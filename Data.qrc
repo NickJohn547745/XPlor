@@ -1,0 +1,27 @@
+<RCC>
+    <qresource prefix="/obj">
+        <file>data/obj/defaultactor_LOD0.bin</file>
+        <file>data/obj/defaultactor_LOD0.cast</file>
+        <file>data/obj/defaultactor_LOD0.gltf</file>
+        <file>data/obj/defaultactor_LOD0.ma</file>
+        <file>data/obj/defaultactor_LOD0.mesh.ascii</file>
+        <file>data/obj/defaultactor_LOD0.obj</file>
+        <file>data/obj/defaultactor_LOD0.semodel</file>
+        <file>data/obj/defaultactor_LOD0.smd</file>
+        <file>data/obj/defaultactor_LOD0.XMODEL_BIN</file>
+        <file>data/obj/defaultactor_LOD0.XMODEL_EXPORT</file>
+        <file>data/obj/defaultactor_LOD0_BIND.mel</file>
+        <file>data/obj/defaultactor_LOD0_cosmetics.mel</file>
+        <file>data/obj/mtl_body_default_character.mtl</file>
+        <file>data/obj/mtl_body_default_character_images.txt</file>
+        <file>data/obj/diffusemap.png</file>
+        <file>data/obj/normalmap.png</file>
+    </qresource>
+    <qresource prefix="/d3dbsp">
+        <file>data/d3dbsp/asset_viewer.d3dbsp</file>
+        <file>data/d3dbsp/barebones.d3dbsp</file>
+    </qresource>
+    <qresource prefix="/dlls">
+        <file>data/dlls/dxcompiler.dll</file>
+    </qresource>
+</RCC>
