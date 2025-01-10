@@ -4,9 +4,9 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += c++17
 
-INCLUDEPATH += "C:/Program Files (x86)/Windows Kits/10/Include/10.0.26100.0/um"
-LIBS += -L"C:/Program Files (x86)/Windows Kits/10/Lib/10.0.26100.0/um/x64" \
-        -ldxcompiler
+#INCLUDEPATH += "C:/Program Files (x86)/Windows Kits/10/Include/10.0.26100.0/um"
+#LIBS += -L"C:/Program Files (x86)/Windows Kits/10/Lib/10.0.26100.0/um/x64" \
+#        -ldxcompiler
 
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.

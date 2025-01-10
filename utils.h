@@ -2,6 +2,7 @@
 #define UTILS_H
 
 #include "enums.h"
+#include "qcolor.h"
 
 #include <QString>
 #include <QtZlib/zlib.h>
@@ -15,36 +16,36 @@ public:
 */
     static QString AssetTypeToString(const QString aAssetType) {
         const QString cleanedType = aAssetType.toUpper();
-        if (cleanedType == "17000000") {        // localized string       PARTIALLY VERIFIED
-            return "LOCAL STRING";
-        } else if (cleanedType == "20000000") { // raw_file               PARTIALLY VERIFIED
-            return "RAW FILE";
-        } else if (cleanedType == "1A000000") { // fx                     PARTIALLY VERIFIED
-            return "EFFECT";
-        } else if (cleanedType == "09000000") { // loaded_sound           PARTIALLY VERIFIED
-            return "SOUND";
-        } else if (cleanedType == "04000000") { // x_anim                 PARTIALLY VERIFIED
+        if (cleanedType == "04000000") {        // x_anim                 PARTIALLY VERIFIED
             return "ANIMATION";
-        } else if (cleanedType == "0C000000") { // collision_map          PARTIALLY VERIFIED
-            return "COLLISION MAP";
-        } else if (cleanedType == "21000000") { // string_table           PARTIALLY VERIFIED
-            return "STRING TABLE";
-        } else if (cleanedType == "15000000") { // menu_file              PARTIALLY VERIFIED
-            return "MENU";
-        } else if (cleanedType == "07000000") { // tech set               PARTIALLY VERIFIED
-            return "TECH SET";
-        } else if (cleanedType == "18000000") { // weapon                 PARTIALLY VERIFIED
-            return "WEAPON";
-        } else if (cleanedType == "11000000") { // d3dbsp dump            PARTIALLY VERIFIED
-            return "D3DBSP DUMP";
-        } else if (cleanedType == "12000000") { // light_def              PARTIALLY VERIFIED
-            return "LIGHT DEF";
-        } else if (cleanedType == "14000000") { // font                   PARTIALLY VERIFIED
-            return "FONT";
         } else if (cleanedType == "05000000") { // xmodel                 PARTIALLY VERIFIED
             return "MODEL";
+        } else if (cleanedType == "06000000") { // material               VERIFIED
+            return "MATERIAL";
+        } else if (cleanedType == "07000000") { // tech set               VERIFIED
+            return "TECH SET";
+        } else if (cleanedType == "09000000") { // loaded_sound           VERIFIED
+            return "SOUND";
+        } else if (cleanedType == "0C000000") { // collision_map          PARTIALLY VERIFIED
+            return "COLLISION MAP";
         } else if (cleanedType == "0D000000") { // shader                 PARTIALLY VERIFIED
             return "SHADER";
+        } else if (cleanedType == "11000000") { // d3dbsp dump            VERIFIED
+            return "D3DBSP DUMP";
+        } else if (cleanedType == "14000000") { // font                   PARTIALLY VERIFIED
+            return "FONT";
+        } else if (cleanedType == "15000000") { // menu_file              PARTIALLY VERIFIED
+            return "MENU";
+        } else if (cleanedType == "17000000") { // localized string       PARTIALLY VERIFIED
+            return "LOCAL STRING";
+        } else if (cleanedType == "18000000") { // weapon                 PARTIALLY VERIFIED
+            return "WEAPON";
+        } else if (cleanedType == "1A000000") { // fx                     VERIFIED
+            return "EFFECT";
+        } else if (cleanedType == "20000000") { // raw_file               VERIFIED
+            return "RAW FILE";
+        } else if (cleanedType == "21000000") { // string_table           PARTIALLY VERIFIED
+            return "STRING TABLE";
         }
         return "UNKNOWN";
     }
@@ -163,6 +164,72 @@ public:
 
     static quint32 PaddingSize(quint32 size) {
         return PadInt4(size) - size;
+    }
+
+    static QString MenuVAlignToStr(MENU_V_ALIGNMENT align) {
+        if (align == VERTICAL_ALIGN_SUBTOP) {
+            return "VERTICAL_ALIGN_SUBTOP";
+        } else if (align == VERTICAL_ALIGN_TOP) {
+            return "VERTICAL_ALIGN_TOP";
+        } else if (align == VERTICAL_ALIGN_CENTER) {
+            return "VERTICAL_ALIGN_CENTER";
+        } else if (align == VERTICAL_ALIGN_BOTTOM) {
+            return "VERTICAL_ALIGN_BOTTOM";
+        } else if (align == VERTICAL_ALIGN_FULLSCREEN) {
+            return "VERTICAL_ALIGN_FULLSCREEN";
+        } else if (align == VERTICAL_ALIGN_NOSCALE) {
+            return "VERTICAL_ALIGN_NOSCALE";
+        } else if (align == VERTICAL_ALIGN_TO480) {
+            return "VERTICAL_ALIGN_TO480";
+        } else if (align == VERTICAL_ALIGN_CENTER_SAFEAREA) {
+            return "VERTICAL_ALIGN_CENTER_SAFEAREA";
+        } else if (align == VERTICAL_ALIGN_MAX) {
+            return "VERTICAL_ALIGN_CENTER_SAFEAREA";
+        } else if (align == VERTICAL_ALIGN_DEFAULT) {
+            return "VERTICAL_ALIGN_SUBTOP";
+        }
+        return "VERTICAL_ALIGN_SUBTOP";
+    }
+
+    static QString MenuHAlignToStr(MENU_H_ALIGNMENT align) {
+        if (align == HORIZONTAL_ALIGN_SUBLEFT) {
+            return "HORIZONTAL_ALIGN_SUBLEFT";
+        } else if (align == HORIZONTAL_ALIGN_LEFT) {
+            return "HORIZONTAL_ALIGN_LEFT";
+        } else if (align == HORIZONTAL_ALIGN_CENTER) {
+            return "HORIZONTAL_ALIGN_CENTER";
+        } else if (align == HORIZONTAL_ALIGN_RIGHT) {
+            return "HORIZONTAL_ALIGN_RIGHT";
+        } else if (align == HORIZONTAL_ALIGN_FULLSCREEN) {
+            return "HORIZONTAL_ALIGN_FULLSCREEN";
+        } else if (align == HORIZONTAL_ALIGN_NOSCALE) {
+            return "HORIZONTAL_ALIGN_NOSCALE";
+        } else if (align == HORIZONTAL_ALIGN_TO640) {
+            return "HORIZONTAL_ALIGN_TO640";
+        } else if (align == HORIZONTAL_ALIGN_CENTER_SAFEAREA) {
+            return "HORIZONTAL_ALIGN_CENTER_SAFEAREA";
+        } else if (align == HORIZONTAL_ALIGN_MAX) {
+            return "HORIZONTAL_ALIGN_CENTER_SAFEAREA";
+        } else if (align == HORIZONTAL_ALIGN_DEFAULT) {
+            return "HORIZONTAL_ALIGN_SUBLEFT";
+        }
+        return "HORIZONTAL_ALIGN_SUBLEFT";
+    }
+
+    static QColor ColorFromNormalized(float r, float g, float b, float a) {
+        // Ensure values are clamped between 0 and 1
+        r = qBound(0.0f, r, 1.0f);
+        g = qBound(0.0f, g, 1.0f);
+        b = qBound(0.0f, b, 1.0f);
+        a = qBound(0.0f, a, 1.0f);
+
+        // Convert to 0-255 scale
+        int red = static_cast<int>(r * 255);
+        int green = static_cast<int>(g * 255);
+        int blue = static_cast<int>(b * 255);
+        int alpha = static_cast<int>(a * 255);
+
+        return QColor(red, green, blue, alpha);
     }
 };
 

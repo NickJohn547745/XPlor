@@ -21,7 +21,5 @@
         <file>data/d3dbsp/asset_viewer.d3dbsp</file>
         <file>data/d3dbsp/barebones.d3dbsp</file>
     </qresource>
-    <qresource prefix="/dlls">
-        <file>data/dlls/dxcompiler.dll</file>
-    </qresource>
+    <qresource prefix="/dlls"/>
 </RCC>
