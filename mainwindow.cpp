@@ -53,6 +53,9 @@ MainWindow::MainWindow(QWidget *parent)
     ui->tableWidget_Order->setShowGrid(false);
     ui->tableWidget_Order->setStyleSheet("QTableView {selection-background-color: red;}");
 
+    ui->treeWidget_Menus->setHeaderLabels({"Components", "Description"});
+    ui->treeWidget_Menus->setColumnWidth(0, width() / 4 * 3); // Name column
+
     Qt3DExtras::Qt3DWindow *view = new Qt3DExtras::Qt3DWindow();
     view->defaultFrameGraph()->setClearColor(QColor(QRgb(0x4d4d4f)));
 
@@ -910,6 +913,437 @@ void MainWindow::ParseAsset_XAnim(QDataStream *aZoneFileStream) {
 
 void MainWindow::ParseAsset_MenuFile(QDataStream *aZoneFileStream) {
     //MENU_FILE
+    aZoneFileStream->skipRawData(4); // Separator
+
+    // Parse menu def count
+    quint32 menuDefCount;
+    *aZoneFileStream >> menuDefCount;
+
+    if (menuDefCount > 1000) { return; }
+    for (int i = 0; i < menuDefCount; i++) {
+        aZoneFileStream->skipRawData(4); // Separator
+
+        // Read in x_anim file name
+        QString menuFilepath;
+        char menuFilepathChar;
+        *aZoneFileStream >> menuFilepathChar;
+        while (menuFilepathChar != 0) {
+            menuFilepath += menuFilepathChar;
+            *aZoneFileStream >> menuFilepathChar;
+        }
+        qDebug() << "Parsing " << menuFilepath;
+
+        QTreeWidgetItem *menuFilePathNode = new QTreeWidgetItem(ui->treeWidget_Menus);
+
+        aZoneFileStream->skipRawData(4); // Separator
+
+        QByteArray menuNamePtr(4, Qt::Uninitialized);
+        aZoneFileStream->readRawData(menuNamePtr.data(), 4);
+        QTreeWidgetItem *menuNamePtrNode = new QTreeWidgetItem(menuFilePathNode);
+        menuNamePtrNode->setText(0, QString("Menu name ptr: %1").arg(menuNamePtr.toHex().toUpper()));
+
+        QTreeWidgetItem *menuRectNode = new QTreeWidgetItem(menuFilePathNode);
+        menuRectNode->setText(0, "Menu Rect");
+
+        float menuRectX, menuRectY, menuRectWidth, menuRectHeight;
+        *aZoneFileStream >> menuRectX >> menuRectY >> menuRectWidth >> menuRectHeight;
+        QTreeWidgetItem *menuRectXNode = new QTreeWidgetItem(menuRectNode);
+        menuRectXNode->setText(0, QString("X: %1").arg(menuRectX));
+        QTreeWidgetItem *menuRectYNode = new QTreeWidgetItem(menuRectNode);
+        menuRectYNode->setText(0, QString("Y: %1").arg(menuRectY));
+        QTreeWidgetItem *menuRectWidthNode = new QTreeWidgetItem(menuRectNode);
+        menuRectWidthNode->setText(0, QString("Width: %1").arg(menuRectWidth));
+        QTreeWidgetItem *menuRectHeightNode = new QTreeWidgetItem(menuRectNode);
+        menuRectHeightNode->setText(0, QString("Height: %1").arg(menuRectHeight));
+
+        MENU_H_ALIGNMENT hAlign;
+        *aZoneFileStream >> hAlign;
+        QTreeWidgetItem *hAlignNode = new QTreeWidgetItem(menuRectNode);
+        QString hAlignStr = Utils::MenuHAlignToStr(hAlign);
+        hAlignNode->setText(0, QString("Horiz. Align: %1").arg(hAlignStr));
+
+        MENU_V_ALIGNMENT vAlign;
+        *aZoneFileStream >> vAlign;
+        QTreeWidgetItem *vAlignNode = new QTreeWidgetItem(menuRectNode);
+        QString vAlignStr = Utils::MenuVAlignToStr(vAlign);
+        vAlignNode->setText(0, QString("Vert. Align: %1").arg(vAlignStr));
+
+        float rectClientX, rectClientY, rectClientWidth, rectClientHeight;
+        *aZoneFileStream >> rectClientX >> rectClientY >> rectClientWidth >> rectClientHeight;
+        QTreeWidgetItem *menuRectClientNode = new QTreeWidgetItem(menuFilePathNode);
+        menuRectClientNode->setText(0, "Menu Client Rect");
+        QTreeWidgetItem *menuRectClientXNode = new QTreeWidgetItem(menuRectClientNode);
+        menuRectClientXNode->setText(0, QString("X: %1").arg(rectClientX));
+        QTreeWidgetItem *menuRectClientYNode = new QTreeWidgetItem(menuRectClientNode);
+        menuRectClientYNode->setText(0, QString("Y: %1").arg(rectClientY));
+        QTreeWidgetItem *menuRectClientWidthNode = new QTreeWidgetItem(menuRectClientNode);
+        menuRectClientWidthNode->setText(0, QString("Width: %1").arg(rectClientWidth));
+        QTreeWidgetItem *menuRectClientHeightNode = new QTreeWidgetItem(menuRectClientNode);
+        menuRectClientHeightNode->setText(0, QString("Height: %1").arg(rectClientHeight));
+
+        // Client horizontal alignment
+        MENU_H_ALIGNMENT hClientAlign;
+        *aZoneFileStream >> hClientAlign;
+        QTreeWidgetItem *hClientAlignNode = new QTreeWidgetItem(menuRectClientNode);
+        QString hClientAlignStr = Utils::MenuHAlignToStr(hAlign);
+        hClientAlignNode->setText(0, QString("Horiz. Align: %1").arg(hClientAlignStr));
+
+        // Client vertical alignment
+        MENU_V_ALIGNMENT vClientAlign;
+        *aZoneFileStream >> vClientAlign;
+        QTreeWidgetItem *vClientAlignNode = new QTreeWidgetItem(menuRectClientNode);
+        QString vClientAlignStr = Utils::MenuVAlignToStr(vAlign);
+        vClientAlignNode->setText(0, QString("Vert. Align: %1").arg(vClientAlignStr));
+
+        quint32 groupPtr; // Should be const char *
+        *aZoneFileStream >> groupPtr;
+
+        MENU_WINDOW_STYLE style;
+        *aZoneFileStream >> style;
+
+        MENU_WINDOW_BORDER border;
+        *aZoneFileStream >> border;
+
+        quint32 ownerDraw, ownerDrawFlags;
+        *aZoneFileStream >> ownerDraw >> ownerDrawFlags;
+
+        float borderSize;
+        *aZoneFileStream >> borderSize;
+
+        int staticFlags, dynamicFlags, nextTime;
+        *aZoneFileStream >> staticFlags >> dynamicFlags >> nextTime;
+
+        QTreeWidgetItem *colorsNode = new QTreeWidgetItem(menuFilePathNode);
+        colorsNode->setText(0, "Menu Colors");
+
+        float foregroundColorR, foregroundColorG, foregroundColorB, foregroundColorA,
+            backgroundColorR, backgroundColorG, backgroundColorB, backgroundColorA,
+            borderColorR, borderColorG, borderColorB, borderColorA,
+            outlineColorR, outlineColorG, outlineColorB, outlineColorA;
+        *aZoneFileStream >> foregroundColorR >> foregroundColorG >> foregroundColorB >> foregroundColorA
+            >> backgroundColorR >> backgroundColorG >> backgroundColorB >> backgroundColorA
+            >> borderColorR >> borderColorG >> borderColorB >> borderColorA
+            >> outlineColorR >> outlineColorG >> outlineColorB >> outlineColorA;
+
+        QTreeWidgetItem *foregroundColorNode = new QTreeWidgetItem(colorsNode);
+        foregroundColorNode->setText(0, QString("Foreground Color: RGBA(%1, %2, %3, %4)")
+                                            .arg(foregroundColorR).arg(foregroundColorG).arg(foregroundColorB).arg(foregroundColorA));
+        foregroundColorNode->setBackground(1, Utils::ColorFromNormalized(foregroundColorR, foregroundColorG, foregroundColorB, foregroundColorA));
+        QTreeWidgetItem *backgroundColorNode = new QTreeWidgetItem(colorsNode);
+        backgroundColorNode->setText(0, QString("Background Color: RGBA(%1, %2, %3, %4)")
+                                            .arg(backgroundColorR).arg(backgroundColorG).arg(backgroundColorB).arg(backgroundColorA));
+        backgroundColorNode->setBackground(1, Utils::ColorFromNormalized(backgroundColorR, backgroundColorG, backgroundColorB, backgroundColorA));
+        QTreeWidgetItem *borderColorNode = new QTreeWidgetItem(colorsNode);
+        borderColorNode->setText(0, QString("Borer Color: RGBA(%1, %2, %3, %4)")
+                                        .arg(borderColorR).arg(borderColorG).arg(borderColorB).arg(borderColorA));
+        borderColorNode->setBackground(1, Utils::ColorFromNormalized(borderColorR, borderColorG, borderColorB, borderColorA));
+        QTreeWidgetItem *outlineColorNode = new QTreeWidgetItem(colorsNode);
+        outlineColorNode->setText(0, QString("Outline Color: RGBA(%1, %2, %3, %4)")
+                                         .arg(outlineColorR).arg(outlineColorG).arg(outlineColorB).arg(outlineColorA));
+        outlineColorNode->setBackground(1, Utils::ColorFromNormalized(outlineColorR, outlineColorG, outlineColorB, outlineColorA));
+
+        quint32 materialPtr; // Should be Material *
+        *aZoneFileStream >> materialPtr;
+
+        quint32 fontPtr, fullScreen, itemCount, fontIndex;
+        *aZoneFileStream >> fontPtr >> fullScreen >> itemCount >> fontIndex;
+
+        quint32 cursorItem, fadeCycle;
+        *aZoneFileStream >> cursorItem >> fadeCycle;
+
+        float fadeClamp, fadeAmount, fadeInAmount, blurRadius;
+        *aZoneFileStream >> fadeClamp >> fadeAmount >> fadeInAmount >> blurRadius;
+
+        quint32 onOpenPtr, onFocusPtr, onClosePtr, onESCPtr; // Should be const char *
+        *aZoneFileStream >> onOpenPtr >> onFocusPtr >> onClosePtr >> onESCPtr;
+
+        quint32 onKeyPtr; // Should be ItemKeyHandler *
+        *aZoneFileStream >> onKeyPtr;
+
+        quint32 visibleExpCount, expEntryPtr; // components of statement_s
+        *aZoneFileStream >> visibleExpCount >> expEntryPtr;
+
+        quint32 allowedBindingPtr, soundNamePtr; // Should be const char *
+        *aZoneFileStream >> allowedBindingPtr >> soundNamePtr;
+
+        quint32 imageTrack;
+        *aZoneFileStream >> imageTrack;
+
+        float focusColorR, focusColorG, focusColorB, focusColorA;
+        *aZoneFileStream >> focusColorR >> focusColorG >> focusColorB >> focusColorA;
+        QTreeWidgetItem *focusColorNode = new QTreeWidgetItem(colorsNode);
+        focusColorNode->setText(0, QString("Focus Color: RGBA(%1, %2, %3, %4)")
+                                         .arg(focusColorR).arg(focusColorG).arg(focusColorB).arg(focusColorA));
+        focusColorNode->setBackground(1, Utils::ColorFromNormalized(focusColorR, focusColorG, focusColorB, focusColorA));
+
+        //QTreeWidgetItem *menuDefChildNode = new QTreeWidgetItem(menuDefNode);
+        //menuDefChildNode->setText(0, menuDefName);
+
+        float disabledColorR, disabledColorG, disabledColorB, disabledColorA;
+        *aZoneFileStream >> disabledColorR >> disabledColorG >> disabledColorB >> disabledColorA;
+        QTreeWidgetItem *disabledColorNode = new QTreeWidgetItem(colorsNode);
+        disabledColorNode->setText(0, QString("Disabled Color: RGBA(%1, %2, %3, %4)")
+                                         .arg(disabledColorR).arg(disabledColorG).arg(disabledColorB).arg(disabledColorA));
+        disabledColorNode->setBackground(1, Utils::ColorFromNormalized(disabledColorR, disabledColorG, disabledColorB, disabledColorA));
+
+        quint32 rectXExpCount, rectXExpPtr; // components of statement_s
+        *aZoneFileStream >> rectXExpCount >> rectXExpPtr;
+
+        quint32 rectYExpCount, rectYExpPtr; // components of statement_s
+        *aZoneFileStream >> rectYExpCount >> rectYExpPtr;
+
+        aZoneFileStream->skipRawData(4); // Separator
+
+        QString menuDefName;
+        char menuDefNameChar;
+        int menuDefNameLen = 0;
+        *aZoneFileStream >> menuDefNameChar;
+        while (menuDefNameChar != 0 && menuDefNameLen < 30) {
+            menuDefNameLen++;
+            menuDefName += menuDefNameChar;
+            *aZoneFileStream >> menuDefNameChar;
+        }
+
+        menuFilePathNode->setText(0, QString("%1 - %2").arg(menuDefName).arg(menuFilepath));
+
+        QString defString;
+        char defStringChar;
+        int defStringLen = 0;
+        *aZoneFileStream >> defStringChar;
+        while (defStringChar != 0 && defStringLen < 30) {
+            defStringLen++;
+            defString += defStringChar;
+            *aZoneFileStream >> defStringChar;
+        }
+        aZoneFileStream->skipRawData(4 * 10);
+
+
+        QTreeWidgetItem *itemsNode = new QTreeWidgetItem(menuFilePathNode);
+        itemsNode->setText(0, "Item Definitions");
+
+        quint32 itemWindowDefNamePtr;
+        *aZoneFileStream >> itemWindowDefNamePtr;
+
+        QTreeWidgetItem *itemRectNode = new QTreeWidgetItem(itemsNode);
+        itemRectNode->setText(0, "Item Text Rect");
+
+        float itemRectX, itemRectY, itemRectWidth, itemRectHeight;
+        *aZoneFileStream >> itemRectX >> itemRectY >> itemRectWidth >> itemRectHeight;
+        QTreeWidgetItem *itemRectXNode = new QTreeWidgetItem(itemRectNode);
+        itemRectXNode->setText(0, QString("X: %1").arg(itemRectX));
+        QTreeWidgetItem *itemRectYNode = new QTreeWidgetItem(itemRectNode);
+        itemRectYNode->setText(0, QString("Y: %1").arg(itemRectY));
+        QTreeWidgetItem *itemRectWidthNode = new QTreeWidgetItem(itemRectNode);
+        itemRectWidthNode->setText(0, QString("Width: %1").arg(itemRectWidth));
+        QTreeWidgetItem *itemRectHeightNode = new QTreeWidgetItem(itemRectNode);
+        itemRectHeightNode->setText(0, QString("Height: %1").arg(itemRectHeight));
+
+        MENU_H_ALIGNMENT itemHAlignment;
+        *aZoneFileStream >> itemHAlignment;
+        QTreeWidgetItem *hTextAlignNode = new QTreeWidgetItem(itemRectNode);
+        QString hTextAlignStr = Utils::MenuHAlignToStr(itemHAlignment);
+        hTextAlignNode->setText(0, QString("Horiz. Align: %1").arg(hTextAlignStr));
+
+        MENU_V_ALIGNMENT itemVAlignment;
+        *aZoneFileStream >> itemVAlignment;
+        QTreeWidgetItem *vTextAlignNode = new QTreeWidgetItem(itemRectNode);
+        QString vTextAlignStr = Utils::MenuVAlignToStr(itemVAlignment);
+        vTextAlignNode->setText(0, QString("Vert. Align: %1").arg(vTextAlignStr));
+
+        quint32 itemGroupPtr; // Should be const char*
+        *aZoneFileStream >> itemGroupPtr;
+
+        MENU_WINDOW_STYLE itemWindowStyle;
+        *aZoneFileStream >> itemWindowStyle;
+
+        MENU_WINDOW_BORDER itemWindowBorder;
+        *aZoneFileStream >> itemWindowBorder;
+
+        quint32 itemOwnerDraw, itemOwnerDrawFlags;
+        *aZoneFileStream >> itemOwnerDraw >> itemOwnerDrawFlags;
+
+        float itemBorderSize;
+        *aZoneFileStream >> itemBorderSize;
+
+        int itemStaticFlags, itemDynamicFlags, itemNextTime;
+        *aZoneFileStream >> itemStaticFlags >> itemDynamicFlags >> itemNextTime;
+
+        float itemForegroundColorR, itemForegroundColorG, itemForegroundColorB, itemForegroundColorA,
+            itemBackgroundColorR, itemBackgroundColorG, itemBackgroundColorB, itemBackgroundColorA,
+            itemBorderColorR, itemBorderColorG, itemBorderColorB, itemBorderColorA,
+            itemOutlineColorR, itemOutlineColorG, itemOutlineColorB, itemOutlineColorA;
+        *aZoneFileStream >> itemForegroundColorR >> itemForegroundColorG >> itemForegroundColorB >> itemForegroundColorA
+            >> itemBackgroundColorR >> itemBackgroundColorG >> itemBackgroundColorB >> itemBackgroundColorA
+            >> itemBorderColorR >> itemBorderColorG >> itemBorderColorB >> itemBorderColorA
+            >> itemOutlineColorR >> itemOutlineColorG >> itemOutlineColorB >> itemOutlineColorA;
+
+        quint32 itemMaterialPtr; // Should be Material *
+        *aZoneFileStream >> itemMaterialPtr;
+
+        QTreeWidgetItem *itemTextRectNode = new QTreeWidgetItem(itemsNode);
+        itemTextRectNode->setText(0, "Item Text Rect");
+
+        float itemTextRectX, itemTextRectY, itemTextRectWidth, itemTextRectHeight;
+        *aZoneFileStream >> itemTextRectX >> itemTextRectY >> itemTextRectWidth >> itemTextRectHeight;
+        QTreeWidgetItem *itemTextRectXNode = new QTreeWidgetItem(itemTextRectNode);
+        itemTextRectXNode->setText(0, QString("X: %1").arg(itemTextRectX));
+        QTreeWidgetItem *itemTextRectYNode = new QTreeWidgetItem(itemTextRectNode);
+        itemTextRectYNode->setText(0, QString("Y: %1").arg(itemTextRectY));
+        QTreeWidgetItem *itemTextRectWidthNode = new QTreeWidgetItem(itemTextRectNode);
+        itemTextRectWidthNode->setText(0, QString("Width: %1").arg(itemTextRectWidth));
+        QTreeWidgetItem *itemTextRectHeightNode = new QTreeWidgetItem(itemTextRectNode);
+        itemTextRectHeightNode->setText(0, QString("Height: %1").arg(itemTextRectHeight));
+
+        MENU_H_ALIGNMENT itemText_hAlign;
+        *aZoneFileStream >> itemText_hAlign;
+        QTreeWidgetItem *hItemTextAlignNode = new QTreeWidgetItem(itemTextRectNode);
+        QString hItemTextAlignStr = Utils::MenuHAlignToStr(itemText_hAlign);
+        hItemTextAlignNode->setText(0, QString("Horiz. Align: %1").arg(hItemTextAlignStr));
+
+        MENU_V_ALIGNMENT itemText_vAlign;
+        *aZoneFileStream >> itemText_vAlign;
+        QTreeWidgetItem *vItemTextAlignNode = new QTreeWidgetItem(itemTextRectNode);
+        QString vItemTextAlignStr = Utils::MenuVAlignToStr(itemText_vAlign);
+        vItemTextAlignNode->setText(0, QString("Vert. Align: %1").arg(vItemTextAlignStr));
+
+
+        MENU_ITEM_TYPE itemType;
+        *aZoneFileStream >> itemType;
+
+        quint32 dataType, alignment;
+        *aZoneFileStream >> dataType >> alignment;
+
+        MENU_FONT_TYPE fontEnum;
+        *aZoneFileStream >> fontEnum;
+
+        quint32 textAlignMode;
+        *aZoneFileStream >> textAlignMode;
+
+        float textalignx, textaligny, textscale;
+        *aZoneFileStream >> textalignx >> textaligny >> textscale;
+
+        MENU_ITEM_TEXTSTYLE textStyle;
+        *aZoneFileStream >> textStyle;
+
+        int gameMsgWindowIndex, gameMsgWindowMode;
+        *aZoneFileStream >> gameMsgWindowIndex >> gameMsgWindowMode;
+
+        quint32 testPtr; // const char *
+        *aZoneFileStream >> testPtr;
+
+        quint32 textSavegameInfo;
+        *aZoneFileStream >> textSavegameInfo;
+
+        quint32 parentPtr; // menuDef_t *
+        *aZoneFileStream >> parentPtr;
+
+        quint32 mouseEnterText, mouseExitText, mouseEnter, mouseExit,
+            action, onAccept, onFocus, leaveFocus, dvar, dvarTest; // const char *
+        *aZoneFileStream >> mouseEnterText >> mouseExitText >> mouseEnter >> mouseExit
+            >> action >> onAccept >> onFocus >> leaveFocus >> dvar >> dvarTest;
+
+        quint32 keyHandlerPtr; // ItemKeyHandler *
+        *aZoneFileStream >> keyHandlerPtr;
+
+        quint32 enableDvarPtr; // const char *
+        *aZoneFileStream >> enableDvarPtr;
+
+        quint32 dvarFlags;
+        *aZoneFileStream >> dvarFlags;
+
+        quint32 focusSoundPtr; // snd_alias_list_t *;
+        *aZoneFileStream >> focusSoundPtr;
+
+        float special;
+        *aZoneFileStream >> special;
+
+        quint32 cursorPos;
+        *aZoneFileStream >> cursorPos;
+
+        // itemDefData_t typeData;
+
+        // listBoxDef_s *listBox;
+
+        quint32 startPos, endPos, drawPadding;
+        *aZoneFileStream >> startPos >> endPos >> drawPadding;
+
+        float elementWidth, elementHeight;
+        *aZoneFileStream >> elementWidth >> elementHeight;
+
+        quint32 elementStyle, numColumns;
+        *aZoneFileStream >> elementStyle >> numColumns;
+
+        //columnInfo_s columnInfo[16];
+
+        quint32 doubleClickPtr; // const char *
+        *aZoneFileStream >> doubleClickPtr;
+
+
+        int notselectable, noScrollBars, usePaging;
+        *aZoneFileStream >> notselectable >> noScrollBars >> usePaging;
+
+        float itemSelectBorderColorR, itemSelectBorderColorG, itemSelectBorderColorB, itemSelectBorderColorA,
+            itemDisableColorR, itemDisableColorG, itemDisableColorB, itemDisableColorA,
+            itemFocusColor2R, itemFocusColor2G, itemFocusColor2B, itemFocusColor2A;
+        *aZoneFileStream >> itemSelectBorderColorR >> itemSelectBorderColorG >> itemSelectBorderColorB >> itemSelectBorderColorA
+            >> itemDisableColorR >> itemDisableColorG >> itemDisableColorB >> itemDisableColorA
+            >> itemFocusColor2R >> itemFocusColor2G >> itemFocusColor2B >> itemFocusColor2A;
+
+        quint32 selectIconPtr, backgroundItemListboxPtr, highlightTexturePtr; // Material *
+        *aZoneFileStream >> selectIconPtr >> backgroundItemListboxPtr >> highlightTexturePtr;
+
+        // editFieldDef_s *editField;
+
+        float minVal, maxVal, defVal, range;
+        *aZoneFileStream >> minVal >> maxVal >> defVal >> range;
+
+        int maxChars, maxCharsGotoNext, maxPaintChars, paintOffset;
+        *aZoneFileStream >> maxChars >> maxCharsGotoNext >> maxPaintChars >> paintOffset;
+
+        // multiDef_s *multi;
+
+        QVector<quint32> dvarListPtrs = QVector<quint32>(32);
+        for (int i = 0; i < 32; i++) {
+            quint32 dvarList;
+            *aZoneFileStream >> dvarList;
+            dvarListPtrs.push_back(dvarList);
+        }
+
+        QVector<quint32> dvarStrPtrs = QVector<quint32>(32);
+        for (int i = 0; i < 32; i++) {
+            quint32 dvarStr;
+            *aZoneFileStream >> dvarStr;
+            dvarStrPtrs.push_back(dvarStr);
+        }
+
+        QVector<float> dvarValues = QVector<float>(32);
+        for (int i = 0; i < 32; i++) {
+            float dvarValue;
+            *aZoneFileStream >> dvarValue;
+            dvarValues.push_back(dvarValue);
+        }
+
+        quint32 count, strDef;
+        *aZoneFileStream >> count >> strDef;
+
+        quint32 enumDvarNamePtr; // const char *
+        *aZoneFileStream >> enumDvarNamePtr;
+
+        quint32 dataPtr; // void *
+        *aZoneFileStream >> dataPtr;
+
+        quint32 itemImageTrack;
+        *aZoneFileStream >> itemImageTrack;
+
+        //statement_s visibleExp;
+        //statement_s textExp;
+        //statement_s materialExp;
+        //statement_s rectXExp;
+        //statement_s rectYExp;
+        //statement_s rectWExp;
+        //statement_s rectHExp;
+        //statement_s foreColorAExp;
+    }
 }
 
 void MainWindow::ParseAsset_Weapon(QDataStream *aZoneFileStream) {
