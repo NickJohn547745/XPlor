@@ -278,12 +278,12 @@ QByteArray MainWindow::DecompressZLIB(QByteArray compressedData) {
 }
 
 /*
-    OpenFastFile()
+    GetFastFilePath()
 
     Opens a file dialog in the steam folder,
     and opens the selected file.
 */
-QFile* MainWindow::OpenFastFile() {
+QString MainWindow::GetFastFilePath() {
     // Reset dialog before opening new file
     Reset();
 
@@ -299,22 +299,16 @@ QFile* MainWindow::OpenFastFile() {
     const QString fastFileStem = fastFilePath.split('/').last();
     setWindowTitle(QString("FastFile Wizard - %1").arg(fastFileStem));
 
-    // Check fastfile can be read
-    QFile *fastFile = new QFile(fastFilePath);
-    if (!fastFile->open(QIODevice::ReadOnly)) {
-        QMessageBox::warning(this, "Warning!", QString("%1 could not be read!.").arg(fastFilePath));
-        return nullptr;
-    }
-    return fastFile;
+    return fastFilePath;
 }
 
 /*
-    OpenZoneFile()
+    GetZoneFilePath()
 
     Opens a file dialog in the steam folder,
     and opens the selected file.
 */
-QFile* MainWindow::OpenZoneFile() {
+QString MainWindow::GetZoneFilePath() {
     // Reset dialog before opening new file
     Reset();
 
@@ -330,13 +324,74 @@ QFile* MainWindow::OpenZoneFile() {
     const QString zoneFileStem = zoneFilePath.split('/').last();
     setWindowTitle(QString("FastFile Wizard - %1").arg(zoneFileStem));
 
+    return zoneFilePath;
+}
+
+QByteArray MainWindow::OpenFastFile(QString aFastFilePath)
+{
+    Reset();
+
     // Check fastfile can be read
-    QFile *zoneFile = new QFile(zoneFilePath);
-    if (!zoneFile->open(QIODevice::ReadOnly)) {
-        QMessageBox::warning(this, "Warning!", QString("%1 could not be read!.").arg(zoneFilePath));
-        return nullptr;
+    QFile *fastFile = new QFile(aFastFilePath);
+    qDebug() << aFastFilePath;
+    if (!fastFile->open(QIODevice::ReadOnly)) {
+        QMessageBox::warning(this, "Warning!", QString("FastFile '%1' could not be read!.").arg(fastFile->fileName()));
+        return QByteArray();
     }
-    return zoneFile;
+    LogOpenedFile(fastFile->fileName());
+    ui->lineEdit_FastFile->setText(fastFile->fileName());
+
+    // Decompress fastfile and close
+    const QByteArray fastFileData = fastFile->readAll();
+
+    // Parse data from fast file header
+    ParseFFHeader(fastFileData.mid(0, 12));
+
+    fastFile->close();
+
+    // Decompress fastfile and close
+    const QByteArray decompressedData = DecompressZLIB(fastFileData.mid(12));
+    // ui->plainTextEdit_ZoneDump->setPlainText(decompressedData.toHex());
+
+    const QString zoneFilePath = aFastFilePath.replace(".ff", ".zone");
+    ui->lineEdit_ZoneFile->setText(zoneFilePath);
+
+    // Open zone file
+    OpenZoneFile(zoneFilePath);
+
+    // Clean up & return
+    delete fastFile;
+    return fastFileData;
+}
+
+QByteArray MainWindow::OpenZoneFile(QString aZoneFilePath)
+{
+    Reset();
+
+    // Check zone file is writeable
+    QFile *zoneFile = new QFile(aZoneFilePath);
+    if (!zoneFile->open(QIODevice::ReadOnly)) {
+        QMessageBox::warning(this, "Warning!", QString("ZoneFile '%1' could not be read!.").arg(zoneFile->fileName()));
+        return QByteArray();
+    }
+    LogOpenedFile(zoneFile->fileName());
+    ui->lineEdit_ZoneFile->setText(zoneFile->fileName());
+
+    // Parse & close zone file
+    QByteArray zoneFileData = zoneFile->readAll();
+    ParseZoneFile(zoneFileData);
+    zoneFile->close();
+
+    // Check if corresponding zone file exists
+    const QString fastFilePath = zoneFile->fileName().replace(".zone", ".ff");
+    if (QFile::exists(fastFilePath)) {
+        ui->lineEdit_FastFile->setText(fastFilePath);
+        LogOpenedFile(fastFilePath);
+    }
+
+    // Clean up & return
+    delete zoneFile;
+    return zoneFileData;
 }
 
 void MainWindow::ParseFFCompany(QDataStream *afastFileStream) {
@@ -420,9 +475,9 @@ void MainWindow::ParseFFVersion(QDataStream *afastFileStream) {
     }
 }
 
-void MainWindow::ParseFFHeader(QFile *aFastFilePtr) {
+void MainWindow::ParseFFHeader(QByteArray aFastFileData) {
     // Open stream to fastfile
-    QDataStream afastFileStream(aFastFilePtr);
+    QDataStream afastFileStream(aFastFileData);
     afastFileStream.setByteOrder(QDataStream::LittleEndian);
 
     ParseFFCompany(&afastFileStream);
@@ -759,10 +814,6 @@ void MainWindow::ParseAsset_RawFile(QDataStream *aZoneFileStream) {
     // qDebug() << QString("%1: %2").arg(rawFilePath).arg(rawFileContents);
 }
 
-void MainWindow::ParseAsset_PhysPreset(QDataStream *aZoneFileStream) {
-
-}
-
 void MainWindow::ParseAsset_XModel(QDataStream *aZoneFileStream) {
 
 }
@@ -793,10 +844,6 @@ void MainWindow::ParseAsset_TechSet(QDataStream *aZoneFileStream) {
     //qDebug() << "Tech Set: " << techSetName;
 }
 
-void MainWindow::ParseAsset_Image(QDataStream *aZoneFileStream) {
-
-}
-
 void MainWindow::ParseAsset_LoadedSound(QDataStream *aZoneFileStream) {
 
 }
@@ -805,31 +852,11 @@ void MainWindow::ParseAsset_ColMapMP(QDataStream *aZoneFileStream) {
 
 }
 
-void MainWindow::ParseAsset_GameMapSP(QDataStream *aZoneFileStream) {
-
-}
-
-void MainWindow::ParseAsset_GameMapMP(QDataStream *aZoneFileStream) {
-
-}
-
-void MainWindow::ParseAsset_LightDef(QDataStream *aZoneFileStream) {
-
-}
-
-void MainWindow::ParseAsset_UIMap(QDataStream *aZoneFileStream) {
-
-}
-
-void MainWindow::ParseAsset_SNDDriverGlobals(QDataStream *aZoneFileStream) {
-
-}
-
-void MainWindow::ParseAsset_AIType(QDataStream *aZoneFileStream) {
-
-}
-
 void MainWindow::ParseAsset_FX(QDataStream *aZoneFileStream) {
+
+}
+
+void MainWindow::ParseAsset_Font(QDataStream *aZoneFileStream) {
 
 }
 
@@ -1413,134 +1440,62 @@ void MainWindow::ParseAsset_StringTable(QDataStream *aZoneFileStream) {
 }
 
 void MainWindow::on_pushButton_FastFile_clicked() {
-    // Try to prompt user to open fastfile
-    QFile *fastFile;
-    if (!(fastFile = OpenFastFile())) {
-        QMessageBox::warning(this, "Warning!", QString("Failed to open FastFile!."));
-        return;
-    }
-
-    // Parse data from fast file header
-    ParseFFHeader(fastFile);
-
-    // Decompress fastfile and close
-    const QByteArray fastFileData = fastFile->readAll();
-    const QByteArray decompressedData = DecompressZLIB(fastFileData);
-    // ui->plainTextEdit_ZoneDump->setPlainText(decompressedData.toHex());
-
-    const QString zoneFilePath = fastFile->fileName().replace(".ff", ".zone");
-    fastFile->close();
-
-    // Check zone file is writeable
-    QFile *zoneFile = new QFile(zoneFilePath);
-    if (!zoneFile->open(QIODevice::ReadWrite)) {
-        qDebug() << QString("Zone file could not be written to: '%1'").arg(zoneFilePath);
-        return;
-    }
-    // Write zone data
-    zoneFile->write(decompressedData);
-    zoneFile->close();
-
-    // Open zone file as little endian stream
-    QDataStream zoneFileStream(decompressedData);
-    zoneFileStream.setByteOrder(QDataStream::LittleEndian);
-
-    // Parse data from zone file header
-    ParseZoneHeader(&zoneFileStream);
-    ParseZoneIndex(&zoneFileStream);
-
-    // Track current and consecutive assets
-    int assetIndex = 0;
-
-    // Iterate asset types found in index
-    for (auto [assetType, assetCount] : mTypeMap.asKeyValueRange()) {
-        // Get asset description from type
-        QString assetStr = Utils::AssetTypeToString(assetType);
-
-        // Insert row and populate
-        ui->tableWidget_Index->insertRow(assetIndex);
-        ui->tableWidget_Index->setItem(assetIndex, 0, new QTableWidgetItem(assetType));
-        ui->tableWidget_Index->setItem(assetIndex, 1, new QTableWidgetItem(assetStr));
-        ui->tableWidget_Index->setItem(assetIndex, 2, new QTableWidgetItem(QString::number(assetCount)));
-
-        // Update count
-        assetIndex++;
-    }
-
-    for (int i = 0; i < mTypeOrder.size(); i++) {
-        const QString typeHex = mTypeOrder[i];
-        const QString typeStr = Utils::AssetTypeToString(typeHex);
-
-        // qDebug() << "Parsing Asset of Type: " << typeHex;
-        if (typeStr == "LOCAL STRING") { // localized string asset
-            ParseAsset_LocalString(&zoneFileStream);
-        } else if (typeStr == "RAW FILE") { // gsc
-            ParseAsset_RawFile(&zoneFileStream);
-        } else if (typeStr == "PHYS PRESET") { // physpreset
-            ParseAsset_PhysPreset(&zoneFileStream);
-        } else if (typeStr == "MODEL") { // xmodel
-            ParseAsset_XModel(&zoneFileStream);
-        } else if (typeStr == "MATERIAL") { // material
-            ParseAsset_Material(&zoneFileStream);
-        } else if (typeStr == "SHADER") { // pixelshader
-            ParseAsset_PixelShader(&zoneFileStream);
-        } else if (typeStr == "TECH SET") { // techset include
-            ParseAsset_TechSet(&zoneFileStream);
-        } else if (typeStr == "IMAGE") { // image
-            ParseAsset_Image(&zoneFileStream);
-        } else if (typeStr == "SOUND") { // loaded_sound
-            ParseAsset_LoadedSound(&zoneFileStream);
-        } else if (typeStr == "COLLISION MAP") { // col_map_mp
-            ParseAsset_ColMapMP(&zoneFileStream);
-        } else if (typeStr == "MP MAP") { // game_map_sp
-            ParseAsset_GameMapSP(&zoneFileStream);
-        } else if (typeStr == "SP MAP") { // game_map_mp
-            ParseAsset_GameMapMP(&zoneFileStream);
-        } else if (typeStr == "LIGHT DEF") { // lightdef
-            ParseAsset_LightDef(&zoneFileStream);
-        } else if (typeStr == "UI MAP") { // ui_map
-            ParseAsset_UIMap(&zoneFileStream);
-        } else if (typeStr == "SND DRIVER GLOBALS") { // snddriverglobals
-            ParseAsset_SNDDriverGlobals(&zoneFileStream);
-        } else if (typeStr == "AI TYPE") { // aitype
-            ParseAsset_AIType(&zoneFileStream);
-        } else if (typeStr == "EFFECT") { // aitype
-            ParseAsset_FX(&zoneFileStream);
-        } else if (typeStr == "ANIMATION") { // aitype
-            ParseAsset_XAnim(&zoneFileStream);
-        } else if (typeStr == "STRING TABLE") { // string_table
-            ParseAsset_StringTable(&zoneFileStream);
-        } else if (typeStr == "MENU") { // string_table
-            ParseAsset_MenuFile(&zoneFileStream);
-        } else if (typeStr == "WEAPON") { // string_table
-            ParseAsset_Weapon(&zoneFileStream);
-        } else if (typeStr == "D3DBSP DUMP") { // string_table
-            ParseAsset_D3DBSP(&zoneFileStream);
-        } else if (typeStr != "UNKNOWN") {
-            qDebug() << "Found bad asset type!" << typeStr;
-        }
-    }
-
-    // Close zone file
-    zoneFile->close();
-
-    // Clean up
-    delete zoneFile;
-    delete fastFile;
+    // Open fast file
+    QString fastFilePath = GetFastFilePath();
+    OpenFastFile(fastFilePath);
 }
 
-void MainWindow::on_pushButton_FastFile_2_clicked() {
-    // Check zone file is writeable
-    QFile *zoneFile;
-    if (!(zoneFile = OpenZoneFile())) {
-        QMessageBox::warning(this, "Warning!", QString("Failed to open FastFile!."));
-        return;
-    }
-    const QByteArray decompressedData = zoneFile->readAll();
+void MainWindow::on_pushButton_ZoneFile_clicked() {
+    const QString zoneFilePath = GetZoneFilePath();
+    OpenZoneFile(zoneFilePath);
+}
 
+void MainWindow::LogOpenedFile(QString aFileName)
+{
+    mRecentFiles.enqueue(aFileName);
+    mRecentFiles.removeDuplicates();
+
+    RefreshRecentFileMenu();
+}
+
+void MainWindow::RefreshRecentFileMenu()
+{
+    foreach (QAction* action, mRecentFileActions) {
+        ui->menuRecent_Fast_Files->removeAction(action);
+        ui->menuRecent_Zone_Files->removeAction(action);
+
+        action->deleteLater();
+    }
+    mRecentFileActions.clear();
+
+    foreach (QString recentFileText, mRecentFiles) {
+        if (recentFileText.contains(".ff")) {
+            QAction *recentFastFileAction = new QAction(ui->menuRecent_Fast_Files);
+            recentFastFileAction->setText(recentFileText);
+            mRecentFileActions << recentFastFileAction;
+            ui->menuRecent_Fast_Files->addAction(recentFastFileAction);
+
+            connect(recentFastFileAction, &QAction::triggered, this, [&, this, recentFileText](bool checked = false) {
+                OpenFastFile(recentFileText);
+            });
+        } else if (recentFileText.contains(".zone")) {
+            QAction *recentZoneFileAction = new QAction(ui->menuRecent_Zone_Files);
+            recentZoneFileAction->setText(recentFileText);
+            mRecentFileActions << recentZoneFileAction;
+            ui->menuRecent_Zone_Files->addAction(recentZoneFileAction);
+
+            connect(recentZoneFileAction, &QAction::triggered, this, [&, this, recentFileText](bool checked = false) {
+                OpenZoneFile(recentFileText);
+            });
+        }
+    }
+}
+
+void MainWindow::ParseZoneFile(QByteArray aDecompressedData) {
     // Open zone file as little endian stream
-    QDataStream zoneFileStream(decompressedData);
+    QDataStream zoneFileStream(aDecompressedData);
     zoneFileStream.setByteOrder(QDataStream::LittleEndian);
+    zoneFileStream.setFloatingPointPrecision(QDataStream::SinglePrecision);
 
     // Parse data from zone file header
     ParseZoneHeader(&zoneFileStream);
@@ -1569,60 +1524,40 @@ void MainWindow::on_pushButton_FastFile_2_clicked() {
         const QString typeStr = Utils::AssetTypeToString(typeHex);
 
         // qDebug() << "Parsing Asset of Type: " << typeHex;
-        if (typeStr == "LOCAL STRING") { // localized string asset
-            ParseAsset_LocalString(&zoneFileStream);
-        } else if (typeStr == "RAW FILE") { // gsc
-            ParseAsset_RawFile(&zoneFileStream);
-        } else if (typeStr == "PHYS PRESET") { // physpreset
-            ParseAsset_PhysPreset(&zoneFileStream);
+        if (typeStr == "ANIMATION") { // aitype
+            ParseAsset_XAnim(&zoneFileStream);
         } else if (typeStr == "MODEL") { // xmodel
             ParseAsset_XModel(&zoneFileStream);
         } else if (typeStr == "MATERIAL") { // material
             ParseAsset_Material(&zoneFileStream);
-        } else if (typeStr == "SHADER") { // pixelshader
-            ParseAsset_PixelShader(&zoneFileStream);
         } else if (typeStr == "TECH SET") { // techset include
             ParseAsset_TechSet(&zoneFileStream);
-        } else if (typeStr == "IMAGE") { // image
-            ParseAsset_Image(&zoneFileStream);
         } else if (typeStr == "SOUND") { // loaded_sound
             ParseAsset_LoadedSound(&zoneFileStream);
         } else if (typeStr == "COLLISION MAP") { // col_map_mp
             ParseAsset_ColMapMP(&zoneFileStream);
-        } else if (typeStr == "MP MAP") { // game_map_sp
-            ParseAsset_GameMapSP(&zoneFileStream);
-        } else if (typeStr == "SP MAP") { // game_map_mp
-            ParseAsset_GameMapMP(&zoneFileStream);
-        } else if (typeStr == "LIGHT DEF") { // lightdef
-            ParseAsset_LightDef(&zoneFileStream);
-        } else if (typeStr == "UI MAP") { // ui_map
-            ParseAsset_UIMap(&zoneFileStream);
-        } else if (typeStr == "SND DRIVER GLOBALS") { // snddriverglobals
-            ParseAsset_SNDDriverGlobals(&zoneFileStream);
-        } else if (typeStr == "AI TYPE") { // aitype
-            ParseAsset_AIType(&zoneFileStream);
-        } else if (typeStr == "EFFECT") { // aitype
-            ParseAsset_FX(&zoneFileStream);
-        } else if (typeStr == "ANIMATION") { // aitype
-            ParseAsset_XAnim(&zoneFileStream);
-        } else if (typeStr == "STRING TABLE") { // string_table
-            ParseAsset_StringTable(&zoneFileStream);
-        } else if (typeStr == "MENU") { // string_table
-            ParseAsset_MenuFile(&zoneFileStream);
-        } else if (typeStr == "WEAPON") { // string_table
-            ParseAsset_Weapon(&zoneFileStream);
+        } else if (typeStr == "SHADER") { // pixelshader
+            ParseAsset_PixelShader(&zoneFileStream);
         } else if (typeStr == "D3DBSP DUMP") { // string_table
             ParseAsset_D3DBSP(&zoneFileStream);
-        } else if (typeStr != "UNKNOWN") {
+        } else if (typeStr == "FONT") { // font
+            ParseAsset_Font(&zoneFileStream);
+        } else if (typeStr == "MENU") { // string_table
+            ParseAsset_MenuFile(&zoneFileStream);
+        } else if (typeStr == "LOCAL STRING") { // localized string asset
+            ParseAsset_LocalString(&zoneFileStream);
+        } else if (typeStr == "WEAPON") { // string_table
+            ParseAsset_Weapon(&zoneFileStream);
+        } else if (typeStr == "EFFECT") { // aitype
+            ParseAsset_FX(&zoneFileStream);
+        } else if (typeStr == "RAW FILE") { // gsc
+            ParseAsset_RawFile(&zoneFileStream);
+        } else if (typeStr == "STRING TABLE") { // string_table
+            ParseAsset_StringTable(&zoneFileStream);
+        } else {
             qDebug() << "Found bad asset type!" << typeStr;
         }
     }
-
-    // Close zone file
-    zoneFile->close();
-
-    // Clean up
-    delete zoneFile;
 }
 
 int MainWindow::LoadFile_D3DBSP(const QString aFilePath) {
