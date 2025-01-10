@@ -15,6 +15,20 @@ MainWindow::MainWindow(QWidget *parent)
     mDiskLumpCount = 0;
     mDiskLumpOrder = QVector<quint32>();
     mLumps = QMap<quint32, Lump>();
+    mRecentFiles = QQueue<QString>();
+    mSettingsValid = false;
+    mRecentFileActions = QVector<QAction*>();
+
+    const QString appSettingsPath = QDir::currentPath() + "/appSettings.ini";
+    QSettings appSettings(appSettingsPath, QSettings::IniFormat);
+    if (appSettings.contains("mRecentFiles")) {
+        mSettingsValid = true;
+
+        QStringList recentFiles = appSettings.value("mRecentFiles").toStringList();
+        foreach (QString recentFile, recentFiles) {
+            mRecentFiles.enqueue(recentFile);
+        }
+    }
 
     connect(ui->treeWidget_Scripts, &QTreeWidget::itemSelectionChanged, this, &MainWindow::ScriptSelected);
     connect(ui->comboBox_StringTable, &QComboBox::currentTextChanged, this, &MainWindow::StrTableSelected);
@@ -114,6 +128,10 @@ MainWindow::MainWindow(QWidget *parent)
 }
 
 MainWindow::~MainWindow() {
+    const QString appSettingsPath = QDir::currentPath() + "/appSettings.ini";
+    QSettings appSettings(appSettingsPath, QSettings::IniFormat);
+    appSettings.setValue("mRecentFiles", mRecentFiles.toList());
+
     delete ui;
 }
 
@@ -193,6 +211,9 @@ void MainWindow::Reset() {
     mRawFileMap.clear();
     mTreeMap.clear();
     mStrTableMap.clear();
+
+    // Refresh recent files
+    RefreshRecentFileMenu();
 }
 
 void MainWindow::StrTableSelected(QString aStrTableName) {

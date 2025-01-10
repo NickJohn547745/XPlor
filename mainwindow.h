@@ -12,6 +12,8 @@
 #include <QDebug>
 #include <QTableWidgetItem>
 #include <QTreeWidgetItem>
+#include <QSettings>
+#include <QQueue>
 
 #include <Qt3DCore/QEntity>
 #include <Qt3DRender/QCamera>
@@ -84,9 +86,16 @@ private slots:
     void on_pushButton_FastFile_clicked();
     void on_pushButton_FastFile_2_clicked();
 
-    QFile *OpenFastFile();
-    QFile *OpenZoneFile();
-    void ParseFFHeader(QFile *aFastFilePtr);
+    void LogOpenedFile(QString aFileName);
+    void RefreshRecentFileMenu();
+
+    QString GetFastFilePath();
+    QString GetZoneFilePath();
+
+    QByteArray OpenFastFile(QString aFastFilePath);
+    QByteArray OpenZoneFile(QString aZoneFilePath);
+
+    void ParseFFHeader(QByteArray aFastFileData);
     void ParseFFCompany(QDataStream *aFastFileStream);
     void ParseFFFileType(QDataStream *afastFileStream);
     void ParseFFSignage(QDataStream *afastFileStream);
@@ -141,6 +150,10 @@ private:
     QMap<QString, QString> mRawFileMap;
     QMap<QString, QTreeWidgetItem*> mTreeMap;
     QMap<QString, QVector<QPair<QString, QString>>> mStrTableMap;
+    QQueue<QString> mRecentFiles;
+    bool mSettingsValid;
+
+    QVector<QAction*> mRecentFileActions;
 
     quint32 mBSPVersion;
     quint32 mDiskLumpCount;
