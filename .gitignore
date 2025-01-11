@@ -1,4 +1,12 @@
 /build/
 /data/dlls/
 /data/fastfiles/
-*.user
+
+# Ignore Qt Creator user files
+*.pro.user
+*.pro.user.*
+*.qbs.user
+*.qbs.user.*
+*.creator.user
+*.creator.user.*
+*.creator.*
