@@ -6,7 +6,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow) {
     ui->setupUi(this);
 
-    mTypeMap = QMap<QString, int>();
+    mTypeMap = QMap<ASSET_TYPE, int>();
     mTypeOrder = QStringList();
     mRawFileMap = QMap<QString, QString>();
     mTreeMap = QMap<QString, QTreeWidgetItem*>();
@@ -227,7 +227,7 @@ void MainWindow::StrTableSelected(QString aStrTableName) {
     for (auto strTableEntry : mStrTableMap[aStrTableName]) {
         ui->tableWidget_StringTable->insertRow(ui->tableWidget_StringTable->rowCount() + 1);
         ui->tableWidget_StringTable->setItem(entryIndex, 0, new QTableWidgetItem(strTableEntry.first));
-        ui->tableWidget_StringTable->setItem(entryIndex, 1, new QTableWidgetItem(Utils::AssetTypeToString(strTableEntry.second)));
+        ui->tableWidget_StringTable->setItem(entryIndex, 1, new QTableWidgetItem(strTableEntry.second));
 
         entryIndex++;
     }
@@ -487,285 +487,18 @@ void MainWindow::ParseFFHeader(QByteArray aFastFileData) {
     ParseFFVersion(&afastFileStream);
 }
 
-void MainWindow::ParseZoneHeader(QDataStream *aZoneFileStream) {
-    ParseZoneSize(aZoneFileStream);
-    ParseZoneUnknownsA(aZoneFileStream);
+void MainWindow::ParseAsset_Localize(QDataStream *aZoneFileStream) {
+    Localize localize;
+    *aZoneFileStream >> localize;
 
-    ParseZoneTagCount(aZoneFileStream);
-    ParseZoneUnknownsB(aZoneFileStream);
-
-    ParseZoneRecordCount(aZoneFileStream);
-
-    if (mTagCount) {
-        ParseZoneUnknownsC(aZoneFileStream);
-        ParseZoneTags(aZoneFileStream);
-    } else {
-        aZoneFileStream->skipRawData(4);
-    }
-}
-
-void MainWindow::ParseZoneSize(QDataStream *aZoneFileStream) {
-    // Byte 0-3: (unsigned int?) correlates to the fastfile's
-    //           size after decompression minus 36 bytes (24h)
-    quint32 zoneFileSize;
-    *aZoneFileStream >> zoneFileSize;
-    if (zoneFileSize <= 0) {
-        qDebug() << "Tried to open empty zone file!";
-        exit(-1);
-    }
-    zoneFileSize += 36;
-    ui->spinBox_FileSize->setValue(zoneFileSize);
-
-    qDebug() << QString("Zone file size: '%1'").arg(zoneFileSize);
-}
-
-/*
-    ParseZoneUnknownsA()
-
-    Parses the 1st section of unknowns as hex vals and uint32s
-*/
-void MainWindow::ParseZoneUnknownsA(QDataStream *aZoneFileStream) {
-    // Byte 4-7, 8-11, 12-15: unknown
-    QByteArray unknown1(4, Qt::Uninitialized);
-    aZoneFileStream->readRawData(unknown1.data(), 4);
-    ui->lineEdit_U1->setText(unknown1.toHex());
-    ui->spinBox_U1->setValue(unknown1.toUInt());
-
-    QByteArray unknown2(4, Qt::Uninitialized);
-    aZoneFileStream->readRawData(unknown2.data(), 4);
-    ui->lineEdit_U2->setText(unknown2.toHex());
-    ui->spinBox_U2->setValue(unknown2.toUInt());
-
-    QByteArray unknown3(4, Qt::Uninitialized);
-    aZoneFileStream->readRawData(unknown3.data(), 4);
-    ui->lineEdit_U3->setText(unknown3.toHex());
-    ui->spinBox_U3->setValue(unknown3.toUInt());
-
-    // Byte 16-19, 20-23: empty/unknown
-    QByteArray unknown4(4, Qt::Uninitialized);
-    aZoneFileStream->readRawData(unknown4.data(), 4);
-    ui->lineEdit_U4->setText(unknown4.toHex());
-    ui->spinBox_U4->setValue(unknown4.toUInt());
-
-    QByteArray unknown5(4, Qt::Uninitialized);
-    aZoneFileStream->readRawData(unknown5.data(), 4);
-    ui->lineEdit_U5->setText(unknown5.toHex());
-    ui->spinBox_U5->setValue(unknown5.toUInt());
-
-    // Byte 24-27: somehow related to the filesize, but smaller value
-    QByteArray unknown6(4, Qt::Uninitialized);
-    aZoneFileStream->readRawData(unknown6.data(), 4);
-    ui->lineEdit_U6->setText(unknown6.toHex());
-    ui->spinBox_U6->setValue(unknown6.toUInt());
-
-    // Byte 28-31, 32-35: unknown
-    QByteArray unknown7(4, Qt::Uninitialized);
-    aZoneFileStream->readRawData(unknown7.data(), 4);
-    ui->lineEdit_U7->setText(unknown7.toHex());
-    ui->spinBox_U7->setValue(unknown7.toUInt());
-
-    QByteArray unknown8(4, Qt::Uninitialized);
-    aZoneFileStream->readRawData(unknown8.data(), 4);
-    ui->lineEdit_U8->setText(unknown8.toHex());
-    ui->spinBox_U8->setValue(unknown8.toUInt());
-
-    qDebug() << QString("Unknowns A: '%1''%2''%3''%4''%5''%6''%7''%8'")
-                    .arg(unknown1.toHex())
-                    .arg(unknown2.toHex())
-                    .arg(unknown3.toHex())
-                    .arg(unknown4.toHex())
-                    .arg(unknown5.toHex())
-                    .arg(unknown6.toHex())
-                    .arg(unknown7.toHex())
-                    .arg(unknown8.toHex());
-}
-
-/*
-    ParseZoneTagCount()
-
-    Parses the number of string tags in the zone index
-*/
-void MainWindow::ParseZoneTagCount(QDataStream *aZoneFileStream) {
-    // Byte 36-39: might indicate where the index record starts,
-    //             calculation unknown
-    *aZoneFileStream >> mTagCount;
-    ui->spinBox_TagCount->setValue(mTagCount);
-    qDebug() << QString("Tag count: '%1'").arg(mTagCount);
-}
-
-/*
-    ParseZoneRecordCount()
-
-    Parses the number of records in the zone index
-*/
-void MainWindow::ParseZoneRecordCount(QDataStream *aZoneFileStream) {
-    // Byte 44-47: (unsigned int) number of records
-    *aZoneFileStream >> mRecordCount;
-    ui->spinBox_RecordCount->setValue(mRecordCount);
-    qDebug() << QString("Record count: '%1'").arg(mRecordCount);
-}
-
-/*
-    ParseZoneUnknownsB()
-
-    Parses the 2nd section of unknowns as hex vals and uint32s
-*/
-void MainWindow::ParseZoneUnknownsB(QDataStream *aZoneFileStream) {
-    // Byte 44-47: Unknown/empty?
-    QByteArray unknown9(4, Qt::Uninitialized);
-    aZoneFileStream->readRawData(unknown9.data(), 4);
-    ui->lineEdit_U9->setText(unknown9.toHex());
-    ui->spinBox_U9->setValue(unknown9.toUInt());
-
-    qDebug() << QString("Unknowns B: \n\t'%1'")
-                    .arg(unknown9.toHex());
-}
-
-/*
-    ParseZoneUnknownsC()
-
-    Parses the 3rd section of unknowns as hex vals and uint32s
-*/
-void MainWindow::ParseZoneUnknownsC(QDataStream *aZoneFileStream) {
-    // Byte 40-43: Unknown/empty?
-    QByteArray unknown10(4, Qt::Uninitialized);
-    aZoneFileStream->readRawData(unknown10.data(), 4);
-    ui->lineEdit_U10->setText(unknown10.toHex());
-    ui->spinBox_U10->setValue(unknown10.toUInt());
-
-    // Byte 44-47: Unknown/empty?
-    QByteArray unknown11(4, Qt::Uninitialized);
-    aZoneFileStream->readRawData(unknown11.data(), 4);
-    ui->lineEdit_U11->setText(unknown11.toHex());
-    ui->spinBox_U11->setValue(unknown11.toUInt());
-
-    qDebug() << QString("Unknowns C: \n\t'%1'\n\t'%2'")
-                    .arg(unknown10.toHex())
-                    .arg(unknown11.toHex());
-}
-
-/*
-    ParseZoneTags()
-
-    Parses the string tags ate the start of zone file
-*/
-void MainWindow::ParseZoneTags(QDataStream *aZoneFileStream) {
-    // Byte 48-51: Repeated separators? ÿÿÿÿ x i
-    aZoneFileStream->skipRawData(4 * (mTagCount - 1));
-
-    // Parse tags/strings before index
-    QString zoneTag;
-    char zoneTagChar;
-    for (quint32 i = 0; i < mTagCount - 1; i++) {
-        *aZoneFileStream >> zoneTagChar;
-        while (zoneTagChar != 0) {
-            zoneTag += zoneTagChar;
-            *aZoneFileStream >> zoneTagChar;
-        }
-        ui->listWidget_Tags->addItem(zoneTag);
-        // qDebug() << "Tag: " << zoneTag;
-        zoneTag.clear();
-    }
-}
-
-/*
-    ParseZoneIndex()
-
-    Parse the binary zone index data and populate table
-*/
-void MainWindow::ParseZoneIndex(QDataStream *aZoneFileStream) {
-    // Don't parse if no records
-    if (!mRecordCount) { return; }
-
-    // Track past assets and counts
-    int consecutiveIndex = 0;
-    int consecutiveCount = 0;
-    QString lastAssetType = "";
-
-    // Parse index & map found asset types
-    for (quint32 i = 0; i < mRecordCount; i++) {
-        // Skip record start
-        QByteArray rawAssetType(4, Qt::Uninitialized);
-        aZoneFileStream->readRawData(rawAssetType.data(), 4);
-        if (!mTypeMap.contains(rawAssetType.toHex())) {
-            mTypeMap[rawAssetType.toHex()] = 0;
-        }
-        mTypeMap[rawAssetType.toHex()]++;
-        mTypeOrder << rawAssetType.toHex();
-
-        // Skip separator
-        aZoneFileStream->skipRawData(4);
-
-        // Get asset description from type
-        const QString assetType = rawAssetType.toHex();
-
-        // Set lastAsset as current if first run
-        if (lastAssetType.isEmpty()) {
-            lastAssetType = assetType;
-        }
-
-        // Track counts or populate asset order table
-        if (lastAssetType == assetType) {
-            // Count consecutive assets
-            consecutiveCount++;
-        } else {
-            // Insert row and populate for the previous asset type
-            ui->tableWidget_Order->insertRow(consecutiveIndex);
-            ui->tableWidget_Order->setItem(consecutiveIndex, 0, new QTableWidgetItem(lastAssetType));
-            ui->tableWidget_Order->setItem(consecutiveIndex, 1, new QTableWidgetItem(Utils::AssetTypeToString(lastAssetType)));
-            ui->tableWidget_Order->setItem(consecutiveIndex, 2, new QTableWidgetItem(QString::number(consecutiveCount)));
-
-            // Update counts and asset type
-            consecutiveCount = 1;
-            consecutiveIndex++;
-            lastAssetType = assetType;
-        }
-    }
-}
-
-void MainWindow::ParseAsset_LocalString(QDataStream *aZoneFileStream) {
-    // Skip separator
-    aZoneFileStream->skipRawData(8);
-
-    // Parse local string asset contents
-    QString localStr;
-    char localStrChar;
-    *aZoneFileStream >> localStrChar;
-    while (localStrChar != 0) {
-        localStr += localStrChar;
-        *aZoneFileStream >> localStrChar;
-    }
-
-    // Parse rawfile name
-    QString aliasName;
-    char aliasNameChar;
-    *aZoneFileStream >> aliasNameChar;
-    while (aliasNameChar != 0) {
-        aliasName += aliasNameChar;
-        *aZoneFileStream >> aliasNameChar;
-    }
-    // qDebug() << QString("%1 = %2").arg(aliasName).arg(localStr);
-    ui->listWidget_LocalString->addItem(QString("%1 = %2").arg(aliasName).arg(localStr));
+    ui->listWidget_LocalString->addItem(QString("%1 = %2").arg(localize.referenceStr).arg(localize.localizedStr));
 }
 
 void MainWindow::ParseAsset_RawFile(QDataStream *aZoneFileStream) {
-    // Skip start separator FF FF FF FF (pointer?)
-    aZoneFileStream->skipRawData(4);
+    RawFile rawFile;
+    *aZoneFileStream >> rawFile;
 
-    quint32 gscLength;
-    *aZoneFileStream >> gscLength;
-
-    // Skip unknown 4 byte data
-    aZoneFileStream->skipRawData(4);
-
-    // Parse rawfile path
-    QString rawFilePath;
-    char scriptPathChar;
-    *aZoneFileStream >> scriptPathChar;
-    while (scriptPathChar != 0) {
-        rawFilePath += scriptPathChar;
-        *aZoneFileStream >> scriptPathChar;
-    }
+    QString rawFilePath = rawFile.rawFilePath;
     rawFilePath.replace(",", "");
     const QStringList pathParts = rawFilePath.split('/');
     if (pathParts.size() == 0) {
@@ -801,17 +534,7 @@ void MainWindow::ParseAsset_RawFile(QDataStream *aZoneFileStream) {
             parentItem = newChildItem;
         }
     }
-
-    // Parse gsc contents
-    QString rawFileContents;
-    char rawFileContentsChar;
-    *aZoneFileStream >> rawFileContentsChar;
-    while (rawFileContentsChar != 0 && rawFileContentsChar != -1) {
-        rawFileContents += rawFileContentsChar;
-        *aZoneFileStream >> rawFileContentsChar;
-    }
-    mRawFileMap[rawFilePath] = (rawFileContents.isEmpty()) ? ("EMPTY") : (rawFileContents);
-    // qDebug() << QString("%1: %2").arg(rawFilePath).arg(rawFileContents);
+    mRawFileMap[rawFilePath] = (rawFile.rawFileContents.isEmpty()) ? ("EMPTY") : (rawFile.rawFileContents);
 }
 
 void MainWindow::ParseAsset_XModel(QDataStream *aZoneFileStream) {
@@ -1498,30 +1221,73 @@ void MainWindow::ParseZoneFile(QByteArray aDecompressedData) {
     zoneFileStream.setFloatingPointPrecision(QDataStream::SinglePrecision);
 
     // Parse data from zone file header
-    ParseZoneHeader(&zoneFileStream);
-    ParseZoneIndex(&zoneFileStream);
+    Zone zone;
+    zoneFileStream >> zone;
 
-    // Track current and consecutive assets
-    int assetIndex = 0;
-
-    // Iterate asset types found in index
-    for (auto [assetType, assetCount] : mTypeMap.asKeyValueRange()) {
-        // Get asset description from type
-        QString assetStr = Utils::AssetTypeToString(assetType);
-
-        // Insert row and populate
-        ui->tableWidget_Index->insertRow(assetIndex);
-        ui->tableWidget_Index->setItem(assetIndex, 0, new QTableWidgetItem(assetType));
-        ui->tableWidget_Index->setItem(assetIndex, 1, new QTableWidgetItem(assetStr));
-        ui->tableWidget_Index->setItem(assetIndex, 2, new QTableWidgetItem(QString::number(assetCount)));
-
-        // Update count
-        assetIndex++;
+    // Add header data to ui
+    ui->spinBox_FileSize->setValue(zone.zoneFileSize);
+    ui->spinBox_TagCount->setValue(zone.tagCount);
+    ui->spinBox_RecordCount->setValue(zone.recordCount);
+    // Add unknowns to ui
+    ui->lineEdit_U1->setText(QString::number(zone.unknown1, 16).toUpper());
+    ui->spinBox_U1->setValue(zone.unknown1);
+    ui->lineEdit_U2->setText(QString::number(zone.unknown2, 16).toUpper());
+    ui->spinBox_U2->setValue(zone.unknown2);
+    ui->lineEdit_U3->setText(QString::number(zone.unknown3, 16).toUpper());
+    ui->spinBox_U3->setValue(zone.unknown3);
+    ui->lineEdit_U4->setText(QString::number(zone.unknown4, 16).toUpper());
+    ui->spinBox_U4->setValue(zone.unknown4);
+    ui->lineEdit_U5->setText(QString::number(zone.unknown5, 16).toUpper());
+    ui->spinBox_U5->setValue(zone.unknown5);
+    ui->lineEdit_U6->setText(QString::number(zone.unknown6, 16).toUpper());
+    ui->spinBox_U6->setValue(zone.unknown6);
+    ui->lineEdit_U7->setText(QString::number(zone.unknown7, 16).toUpper());
+    ui->spinBox_U7->setValue(zone.unknown7);
+    ui->lineEdit_U8->setText(QString::number(zone.unknown8, 16).toUpper());
+    ui->spinBox_U8->setValue(zone.unknown8);
+    ui->lineEdit_U9->setText(QString::number(zone.unknown9, 16).toUpper());
+    ui->spinBox_U9->setValue(zone.unknown9);
+    ui->lineEdit_U10->setText(QString::number(zone.unknown10, 16).toUpper());
+    ui->spinBox_U10->setValue(zone.unknown10);
+    ui->lineEdit_U11->setText(QString::number(zone.unknown11, 16).toUpper());
+    ui->spinBox_U11->setValue(zone.unknown11);
+    // Add tags to ui list
+    foreach (const QString tag, zone.tags) {
+        ui->listWidget_Tags->addItem(tag);
     }
 
-    for (int i = 0; i < mTypeOrder.size(); i++) {
-        const QString typeHex = mTypeOrder[i];
-        const QString typeStr = Utils::AssetTypeToString(typeHex);
+    // Track past assets and counts
+    int consecutiveIndex = 0;
+    int consecutiveCount = 0;
+    ASSET_TYPE lastAssetType = ASSET_UNKNOWN;
+    foreach (ASSET_TYPE assetType, zone.assetTypes) {
+        const QString typeStr = Utils::AssetTypeToString(assetType);
+
+        if (!mTypeMap.contains(assetType)) {
+            mTypeMap[assetType] = 0;
+        }
+        mTypeMap[assetType]++;
+
+        // Set lastAsset as current if first run
+        if (lastAssetType == ASSET_UNKNOWN) {
+            lastAssetType = assetType;
+        }
+
+        // Track counts or populate asset order table
+        if (lastAssetType == assetType) {
+            // Count consecutive assets
+            consecutiveCount++;
+        } else {
+            // Insert row and populate for the previous asset type
+            ui->tableWidget_Order->insertRow(consecutiveIndex);
+            ui->tableWidget_Order->setItem(consecutiveIndex, 0, new QTableWidgetItem(Utils::AssetTypeToString(lastAssetType)));
+            ui->tableWidget_Order->setItem(consecutiveIndex, 1, new QTableWidgetItem(QString::number(consecutiveCount)));
+
+            // Update counts and asset type
+            consecutiveCount = 1;
+            consecutiveIndex++;
+            lastAssetType = assetType;
+        }
 
         // qDebug() << "Parsing Asset of Type: " << typeHex;
         if (typeStr == "ANIMATION") { // aitype
@@ -1545,18 +1311,36 @@ void MainWindow::ParseZoneFile(QByteArray aDecompressedData) {
         } else if (typeStr == "MENU") { // string_table
             ParseAsset_MenuFile(&zoneFileStream);
         } else if (typeStr == "LOCAL STRING") { // localized string asset
-            ParseAsset_LocalString(&zoneFileStream);
+            ParseAsset_Localize(&zoneFileStream);
         } else if (typeStr == "WEAPON") { // string_table
             ParseAsset_Weapon(&zoneFileStream);
         } else if (typeStr == "EFFECT") { // aitype
             ParseAsset_FX(&zoneFileStream);
         } else if (typeStr == "RAW FILE") { // gsc
-            ParseAsset_RawFile(&zoneFileStream);
+            // ParseAsset_RawFile(&zoneFileStream);
+            RawFile rawFile = RawFile();
+            zoneFileStream >> rawFile;
+            mRawFilesVec >> rawFile;
         } else if (typeStr == "STRING TABLE") { // string_table
             ParseAsset_StringTable(&zoneFileStream);
         } else {
             qDebug() << "Found bad asset type!" << typeStr;
         }
+    }
+
+    // Track current and consecutive assets
+    int assetIndex = 0;
+
+    // Iterate asset types found in index
+    for (auto [assetType, assetCount] : mTypeMap.asKeyValueRange()) {
+        const QString typeStr = Utils::AssetTypeToString(assetType);
+        // Insert row and populate
+        ui->tableWidget_Index->insertRow(assetIndex);
+        ui->tableWidget_Index->setItem(assetIndex, 0, new QTableWidgetItem(typeStr));
+        ui->tableWidget_Index->setItem(assetIndex, 1, new QTableWidgetItem(QString::number(assetCount)));
+
+        // Update count
+        assetIndex++;
     }
 }
 
