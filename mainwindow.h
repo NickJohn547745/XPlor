@@ -59,9 +59,6 @@
 #include <Qt3DExtras/QNormalDiffuseMapMaterial>
 
 #include <windows.h>
-#include <dxcapi.h>
-#include <atlbase.h>
-#include <atlcom.h>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
