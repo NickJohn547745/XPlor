@@ -34,8 +34,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->comboBox_StringTable, &QComboBox::currentTextChanged, this, &MainWindow::StrTableSelected);
 
     // Initialize Asset Index Table
-    ui->tableWidget_Index->setColumnCount(3);
-    ui->tableWidget_Index->setHorizontalHeaderLabels({"Asset Type", "Asset Name", "Asset Count"});
+    ui->tableWidget_Index->setColumnCount(2);
+    ui->tableWidget_Index->setHorizontalHeaderLabels({"Asset Name", "Asset Count"});
     ui->tableWidget_Index->verticalHeader()->setVisible(false);
     ui->tableWidget_Index->setEditTriggers(QAbstractItemView::NoEditTriggers);
     ui->tableWidget_Index->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -44,8 +44,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->tableWidget_Index->setStyleSheet("QTableView {selection-background-color: red;}");
 
     // Initialize Asset Order Table
-    ui->tableWidget_Order->setColumnCount(3);
-    ui->tableWidget_Order->setHorizontalHeaderLabels({"Asset Type", "Asset Name", "Asset Count"});
+    ui->tableWidget_Order->setColumnCount(2);
+    ui->tableWidget_Order->setHorizontalHeaderLabels({"Asset Name", "Asset Count"});
     ui->tableWidget_Order->verticalHeader()->setVisible(false);
     ui->tableWidget_Order->setEditTriggers(QAbstractItemView::NoEditTriggers);
     ui->tableWidget_Order->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -53,6 +53,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->tableWidget_Order->setShowGrid(false);
     ui->tableWidget_Order->setStyleSheet("QTableView {selection-background-color: red;}");
 
+    // Initialize Menu table
     ui->treeWidget_Menus->setHeaderLabels({"Components", "Description"});
     ui->treeWidget_Menus->setColumnWidth(0, width() / 4 * 3); // Name column
 
