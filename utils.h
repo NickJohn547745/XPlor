@@ -16,39 +16,42 @@ public:
     Convert asset type string to asset desc string
 */
     static QString AssetTypeToString(ASSET_TYPE aAssetType) {
-        qDebug() << "aAssetType: " << (int)aAssetType;
+        QString assetStr;
         if (aAssetType == ASSET_ANIMATION) {        // x_anim                 PARTIALLY VERIFIED
-            return "ANIMATION";
+            assetStr = "ANIMATION";
         } else if (aAssetType == ASSET_MODEL) { // xmodel                 PARTIALLY VERIFIED
-            return "MODEL";
+            assetStr = "MODEL";
         } else if (aAssetType == ASSET_MATERIAL) { // material               VERIFIED
-            return "MATERIAL";
+            assetStr = "MATERIAL";
         } else if (aAssetType == ASSET_TECH_SET) { // tech set               VERIFIED
-            return "TECH SET";
+            assetStr = "TECH SET";
         } else if (aAssetType == ASSET_SOUND) { // loaded_sound           VERIFIED
-            return "SOUND";
+            assetStr = "SOUND";
         } else if (aAssetType == ASSET_COLLISION_MAP) { // collision_map          PARTIALLY VERIFIED
-            return "COLLISION MAP";
+            assetStr = "COLLISION MAP";
         } else if (aAssetType == ASSET_SHADER) { // shader                 PARTIALLY VERIFIED
-            return "SHADER";
+            assetStr = "SHADER";
         } else if (aAssetType == ASSET_D3DBSP_DUMP) { // d3dbsp dump            VERIFIED
-            return "D3DBSP DUMP";
+            assetStr = "D3DBSP DUMP";
         } else if (aAssetType == ASSET_FONT) { // font                   PARTIALLY VERIFIED
-            return "FONT";
+            assetStr = "FONT";
         } else if (aAssetType == ASSET_MENU) { // menu_file              PARTIALLY VERIFIED
-            return "MENU";
+            assetStr = "MENU";
         } else if (aAssetType == ASSET_LOCAL_STRING) { // localized string       PARTIALLY VERIFIED
-            return "LOCAL STRING";
+            assetStr = "LOCAL STRING";
         } else if (aAssetType == ASSET_WEAPON) { // weapon                 PARTIALLY VERIFIED
-            return "WEAPON";
+            assetStr = "WEAPON";
         } else if (aAssetType == ASSET_EFFECT) { // fx                     VERIFIED
-            return "EFFECT";
+            assetStr = "EFFECT";
         } else if (aAssetType == ASSET_RAW_FILE) { // raw_file               VERIFIED
-            return "RAW FILE";
+            assetStr = "RAW FILE";
         } else if (aAssetType == ASSET_STRING_TABLE) { // string_table           PARTIALLY VERIFIED
-            return "STRING TABLE";
+            assetStr = "STRING TABLE";
+        } else {
+            assetStr = "UNKNOWN";
         }
-        return "UNKNOWN";
+        assetStr += QString(" [%1]").arg(QString::number(aAssetType, 16).rightJustified(2, '0').leftJustified(8, '0').toUpper());
+        return assetStr;
     }
 
     /*
