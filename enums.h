@@ -543,6 +543,25 @@ enum MENU_BUTTON {
     APAD_RIGHT = 31
 };
 
+enum ASSET_TYPE {
+    ASSET_UNKNOWN = 0,
+    ASSET_ANIMATION = 4,        // x_anim                 PARTIALLY VERIFIED
+    ASSET_MODEL = 5,            // xmodel                 PARTIALLY VERIFIED
+    ASSET_MATERIAL = 6,         // material               VERIFIED
+    ASSET_TECH_SET = 7,         // tech set               VERIFIED
+    ASSET_SOUND = 9,            // loaded_sound           VERIFIED
+    ASSET_COLLISION_MAP = 12,   // collision_map          PARTIALLY VERIFIED
+    ASSET_SHADER = 13,          // shader                 PARTIALLY VERIFIED
+    ASSET_D3DBSP_DUMP = 17,     // d3dbsp dump            VERIFIED
+    ASSET_FONT = 20,            // font                   PARTIALLY VERIFIED
+    ASSET_MENU = 21,            // menu_file              VERIFIED
+    ASSET_LOCAL_STRING = 23,    // localized string       VERIFIED
+    ASSET_WEAPON = 24,          // weapon                 VERIFIED
+    ASSET_EFFECT = 26,          // fx                     VERIFIED
+    ASSET_RAW_FILE = 32,        // raw_file               VERIFIED
+    ASSET_STRING_TABLE = 33     // string_table           PARTIALLY VERIFIED
+};
+
 // Change this depending on the platform
 // PC
 #define DEVMAP_LEVEL_FIRST "devmap intro_pac"
