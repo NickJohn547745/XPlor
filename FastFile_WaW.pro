@@ -18,9 +18,12 @@ SOURCES += \
 
 HEADERS += \
     enums.h \
+    localize.h \
     mainwindow.h \
+    rawfile.h \
     structs.h \
-    utils.h
+    utils.h \
+    zone.h
 
 FORMS += \
     mainwindow.ui
