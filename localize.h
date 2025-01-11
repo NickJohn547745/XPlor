@@ -11,7 +11,7 @@ struct Localize {
     QString localizedStr;
 };
 
-QDataStream &operator<<(QDataStream &out, const Localize &localize) {
+inline QDataStream &operator<<(QDataStream &out, const Localize &localize) {
     out << localize.valuePtr << localize.namePtr;
 
     // Parse gsc contents
@@ -25,7 +25,7 @@ QDataStream &operator<<(QDataStream &out, const Localize &localize) {
     return out;
 }
 
-QDataStream &operator>>(QDataStream &in, Localize &localize) {
+inline QDataStream &operator>>(QDataStream &in, Localize &localize) {
     // Parse value and name pointers
     in >> localize.valuePtr >> localize.namePtr;
 

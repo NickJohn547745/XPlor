@@ -27,7 +27,7 @@ struct Zone {
     QVector<ASSET_TYPE> assetTypes;
 };
 
-QDataStream &operator<<(QDataStream &out, const Zone &zone) {
+inline QDataStream &operator<<(QDataStream &out, const Zone &zone) {
     // Write adjusted fastfile size
     out << zone.zoneFileSize - 36;
     // Write unknowns 1-8
@@ -60,7 +60,7 @@ QDataStream &operator<<(QDataStream &out, const Zone &zone) {
     return out;
 }
 
-QDataStream &operator>>(QDataStream &in, Zone &zone) {
+inline QDataStream &operator>>(QDataStream &in, Zone &zone) {
     // Parse file size
     in >> zone.zoneFileSize;
     zone.zoneFileSize += 36;

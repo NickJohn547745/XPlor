@@ -13,7 +13,7 @@ struct RawFile {
     QString rawFileContents;
 };
 
-QDataStream &operator<<(QDataStream &out, const RawFile &rawFile) {
+inline QDataStream &operator<<(QDataStream &out, const RawFile &rawFile) {
     out << rawFile.gscNamePtr;
     out << rawFile.gscLength;
     out << rawFile.rawFilePathPtr;
@@ -29,7 +29,7 @@ QDataStream &operator<<(QDataStream &out, const RawFile &rawFile) {
     return out;
 }
 
-QDataStream &operator>>(QDataStream &in, RawFile &rawFile) {
+inline QDataStream &operator>>(QDataStream &in, RawFile &rawFile) {
     in >> rawFile.gscNamePtr;
     in >> rawFile.gscLength;
     in >> rawFile.rawFilePathPtr;
