@@ -22,7 +22,7 @@
 #include <Qt3DRender/QCamera>
 #include <Qt3DRender/QCameraLens>
 #include <Qt3DCore/QTransform>
-#include <Qt3DCore/QAspectEngine>>
+#include <Qt3DCore/QAspectEngine>
 
 #include <Qt3DInput/QInputAspect>
 

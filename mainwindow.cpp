@@ -1322,7 +1322,7 @@ void MainWindow::ParseZoneFile(QByteArray aDecompressedData) {
             // ParseAsset_RawFile(&zoneFileStream);
             RawFile rawFile = RawFile();
             zoneFileStream >> rawFile;
-            mRawFilesVec >> rawFile;
+            mRawFilesVec << rawFile;
         } else if (typeStr == "STRING TABLE") { // string_table
             ParseAsset_StringTable(&zoneFileStream);
         } else {
