@@ -2,8 +2,11 @@
 #define MAINWINDOW_H
 
 #include "enums.h"
+#include "rawfile.h"
 #include "structs.h"
 #include "utils.h"
+#include "localize.h"
+#include "zone.h"
 
 #include <QMainWindow>
 #include <QFileDialog>
@@ -103,16 +106,6 @@ private slots:
     void ParseFFVersion(QDataStream *afastFileStream);
 
     void ParseZoneFile(QByteArray aDecompressedData);
-    void ParseZoneHeader(QDataStream *aZoneFileStream);
-    void ParseZoneSize(QDataStream *aZoneFileStream);
-
-    void ParseZoneUnknownsA(QDataStream *aZoneFileStream);
-    void ParseZoneUnknownsB(QDataStream *aZoneFileStream);
-    void ParseZoneUnknownsC(QDataStream *aZoneFileStream);
-    void ParseZoneTagCount(QDataStream *aZoneFileStream);
-    void ParseZoneRecordCount(QDataStream *aZoneFileStream);
-    void ParseZoneTags(QDataStream *aZoneFileStream);
-    void ParseZoneIndex(QDataStream *aZoneFileStream);
 
     void ParseAsset_XAnim(QDataStream *aZoneFileStream);
     void ParseAsset_XModel(QDataStream *aZoneFileStream);
@@ -124,7 +117,7 @@ private slots:
     void ParseAsset_D3DBSP(QDataStream *aZoneFileStream);
     void ParseAsset_Font(QDataStream *aZoneFileStream);
     void ParseAsset_MenuFile(QDataStream *aZoneFileStream);
-    void ParseAsset_LocalString(QDataStream *aZoneFileStream);
+    void ParseAsset_Localize(QDataStream *aZoneFileStream);
     void ParseAsset_Weapon(QDataStream *aZoneFileStream);
     void ParseAsset_FX(QDataStream *aZoneFileStream);
     void ParseAsset_RawFile(QDataStream *aZoneFileStream);
@@ -137,7 +130,7 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-    QMap<QString, int> mTypeMap;
+    QMap<ASSET_TYPE, int> mTypeMap;
     QStringList mTypeOrder;
     quint32 mTagCount;
     quint32 mRecordCount;

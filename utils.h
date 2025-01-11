@@ -14,37 +14,37 @@ public:
 
     Convert asset type string to asset desc string
 */
-    static QString AssetTypeToString(const QString aAssetType) {
-        const QString cleanedType = aAssetType.toUpper();
-        if (cleanedType == "04000000") {        // x_anim                 PARTIALLY VERIFIED
+    static QString AssetTypeToString(ASSET_TYPE aAssetType) {
+        qDebug() << "aAssetType: " << (int)aAssetType;
+        if (aAssetType == ASSET_ANIMATION) {        // x_anim                 PARTIALLY VERIFIED
             return "ANIMATION";
-        } else if (cleanedType == "05000000") { // xmodel                 PARTIALLY VERIFIED
+        } else if (aAssetType == ASSET_MODEL) { // xmodel                 PARTIALLY VERIFIED
             return "MODEL";
-        } else if (cleanedType == "06000000") { // material               VERIFIED
+        } else if (aAssetType == ASSET_MATERIAL) { // material               VERIFIED
             return "MATERIAL";
-        } else if (cleanedType == "07000000") { // tech set               VERIFIED
+        } else if (aAssetType == ASSET_TECH_SET) { // tech set               VERIFIED
             return "TECH SET";
-        } else if (cleanedType == "09000000") { // loaded_sound           VERIFIED
+        } else if (aAssetType == ASSET_SOUND) { // loaded_sound           VERIFIED
             return "SOUND";
-        } else if (cleanedType == "0C000000") { // collision_map          PARTIALLY VERIFIED
+        } else if (aAssetType == ASSET_COLLISION_MAP) { // collision_map          PARTIALLY VERIFIED
             return "COLLISION MAP";
-        } else if (cleanedType == "0D000000") { // shader                 PARTIALLY VERIFIED
+        } else if (aAssetType == ASSET_SHADER) { // shader                 PARTIALLY VERIFIED
             return "SHADER";
-        } else if (cleanedType == "11000000") { // d3dbsp dump            VERIFIED
+        } else if (aAssetType == ASSET_D3DBSP_DUMP) { // d3dbsp dump            VERIFIED
             return "D3DBSP DUMP";
-        } else if (cleanedType == "14000000") { // font                   PARTIALLY VERIFIED
+        } else if (aAssetType == ASSET_FONT) { // font                   PARTIALLY VERIFIED
             return "FONT";
-        } else if (cleanedType == "15000000") { // menu_file              PARTIALLY VERIFIED
+        } else if (aAssetType == ASSET_MENU) { // menu_file              PARTIALLY VERIFIED
             return "MENU";
-        } else if (cleanedType == "17000000") { // localized string       PARTIALLY VERIFIED
+        } else if (aAssetType == ASSET_LOCAL_STRING) { // localized string       PARTIALLY VERIFIED
             return "LOCAL STRING";
-        } else if (cleanedType == "18000000") { // weapon                 PARTIALLY VERIFIED
+        } else if (aAssetType == ASSET_WEAPON) { // weapon                 PARTIALLY VERIFIED
             return "WEAPON";
-        } else if (cleanedType == "1A000000") { // fx                     VERIFIED
+        } else if (aAssetType == ASSET_EFFECT) { // fx                     VERIFIED
             return "EFFECT";
-        } else if (cleanedType == "20000000") { // raw_file               VERIFIED
+        } else if (aAssetType == ASSET_RAW_FILE) { // raw_file               VERIFIED
             return "RAW FILE";
-        } else if (cleanedType == "21000000") { // string_table           PARTIALLY VERIFIED
+        } else if (aAssetType == ASSET_STRING_TABLE) { // string_table           PARTIALLY VERIFIED
             return "STRING TABLE";
         }
         return "UNKNOWN";
