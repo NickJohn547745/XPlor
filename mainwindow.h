@@ -147,5 +147,6 @@ private:
     QVector<quint32> mDiskLumpOrder;
     QMap<quint32, Lump> mLumps;
 
+    QVector<RawFile> mRawFilesVec;
 };
 #endif // MAINWINDOW_H

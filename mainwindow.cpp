@@ -18,6 +18,7 @@ MainWindow::MainWindow(QWidget *parent)
     mRecentFiles = QQueue<QString>();
     mSettingsValid = false;
     mRecentFileActions = QVector<QAction*>();
+    mRawFilesVec = QVector<RawFile>();
 
     const QString appSettingsPath = QDir::currentPath() + "/appSettings.ini";
     QSettings appSettings(appSettingsPath, QSettings::IniFormat);

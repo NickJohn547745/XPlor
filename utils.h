@@ -5,6 +5,7 @@
 #include "qcolor.h"
 
 #include <QString>
+#include <QDebug>
 #include <QtZlib/zlib.h>
 
 class Utils {
