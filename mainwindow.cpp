@@ -43,6 +43,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->tableWidget_Index->setSelectionMode(QAbstractItemView::SingleSelection);
     ui->tableWidget_Index->setShowGrid(false);
     ui->tableWidget_Index->setStyleSheet("QTableView {selection-background-color: red;}");
+    ui->tableWidget_Index->setColumnWidth(0, width() / 4); // Name column
 
     // Initialize Asset Order Table
     ui->tableWidget_Order->setColumnCount(2);
@@ -53,6 +54,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->tableWidget_Order->setSelectionMode(QAbstractItemView::SingleSelection);
     ui->tableWidget_Order->setShowGrid(false);
     ui->tableWidget_Order->setStyleSheet("QTableView {selection-background-color: red;}");
+    ui->tableWidget_Order->setColumnWidth(0, width() / 4); // Name column
 
     // Initialize Menu table
     ui->treeWidget_Menus->setHeaderLabels({"Components", "Description"});

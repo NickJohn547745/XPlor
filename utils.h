@@ -17,35 +17,35 @@ public:
 */
     static QString AssetTypeToString(ASSET_TYPE aAssetType) {
         QString assetStr;
-        if (aAssetType == ASSET_ANIMATION) {        // x_anim                 PARTIALLY VERIFIED
+        if (aAssetType == ASSET_ANIMATION) {
             assetStr = "ANIMATION";
-        } else if (aAssetType == ASSET_MODEL) { // xmodel                 PARTIALLY VERIFIED
+        } else if (aAssetType == ASSET_MODEL) {
             assetStr = "MODEL";
-        } else if (aAssetType == ASSET_MATERIAL) { // material               VERIFIED
+        } else if (aAssetType == ASSET_MATERIAL) {
             assetStr = "MATERIAL";
-        } else if (aAssetType == ASSET_TECH_SET) { // tech set               VERIFIED
-            assetStr = "TECH SET";
-        } else if (aAssetType == ASSET_SOUND) { // loaded_sound           VERIFIED
+        } else if (aAssetType == ASSET_BIK_FILE) {
+            assetStr = "BIK FILE";
+        } else if (aAssetType == ASSET_SOUND) {
             assetStr = "SOUND";
-        } else if (aAssetType == ASSET_COLLISION_MAP) { // collision_map          PARTIALLY VERIFIED
+        } else if (aAssetType == ASSET_COLLISION_MAP) {
             assetStr = "COLLISION MAP";
-        } else if (aAssetType == ASSET_SHADER) { // shader                 PARTIALLY VERIFIED
+        } else if (aAssetType == ASSET_SHADER) {
             assetStr = "SHADER";
-        } else if (aAssetType == ASSET_D3DBSP_DUMP) { // d3dbsp dump            VERIFIED
+        } else if (aAssetType == ASSET_D3DBSP_DUMP) {
             assetStr = "D3DBSP DUMP";
-        } else if (aAssetType == ASSET_FONT) { // font                   PARTIALLY VERIFIED
+        } else if (aAssetType == ASSET_FONT) {
             assetStr = "FONT";
-        } else if (aAssetType == ASSET_MENU) { // menu_file              PARTIALLY VERIFIED
+        } else if (aAssetType == ASSET_MENU) {
             assetStr = "MENU";
-        } else if (aAssetType == ASSET_LOCAL_STRING) { // localized string       PARTIALLY VERIFIED
+        } else if (aAssetType == ASSET_LOCAL_STRING) {
             assetStr = "LOCAL STRING";
-        } else if (aAssetType == ASSET_WEAPON) { // weapon                 PARTIALLY VERIFIED
+        } else if (aAssetType == ASSET_WEAPON) {
             assetStr = "WEAPON";
-        } else if (aAssetType == ASSET_EFFECT) { // fx                     VERIFIED
+        } else if (aAssetType == ASSET_EFFECT) {
             assetStr = "EFFECT";
-        } else if (aAssetType == ASSET_RAW_FILE) { // raw_file               VERIFIED
+        } else if (aAssetType == ASSET_RAW_FILE) {
             assetStr = "RAW FILE";
-        } else if (aAssetType == ASSET_STRING_TABLE) { // string_table           PARTIALLY VERIFIED
+        } else if (aAssetType == ASSET_STRING_TABLE) {
             assetStr = "STRING TABLE";
         } else {
             assetStr = "UNKNOWN";

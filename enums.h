@@ -548,7 +548,7 @@ enum ASSET_TYPE {
     ASSET_ANIMATION = 4,        // x_anim                 PARTIALLY VERIFIED
     ASSET_MODEL = 5,            // xmodel                 PARTIALLY VERIFIED
     ASSET_MATERIAL = 6,         // material               VERIFIED
-    ASSET_TECH_SET = 7,         // tech set               VERIFIED
+    ASSET_BIK_FILE = 7,         // .bik file              PARTIALLY VERIFIED
     ASSET_SOUND = 9,            // loaded_sound           VERIFIED
     ASSET_COLLISION_MAP = 12,   // collision_map          PARTIALLY VERIFIED
     ASSET_SHADER = 13,          // shader                 PARTIALLY VERIFIED
