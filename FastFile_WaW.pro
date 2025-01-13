@@ -20,7 +20,8 @@ HEADERS += \
     enums.h \
     mainwindow.h \
     structs.h \
-    utils.h
+    utils.h \
+    bink.h
 
 FORMS += \
     mainwindow.ui
