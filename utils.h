@@ -2,6 +2,7 @@
 #define UTILS_H
 
 #include "enums.h"
+#include "qdir.h"
 
 #include <QString>
 #include <QtZlib/zlib.h>
@@ -45,6 +46,8 @@ public:
             return "MODEL";
         } else if (cleanedType == "0D000000") { // shader                 PARTIALLY VERIFIED
             return "SHADER";
+        } else if (cleanedType == "06000000") { // material               PARTIALLY VERIFIED
+            return "MATERIAL";
         }
         return "UNKNOWN";
     }

@@ -1,6 +1,7 @@
 #ifndef ENUMS_H
 #define ENUMS_H
 
+#include "qtypes.h"
 enum LUMP_TYPE
 {
     LUMP_MATERIALS = 0x0,
@@ -97,5 +98,8 @@ enum BSPVERSION_TYPE
     BSPVERSION_COD_WAW = 31,
     BSPVERSION_COD_BO = 45
 };
+
+// Bink constants
+const quint32 BINK_SURFACE32RGBA = 6;
 
 #endif // ENUMS_H

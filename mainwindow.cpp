@@ -646,93 +646,124 @@ void MainWindow::ParseZoneIndex(QDataStream *aZoneFileStream) {
 
 void MainWindow::ParseAsset_LocalString(QDataStream *aZoneFileStream) {
     // Skip separator
-    aZoneFileStream->skipRawData(8);
+    qint32 langStrPtr, referenceStrPtr;
+    *aZoneFileStream >> langStrPtr >> referenceStrPtr;
 
-    // Parse local string asset contents
-    QString localStr;
-    char localStrChar;
-    *aZoneFileStream >> localStrChar;
-    while (localStrChar != 0) {
-        localStr += localStrChar;
-        *aZoneFileStream >> localStrChar;
+    // Parse language-specific string if present
+    QString langStr;
+    if (langStrPtr == -1) {
+        char langStrChar;
+        *aZoneFileStream >> langStrChar;
+        while (langStrChar != 0) {
+            langStr += langStrChar;
+            *aZoneFileStream >> langStrChar;
+        }
+    } else {
+        langStr = "MEMORY_REFERENCE";
     }
 
-    // Parse rawfile name
-    QString aliasName;
-    char aliasNameChar;
-    *aZoneFileStream >> aliasNameChar;
-    while (aliasNameChar != 0) {
-        aliasName += aliasNameChar;
-        *aZoneFileStream >> aliasNameChar;
+    // Parse reference str ig present
+    QString referenceStr;
+    if (referenceStrPtr == -1) {
+        char referenceStrChar;
+        *aZoneFileStream >> referenceStrChar;
+        while (referenceStrChar != 0) {
+            referenceStr += referenceStrChar;
+            *aZoneFileStream >> referenceStrChar;
+        }
+    } else {
+        referenceStr = "MEMORY_REFERENCE";
     }
-    // qDebug() << QString("%1 = %2").arg(aliasName).arg(localStr);
-    ui->listWidget_LocalString->addItem(QString("%1 = %2").arg(aliasName).arg(localStr));
+
+    const int localStrIndex = ui->listWidget_LocalString->count() + 1;
+    ui->listWidget_LocalString->addItem(QString("[%1] %2 = %3").arg(localStrIndex).arg(referenceStr).arg(langStr));
 }
 
 void MainWindow::ParseAsset_RawFile(QDataStream *aZoneFileStream) {
     // Skip start separator FF FF FF FF (pointer?)
     aZoneFileStream->skipRawData(4);
 
-    quint32 gscLength;
-    *aZoneFileStream >> gscLength;
+    quint32 rawFileLength;
+    *aZoneFileStream >> rawFileLength;
 
     // Skip unknown 4 byte data
     aZoneFileStream->skipRawData(4);
 
+    bool isBik = false;
+
     // Parse rawfile path
     QString rawFilePath;
-    char scriptPathChar;
-    *aZoneFileStream >> scriptPathChar;
-    while (scriptPathChar != 0) {
-        rawFilePath += scriptPathChar;
-        *aZoneFileStream >> scriptPathChar;
+    char rawFilePathChar;
+    *aZoneFileStream >> rawFilePathChar;
+    while (rawFilePathChar != 0) {
+        rawFilePath += rawFilePathChar;
+        *aZoneFileStream >> rawFilePathChar;
     }
     rawFilePath.replace(",", "");
-    const QStringList pathParts = rawFilePath.split('/');
-    if (pathParts.size() == 0) {
-        qDebug() << "Failed to parse ff path! " << rawFilePath;
-        exit(-1);
-    } else if (pathParts.size() == 1) {
-        const QString path = pathParts[0];
-        QTreeWidgetItem *newRootItem = new QTreeWidgetItem(ui->treeWidget_Scripts);
-        newRootItem->setText(0, path);
+    if (rawFilePath.contains(".bik")) {
+        isBik = true;
     } else {
-        const QString path = pathParts[0];
-        QTreeWidgetItem *newRootItem;
-        if (mTreeMap.contains(path)) {
-            newRootItem = mTreeMap[path];
-        } else {
-            newRootItem = new QTreeWidgetItem(ui->treeWidget_Scripts);
+        const QStringList pathParts = rawFilePath.split('/');
+        if (pathParts.size() == 0) {
+            qDebug() << "Failed to parse ff path! " << rawFilePath;
+            exit(-1);
+        } else if (pathParts.size() == 1) {
+            const QString path = pathParts[0];
+            QTreeWidgetItem *newRootItem = new QTreeWidgetItem(ui->treeWidget_Scripts);
             newRootItem->setText(0, path);
-            mTreeMap[path] = newRootItem;
-        }
-
-        QTreeWidgetItem *parentItem = newRootItem;
-        for (int i = 1; i < pathParts.size(); i++) {
-            const QString path = pathParts[i];
-            QTreeWidgetItem *newChildItem;
+        } else {
+            const QString path = pathParts[0];
+            QTreeWidgetItem *newRootItem;
             if (mTreeMap.contains(path)) {
-                newChildItem = mTreeMap[path];
+                newRootItem = mTreeMap[path];
             } else {
-                newChildItem = new QTreeWidgetItem();
-                newChildItem->setText(0, path);
-                mTreeMap[path] = newChildItem;
+                newRootItem = new QTreeWidgetItem(ui->treeWidget_Scripts);
+                newRootItem->setText(0, path);
+                mTreeMap[path] = newRootItem;
             }
-            parentItem->addChild(newChildItem);
-            parentItem = newChildItem;
+
+            QTreeWidgetItem *parentItem = newRootItem;
+            for (int i = 1; i < pathParts.size(); i++) {
+                const QString path = pathParts[i];
+                QTreeWidgetItem *newChildItem;
+                if (mTreeMap.contains(path)) {
+                    newChildItem = mTreeMap[path];
+                } else {
+                    newChildItem = new QTreeWidgetItem();
+                    newChildItem->setText(0, path);
+                    mTreeMap[path] = newChildItem;
+                }
+                parentItem->addChild(newChildItem);
+                parentItem = newChildItem;
+            }
         }
     }
 
-    // Parse gsc contents
-    QString rawFileContents;
-    char rawFileContentsChar;
-    *aZoneFileStream >> rawFileContentsChar;
-    while (rawFileContentsChar != 0 && rawFileContentsChar != -1) {
-        rawFileContents += rawFileContentsChar;
+    if (false && isBik) {
+        qDebug() << "rawFileLength: " << rawFileLength;
+        QByteArray bikData(rawFileLength, Qt::Uninitialized);
+        aZoneFileStream->readRawData(bikData.data(), rawFileLength);
+
+        //QFile bikFile(QDir::currentPath() + "/" + rawFilePath.split('/').last());
+        //qDebug() << bikFile.fileName();
+        //if (!bikFile.open(QIODevice::WriteOnly)) {
+        //    qWarning() << "Failed to open .bik file for writing!";
+        //    return;
+        //}
+        //qDebug() << QString("%1: %2").arg(rawFilePath).arg(bikFile.fileName());
+        //bikFile.write(bikData);
+    } else {
+        // Parse gsc contents
+        QString rawFileContents;
+        char rawFileContentsChar;
         *aZoneFileStream >> rawFileContentsChar;
+        while (rawFileContentsChar != 0 && rawFileContentsChar != -1) {
+            rawFileContents += rawFileContentsChar;
+            *aZoneFileStream >> rawFileContentsChar;
+        }
+        mRawFileMap[rawFilePath] = (rawFileContents.isEmpty()) ? ("EMPTY") : (rawFileContents);
+        qDebug() << QString("%1: %2").arg(rawFilePath).arg(rawFileContents);
     }
-    mRawFileMap[rawFilePath] = (rawFileContents.isEmpty()) ? ("EMPTY") : (rawFileContents);
-    // qDebug() << QString("%1: %2").arg(rawFilePath).arg(rawFileContents);
 }
 
 void MainWindow::ParseAsset_PhysPreset(QDataStream *aZoneFileStream) {
@@ -744,29 +775,99 @@ void MainWindow::ParseAsset_XModel(QDataStream *aZoneFileStream) {
 }
 
 void MainWindow::ParseAsset_Material(QDataStream *aZoneFileStream) {
+    aZoneFileStream->skipRawData(27 * 4);
 
+    qint32 materialNamePtr;
+    *aZoneFileStream >> materialNamePtr;
+    qDebug() << "materialNamePtr: " << materialNamePtr;
+    if (materialNamePtr == -1) {
+        QString materialName;
+        char materialNameChar;
+        *aZoneFileStream >> materialNameChar;
+        while (materialNameChar != 0) {
+            materialName += materialNameChar;
+            *aZoneFileStream >> materialNameChar;
+        }
+        qDebug() << "Parsing Material: " << materialName;
+    }
+
+    aZoneFileStream->skipRawData(3 * 4);
+
+    qint32 compressionPtr, compression, unknownSectionPtr;
+    *aZoneFileStream >> compressionPtr;
+    qDebug() << "compressionPtr: " << compressionPtr;
+    if (compressionPtr == -1) {
+        *aZoneFileStream >> compression;
+        qDebug() << QString("Found material with DXT%1 compression!").arg(compression);
+
+        *aZoneFileStream >> unknownSectionPtr;
+        qDebug() << "unknownSectionPtr: " << unknownSectionPtr;
+        if (unknownSectionPtr == -2) {
+            aZoneFileStream->skipRawData(6 * 4);
+        }
+    }
+
+    qint32 imageNamePtr;
+    *aZoneFileStream >> imageNamePtr;
+    qDebug() << "imageNamePtr: " << imageNamePtr;
+    if (imageNamePtr == -1) {
+        QString imageName;
+        char imageNameChar;
+        *aZoneFileStream >> imageNameChar;
+        while (imageNameChar != 0) {
+            imageName += imageNameChar;
+            *aZoneFileStream >> imageNameChar;
+        }
+        qDebug() << "- Embeded image: " << imageName;
+    }
+
+    QByteArray compressionData(4, Qt::Uninitialized);
+    QString compressionStr;
+    if (compressionPtr == -1) {
+        aZoneFileStream->skipRawData(2 * 4);
+        aZoneFileStream->readRawData(compressionData.data(), 4);
+        aZoneFileStream->skipRawData(4);
+        compressionStr = QString::fromUtf8(compressionData);
+        aZoneFileStream->skipRawData(4);
+    }
+    aZoneFileStream->skipRawData(4);
 }
 
 void MainWindow::ParseAsset_PixelShader(QDataStream *aZoneFileStream) {
 
 }
 
-void MainWindow::ParseAsset_TechSet(QDataStream *aZoneFileStream) {
-    aZoneFileStream->skipRawData(4);
-    // Parse techset name
-    QString techSetName;
-    char techSetNameChar;
-    *aZoneFileStream >> techSetNameChar;
-    while (techSetNameChar == 0) {
-        *aZoneFileStream >> techSetNameChar;
-    }
-    while (techSetNameChar != 0) {
-        techSetName += techSetNameChar;
-        *aZoneFileStream >> techSetNameChar;
-    }
-    techSetName.replace(",", "");
-    ui->listWidget_TechSets->addItem(techSetName);
-    //qDebug() << "Tech Set: " << techSetName;
+void MainWindow::ParseAsset_BikFile(QDataStream *aZoneFileStream) {
+    QByteArray testData(32, Qt::Uninitialized);
+    aZoneFileStream->readRawData(testData.data(), 32);
+    qDebug() << "Test Data: " << testData;
+
+    //aZoneFileStream->skipRawData(4);
+
+    quint32 fileSize;
+    //*aZoneFileStream >> fileSize;
+    //qDebug() << ".bik file size:" << fileSize;
+
+    // // Parse rawfile path
+    // QString filePath;
+    // char filePathChar;
+    // *aZoneFileStream >> filePathChar;
+    // while (filePathChar != 0) {
+    //     filePath += filePathChar;
+    //     *aZoneFileStream >> filePathChar;
+    // }
+
+    // QByteArray bikData(fileSize, Qt::Uninitialized);
+    // aZoneFileStream->readRawData(bikData.data(), fileSize);
+    // qDebug() << filePath;
+
+    // QFile bikFile(QDir::currentPath() + "/" + filePath.split('/').last());
+    // qDebug() << bikFile.fileName();
+    // if (!bikFile.open(QIODevice::WriteOnly)) {
+    //     qWarning() << "Failed to open .bik file for writing!";
+    //     return;
+    // }
+    // bikFile.write(bikData);
 }
 
 void MainWindow::ParseAsset_Image(QDataStream *aZoneFileStream) {
@@ -899,6 +1000,25 @@ void MainWindow::ParseAsset_D3DBSP(QDataStream *aZoneFileStream) {
     //D3DBSP_DUMP
 }
 
+void MainWindow::ParseAsset_TechSet(QDataStream *aZoneFileStream)
+{
+    aZoneFileStream->skipRawData(4);
+    // Parse techset name
+    QString techSetName;
+    char techSetNameChar;
+    *aZoneFileStream >> techSetNameChar;
+    while (techSetNameChar == 0) {
+        *aZoneFileStream >> techSetNameChar;
+    }
+    while (techSetNameChar != 0) {
+        techSetName += techSetNameChar;
+        *aZoneFileStream >> techSetNameChar;
+    }
+    techSetName.replace(",", "");
+    ui->listWidget_TechSets->addItem(techSetName);
+    qDebug() << "Tech Set: " << techSetName;
+}
+
 void MainWindow::ParseAsset_StringTable(QDataStream *aZoneFileStream) {
     aZoneFileStream->skipRawData(4);
 
@@ -1029,8 +1149,8 @@ void MainWindow::on_pushButton_FastFile_clicked() {
             ParseAsset_Material(&zoneFileStream);
         } else if (typeStr == "SHADER") { // pixelshader
             ParseAsset_PixelShader(&zoneFileStream);
-        } else if (typeStr == "TECH SET") { // techset include
-            ParseAsset_TechSet(&zoneFileStream);
+        } else if (typeStr == "BIK FILE") { // bik file?
+            ParseAsset_BikFile(&zoneFileStream);
         } else if (typeStr == "IMAGE") { // image
             ParseAsset_Image(&zoneFileStream);
         } else if (typeStr == "SOUND") { // loaded_sound
@@ -1061,6 +1181,8 @@ void MainWindow::on_pushButton_FastFile_clicked() {
             ParseAsset_Weapon(&zoneFileStream);
         } else if (typeStr == "D3DBSP DUMP") { // string_table
             ParseAsset_D3DBSP(&zoneFileStream);
+        } else if (typeStr == "TECH SET") { // string_table
+            ParseAsset_TechSet(&zoneFileStream);
         } else if (typeStr != "UNKNOWN") {
             qDebug() << "Found bad asset type!" << typeStr;
         }
@@ -1126,8 +1248,8 @@ void MainWindow::on_pushButton_FastFile_2_clicked() {
             ParseAsset_Material(&zoneFileStream);
         } else if (typeStr == "SHADER") { // pixelshader
             ParseAsset_PixelShader(&zoneFileStream);
-        } else if (typeStr == "TECH SET") { // techset include
-            ParseAsset_TechSet(&zoneFileStream);
+        } else if (typeStr == "BIK FILE") { // .bik file
+            ParseAsset_BikFile(&zoneFileStream);
         } else if (typeStr == "IMAGE") { // image
             ParseAsset_Image(&zoneFileStream);
         } else if (typeStr == "SOUND") { // loaded_sound
@@ -1158,7 +1280,9 @@ void MainWindow::on_pushButton_FastFile_2_clicked() {
             ParseAsset_Weapon(&zoneFileStream);
         } else if (typeStr == "D3DBSP DUMP") { // string_table
             ParseAsset_D3DBSP(&zoneFileStream);
-        } else if (typeStr != "UNKNOWN") {
+        } else if (typeStr == "TECH SET") { // string_table
+            ParseAsset_TechSet(&zoneFileStream);
+        } else {
             qDebug() << "Found bad asset type!" << typeStr;
         }
     }

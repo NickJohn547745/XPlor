@@ -16,4 +16,26 @@ struct LumpIndexEntry {
     quint32 length;
 };
 
+// Bink structure definitions
+struct BINKRECT {
+    int Left;
+    int Top;
+    int Width;
+    int Height;
+};
+
+struct BINK {
+    int Width;
+    int Height;
+    uint32_t Frames;
+    uint32_t FrameNum;
+    uint32_t FrameRate;
+    uint32_t FrameRateDiv;
+    uint32_t ReadError;
+    uint32_t OpenFlags;
+    BINKRECT FrameRects;
+    uint32_t NumRects;
+    uint32_t FrameChangePercent;
+};
+
 #endif // STRUCTS_H

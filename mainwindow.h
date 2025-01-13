@@ -59,6 +59,10 @@
 #include <Qt3DExtras/QNormalDiffuseMapMaterial>
 
 #include <windows.h>
+#include <stdexcept>
+#include <iostream>
+#include <memory>
+#include <cstring>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -107,7 +111,7 @@ private slots:
     void ParseAsset_XModel(QDataStream *aZoneFileStream);
     void ParseAsset_Material(QDataStream *aZoneFileStream);
     void ParseAsset_PixelShader(QDataStream *aZoneFileStream);
-    void ParseAsset_TechSet(QDataStream *aZoneFileStream);
+    void ParseAsset_BikFile(QDataStream *aZoneFileStream);
     void ParseAsset_Image(QDataStream *aZoneFileStream);
     void ParseAsset_LoadedSound(QDataStream *aZoneFileStream);
     void ParseAsset_ColMapMP(QDataStream *aZoneFileStream);
@@ -123,6 +127,7 @@ private slots:
     void ParseAsset_MenuFile(QDataStream *aZoneFileStream);
     void ParseAsset_Weapon(QDataStream *aZoneFileStream);
     void ParseAsset_D3DBSP(QDataStream *aZoneFileStream);
+    void ParseAsset_TechSet(QDataStream *aZoneFileStream);
 
     int LoadFile_D3DBSP(const QString aFilePath);
 
