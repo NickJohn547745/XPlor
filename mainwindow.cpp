@@ -6,7 +6,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow) {
     ui->setupUi(this);
 
-    mTypeMap = QMap<QString, int>();
+    mTypeMap = QMap<ASSET_TYPE, int>();
     mTypeOrder = QStringList();
     mRawFileMap = QMap<QString, QString>();
     mTreeMap = QMap<QString, QTreeWidgetItem*>();
@@ -15,29 +15,50 @@ MainWindow::MainWindow(QWidget *parent)
     mDiskLumpCount = 0;
     mDiskLumpOrder = QVector<quint32>();
     mLumps = QMap<quint32, Lump>();
+    mRecentFiles = QQueue<QString>();
+    mSettingsValid = false;
+    mRecentFileActions = QVector<QAction*>();
+    mRawFilesVec = QVector<RawFile>();
+
+    const QString appSettingsPath = QDir::currentPath() + "/appSettings.ini";
+    QSettings appSettings(appSettingsPath, QSettings::IniFormat);
+    if (appSettings.contains("mRecentFiles")) {
+        mSettingsValid = true;
+
+        QStringList recentFiles = appSettings.value("mRecentFiles").toStringList();
+        foreach (QString recentFile, recentFiles) {
+            mRecentFiles.enqueue(recentFile);
+        }
+    }
 
     connect(ui->treeWidget_Scripts, &QTreeWidget::itemSelectionChanged, this, &MainWindow::ScriptSelected);
     connect(ui->comboBox_StringTable, &QComboBox::currentTextChanged, this, &MainWindow::StrTableSelected);
 
     // Initialize Asset Index Table
-    ui->tableWidget_Index->setColumnCount(3);
-    ui->tableWidget_Index->setHorizontalHeaderLabels({"Asset Type", "Asset Name", "Asset Count"});
+    ui->tableWidget_Index->setColumnCount(2);
+    ui->tableWidget_Index->setHorizontalHeaderLabels({"Asset Name", "Asset Count"});
     ui->tableWidget_Index->verticalHeader()->setVisible(false);
     ui->tableWidget_Index->setEditTriggers(QAbstractItemView::NoEditTriggers);
     ui->tableWidget_Index->setSelectionBehavior(QAbstractItemView::SelectRows);
     ui->tableWidget_Index->setSelectionMode(QAbstractItemView::SingleSelection);
     ui->tableWidget_Index->setShowGrid(false);
     ui->tableWidget_Index->setStyleSheet("QTableView {selection-background-color: red;}");
+    ui->tableWidget_Index->setColumnWidth(0, width() / 4); // Name column
 
     // Initialize Asset Order Table
-    ui->tableWidget_Order->setColumnCount(3);
-    ui->tableWidget_Order->setHorizontalHeaderLabels({"Asset Type", "Asset Name", "Asset Count"});
+    ui->tableWidget_Order->setColumnCount(2);
+    ui->tableWidget_Order->setHorizontalHeaderLabels({"Asset Name", "Asset Count"});
     ui->tableWidget_Order->verticalHeader()->setVisible(false);
     ui->tableWidget_Order->setEditTriggers(QAbstractItemView::NoEditTriggers);
     ui->tableWidget_Order->setSelectionBehavior(QAbstractItemView::SelectRows);
     ui->tableWidget_Order->setSelectionMode(QAbstractItemView::SingleSelection);
     ui->tableWidget_Order->setShowGrid(false);
     ui->tableWidget_Order->setStyleSheet("QTableView {selection-background-color: red;}");
+    ui->tableWidget_Order->setColumnWidth(0, width() / 4); // Name column
+
+    // Initialize Menu table
+    ui->treeWidget_Menus->setHeaderLabels({"Components", "Description"});
+    ui->treeWidget_Menus->setColumnWidth(0, width() / 4 * 3); // Name column
 
     Qt3DExtras::Qt3DWindow *view = new Qt3DExtras::Qt3DWindow();
     view->defaultFrameGraph()->setClearColor(QColor(QRgb(0x4d4d4f)));
@@ -114,6 +135,10 @@ MainWindow::MainWindow(QWidget *parent)
 }
 
 MainWindow::~MainWindow() {
+    const QString appSettingsPath = QDir::currentPath() + "/appSettings.ini";
+    QSettings appSettings(appSettingsPath, QSettings::IniFormat);
+    appSettings.setValue("mRecentFiles", mRecentFiles.toList());
+
     delete ui;
 }
 
@@ -193,6 +218,9 @@ void MainWindow::Reset() {
     mRawFileMap.clear();
     mTreeMap.clear();
     mStrTableMap.clear();
+
+    // Refresh recent files
+    RefreshRecentFileMenu();
 }
 
 void MainWindow::StrTableSelected(QString aStrTableName) {
@@ -203,7 +231,7 @@ void MainWindow::StrTableSelected(QString aStrTableName) {
     for (auto strTableEntry : mStrTableMap[aStrTableName]) {
         ui->tableWidget_StringTable->insertRow(ui->tableWidget_StringTable->rowCount() + 1);
         ui->tableWidget_StringTable->setItem(entryIndex, 0, new QTableWidgetItem(strTableEntry.first));
-        ui->tableWidget_StringTable->setItem(entryIndex, 1, new QTableWidgetItem(Utils::AssetTypeToString(strTableEntry.second)));
+        ui->tableWidget_StringTable->setItem(entryIndex, 1, new QTableWidgetItem(strTableEntry.second));
 
         entryIndex++;
     }
@@ -254,12 +282,12 @@ QByteArray MainWindow::DecompressZLIB(QByteArray compressedData) {
 }
 
 /*
-    OpenFastFile()
+    GetFastFilePath()
 
     Opens a file dialog in the steam folder,
     and opens the selected file.
 */
-QFile* MainWindow::OpenFastFile() {
+QString MainWindow::GetFastFilePath() {
     // Reset dialog before opening new file
     Reset();
 
@@ -275,22 +303,16 @@ QFile* MainWindow::OpenFastFile() {
     const QString fastFileStem = fastFilePath.split('/').last();
     setWindowTitle(QString("FastFile Wizard - %1").arg(fastFileStem));
 
-    // Check fastfile can be read
-    QFile *fastFile = new QFile(fastFilePath);
-    if (!fastFile->open(QIODevice::ReadOnly)) {
-        QMessageBox::warning(this, "Warning!", QString("%1 could not be read!.").arg(fastFilePath));
-        return nullptr;
-    }
-    return fastFile;
+    return fastFilePath;
 }
 
 /*
-    OpenZoneFile()
+    GetZoneFilePath()
 
     Opens a file dialog in the steam folder,
     and opens the selected file.
 */
-QFile* MainWindow::OpenZoneFile() {
+QString MainWindow::GetZoneFilePath() {
     // Reset dialog before opening new file
     Reset();
 
@@ -306,13 +328,74 @@ QFile* MainWindow::OpenZoneFile() {
     const QString zoneFileStem = zoneFilePath.split('/').last();
     setWindowTitle(QString("FastFile Wizard - %1").arg(zoneFileStem));
 
+    return zoneFilePath;
+}
+
+QByteArray MainWindow::OpenFastFile(QString aFastFilePath)
+{
+    Reset();
+
     // Check fastfile can be read
-    QFile *zoneFile = new QFile(zoneFilePath);
-    if (!zoneFile->open(QIODevice::ReadOnly)) {
-        QMessageBox::warning(this, "Warning!", QString("%1 could not be read!.").arg(zoneFilePath));
-        return nullptr;
+    QFile *fastFile = new QFile(aFastFilePath);
+    qDebug() << aFastFilePath;
+    if (!fastFile->open(QIODevice::ReadOnly)) {
+        QMessageBox::warning(this, "Warning!", QString("FastFile '%1' could not be read!.").arg(fastFile->fileName()));
+        return QByteArray();
     }
-    return zoneFile;
+    LogOpenedFile(fastFile->fileName());
+    ui->lineEdit_FastFile->setText(fastFile->fileName());
+
+    // Decompress fastfile and close
+    const QByteArray fastFileData = fastFile->readAll();
+
+    // Parse data from fast file header
+    ParseFFHeader(fastFileData.mid(0, 12));
+
+    fastFile->close();
+
+    // Decompress fastfile and close
+    const QByteArray decompressedData = DecompressZLIB(fastFileData.mid(12));
+    // ui->plainTextEdit_ZoneDump->setPlainText(decompressedData.toHex());
+
+    const QString zoneFilePath = aFastFilePath.replace(".ff", ".zone");
+    ui->lineEdit_ZoneFile->setText(zoneFilePath);
+
+    // Open zone file
+    OpenZoneFile(zoneFilePath);
+
+    // Clean up & return
+    delete fastFile;
+    return fastFileData;
+}
+
+QByteArray MainWindow::OpenZoneFile(QString aZoneFilePath)
+{
+    Reset();
+
+    // Check zone file is writeable
+    QFile *zoneFile = new QFile(aZoneFilePath);
+    if (!zoneFile->open(QIODevice::ReadOnly)) {
+        QMessageBox::warning(this, "Warning!", QString("ZoneFile '%1' could not be read!.").arg(zoneFile->fileName()));
+        return QByteArray();
+    }
+    LogOpenedFile(zoneFile->fileName());
+    ui->lineEdit_ZoneFile->setText(zoneFile->fileName());
+
+    // Parse & close zone file
+    QByteArray zoneFileData = zoneFile->readAll();
+    ParseZoneFile(zoneFileData);
+    zoneFile->close();
+
+    // Check if corresponding zone file exists
+    const QString fastFilePath = zoneFile->fileName().replace(".zone", ".ff");
+    if (QFile::exists(fastFilePath)) {
+        ui->lineEdit_FastFile->setText(fastFilePath);
+        LogOpenedFile(fastFilePath);
+    }
+
+    // Clean up & return
+    delete zoneFile;
+    return zoneFileData;
 }
 
 void MainWindow::ParseFFCompany(QDataStream *afastFileStream) {
@@ -396,9 +479,9 @@ void MainWindow::ParseFFVersion(QDataStream *afastFileStream) {
     }
 }
 
-void MainWindow::ParseFFHeader(QFile *aFastFilePtr) {
+void MainWindow::ParseFFHeader(QByteArray aFastFileData) {
     // Open stream to fastfile
-    QDataStream afastFileStream(aFastFilePtr);
+    QDataStream afastFileStream(aFastFileData);
     afastFileStream.setByteOrder(QDataStream::LittleEndian);
 
     ParseFFCompany(&afastFileStream);
@@ -408,285 +491,18 @@ void MainWindow::ParseFFHeader(QFile *aFastFilePtr) {
     ParseFFVersion(&afastFileStream);
 }
 
-void MainWindow::ParseZoneHeader(QDataStream *aZoneFileStream) {
-    ParseZoneSize(aZoneFileStream);
-    ParseZoneUnknownsA(aZoneFileStream);
+void MainWindow::ParseAsset_Localize(QDataStream *aZoneFileStream) {
+    Localize localize;
+    *aZoneFileStream >> localize;
 
-    ParseZoneTagCount(aZoneFileStream);
-    ParseZoneUnknownsB(aZoneFileStream);
-
-    ParseZoneRecordCount(aZoneFileStream);
-
-    if (mTagCount) {
-        ParseZoneUnknownsC(aZoneFileStream);
-        ParseZoneTags(aZoneFileStream);
-    } else {
-        aZoneFileStream->skipRawData(4);
-    }
-}
-
-void MainWindow::ParseZoneSize(QDataStream *aZoneFileStream) {
-    // Byte 0-3: (unsigned int?) correlates to the fastfile's
-    //           size after decompression minus 36 bytes (24h)
-    quint32 zoneFileSize;
-    *aZoneFileStream >> zoneFileSize;
-    if (zoneFileSize <= 0) {
-        qDebug() << "Tried to open empty zone file!";
-        exit(-1);
-    }
-    zoneFileSize += 36;
-    ui->spinBox_FileSize->setValue(zoneFileSize);
-
-    qDebug() << QString("Zone file size: '%1'").arg(zoneFileSize);
-}
-
-/*
-    ParseZoneUnknownsA()
-
-    Parses the 1st section of unknowns as hex vals and uint32s
-*/
-void MainWindow::ParseZoneUnknownsA(QDataStream *aZoneFileStream) {
-    // Byte 4-7, 8-11, 12-15: unknown
-    QByteArray unknown1(4, Qt::Uninitialized);
-    aZoneFileStream->readRawData(unknown1.data(), 4);
-    ui->lineEdit_U1->setText(unknown1.toHex());
-    ui->spinBox_U1->setValue(unknown1.toUInt());
-
-    QByteArray unknown2(4, Qt::Uninitialized);
-    aZoneFileStream->readRawData(unknown2.data(), 4);
-    ui->lineEdit_U2->setText(unknown2.toHex());
-    ui->spinBox_U2->setValue(unknown2.toUInt());
-
-    QByteArray unknown3(4, Qt::Uninitialized);
-    aZoneFileStream->readRawData(unknown3.data(), 4);
-    ui->lineEdit_U3->setText(unknown3.toHex());
-    ui->spinBox_U3->setValue(unknown3.toUInt());
-
-    // Byte 16-19, 20-23: empty/unknown
-    QByteArray unknown4(4, Qt::Uninitialized);
-    aZoneFileStream->readRawData(unknown4.data(), 4);
-    ui->lineEdit_U4->setText(unknown4.toHex());
-    ui->spinBox_U4->setValue(unknown4.toUInt());
-
-    QByteArray unknown5(4, Qt::Uninitialized);
-    aZoneFileStream->readRawData(unknown5.data(), 4);
-    ui->lineEdit_U5->setText(unknown5.toHex());
-    ui->spinBox_U5->setValue(unknown5.toUInt());
-
-    // Byte 24-27: somehow related to the filesize, but smaller value
-    QByteArray unknown6(4, Qt::Uninitialized);
-    aZoneFileStream->readRawData(unknown6.data(), 4);
-    ui->lineEdit_U6->setText(unknown6.toHex());
-    ui->spinBox_U6->setValue(unknown6.toUInt());
-
-    // Byte 28-31, 32-35: unknown
-    QByteArray unknown7(4, Qt::Uninitialized);
-    aZoneFileStream->readRawData(unknown7.data(), 4);
-    ui->lineEdit_U7->setText(unknown7.toHex());
-    ui->spinBox_U7->setValue(unknown7.toUInt());
-
-    QByteArray unknown8(4, Qt::Uninitialized);
-    aZoneFileStream->readRawData(unknown8.data(), 4);
-    ui->lineEdit_U8->setText(unknown8.toHex());
-    ui->spinBox_U8->setValue(unknown8.toUInt());
-
-    qDebug() << QString("Unknowns A: '%1''%2''%3''%4''%5''%6''%7''%8'")
-                    .arg(unknown1.toHex())
-                    .arg(unknown2.toHex())
-                    .arg(unknown3.toHex())
-                    .arg(unknown4.toHex())
-                    .arg(unknown5.toHex())
-                    .arg(unknown6.toHex())
-                    .arg(unknown7.toHex())
-                    .arg(unknown8.toHex());
-}
-
-/*
-    ParseZoneTagCount()
-
-    Parses the number of string tags in the zone index
-*/
-void MainWindow::ParseZoneTagCount(QDataStream *aZoneFileStream) {
-    // Byte 36-39: might indicate where the index record starts,
-    //             calculation unknown
-    *aZoneFileStream >> mTagCount;
-    ui->spinBox_TagCount->setValue(mTagCount);
-    qDebug() << QString("Tag count: '%1'").arg(mTagCount);
-}
-
-/*
-    ParseZoneRecordCount()
-
-    Parses the number of records in the zone index
-*/
-void MainWindow::ParseZoneRecordCount(QDataStream *aZoneFileStream) {
-    // Byte 44-47: (unsigned int) number of records
-    *aZoneFileStream >> mRecordCount;
-    ui->spinBox_RecordCount->setValue(mRecordCount);
-    qDebug() << QString("Record count: '%1'").arg(mRecordCount);
-}
-
-/*
-    ParseZoneUnknownsB()
-
-    Parses the 2nd section of unknowns as hex vals and uint32s
-*/
-void MainWindow::ParseZoneUnknownsB(QDataStream *aZoneFileStream) {
-    // Byte 44-47: Unknown/empty?
-    QByteArray unknown9(4, Qt::Uninitialized);
-    aZoneFileStream->readRawData(unknown9.data(), 4);
-    ui->lineEdit_U9->setText(unknown9.toHex());
-    ui->spinBox_U9->setValue(unknown9.toUInt());
-
-    qDebug() << QString("Unknowns B: \n\t'%1'")
-                    .arg(unknown9.toHex());
-}
-
-/*
-    ParseZoneUnknownsC()
-
-    Parses the 3rd section of unknowns as hex vals and uint32s
-*/
-void MainWindow::ParseZoneUnknownsC(QDataStream *aZoneFileStream) {
-    // Byte 40-43: Unknown/empty?
-    QByteArray unknown10(4, Qt::Uninitialized);
-    aZoneFileStream->readRawData(unknown10.data(), 4);
-    ui->lineEdit_U10->setText(unknown10.toHex());
-    ui->spinBox_U10->setValue(unknown10.toUInt());
-
-    // Byte 44-47: Unknown/empty?
-    QByteArray unknown11(4, Qt::Uninitialized);
-    aZoneFileStream->readRawData(unknown11.data(), 4);
-    ui->lineEdit_U11->setText(unknown11.toHex());
-    ui->spinBox_U11->setValue(unknown11.toUInt());
-
-    qDebug() << QString("Unknowns C: \n\t'%1'\n\t'%2'")
-                    .arg(unknown10.toHex())
-                    .arg(unknown11.toHex());
-}
-
-/*
-    ParseZoneTags()
-
-    Parses the string tags ate the start of zone file
-*/
-void MainWindow::ParseZoneTags(QDataStream *aZoneFileStream) {
-    // Byte 48-51: Repeated separators? ÿÿÿÿ x i
-    aZoneFileStream->skipRawData(4 * (mTagCount - 1));
-
-    // Parse tags/strings before index
-    QString zoneTag;
-    char zoneTagChar;
-    for (quint32 i = 0; i < mTagCount - 1; i++) {
-        *aZoneFileStream >> zoneTagChar;
-        while (zoneTagChar != 0) {
-            zoneTag += zoneTagChar;
-            *aZoneFileStream >> zoneTagChar;
-        }
-        ui->listWidget_Tags->addItem(zoneTag);
-        // qDebug() << "Tag: " << zoneTag;
-        zoneTag.clear();
-    }
-}
-
-/*
-    ParseZoneIndex()
-
-    Parse the binary zone index data and populate table
-*/
-void MainWindow::ParseZoneIndex(QDataStream *aZoneFileStream) {
-    // Don't parse if no records
-    if (!mRecordCount) { return; }
-
-    // Track past assets and counts
-    int consecutiveIndex = 0;
-    int consecutiveCount = 0;
-    QString lastAssetType = "";
-
-    // Parse index & map found asset types
-    for (quint32 i = 0; i < mRecordCount; i++) {
-        // Skip record start
-        QByteArray rawAssetType(4, Qt::Uninitialized);
-        aZoneFileStream->readRawData(rawAssetType.data(), 4);
-        if (!mTypeMap.contains(rawAssetType.toHex())) {
-            mTypeMap[rawAssetType.toHex()] = 0;
-        }
-        mTypeMap[rawAssetType.toHex()]++;
-        mTypeOrder << rawAssetType.toHex();
-
-        // Skip separator
-        aZoneFileStream->skipRawData(4);
-
-        // Get asset description from type
-        const QString assetType = rawAssetType.toHex();
-
-        // Set lastAsset as current if first run
-        if (lastAssetType.isEmpty()) {
-            lastAssetType = assetType;
-        }
-
-        // Track counts or populate asset order table
-        if (lastAssetType == assetType) {
-            // Count consecutive assets
-            consecutiveCount++;
-        } else {
-            // Insert row and populate for the previous asset type
-            ui->tableWidget_Order->insertRow(consecutiveIndex);
-            ui->tableWidget_Order->setItem(consecutiveIndex, 0, new QTableWidgetItem(lastAssetType));
-            ui->tableWidget_Order->setItem(consecutiveIndex, 1, new QTableWidgetItem(Utils::AssetTypeToString(lastAssetType)));
-            ui->tableWidget_Order->setItem(consecutiveIndex, 2, new QTableWidgetItem(QString::number(consecutiveCount)));
-
-            // Update counts and asset type
-            consecutiveCount = 1;
-            consecutiveIndex++;
-            lastAssetType = assetType;
-        }
-    }
-}
-
-void MainWindow::ParseAsset_LocalString(QDataStream *aZoneFileStream) {
-    // Skip separator
-    aZoneFileStream->skipRawData(8);
-
-    // Parse local string asset contents
-    QString localStr;
-    char localStrChar;
-    *aZoneFileStream >> localStrChar;
-    while (localStrChar != 0) {
-        localStr += localStrChar;
-        *aZoneFileStream >> localStrChar;
-    }
-
-    // Parse rawfile name
-    QString aliasName;
-    char aliasNameChar;
-    *aZoneFileStream >> aliasNameChar;
-    while (aliasNameChar != 0) {
-        aliasName += aliasNameChar;
-        *aZoneFileStream >> aliasNameChar;
-    }
-    // qDebug() << QString("%1 = %2").arg(aliasName).arg(localStr);
-    ui->listWidget_LocalString->addItem(QString("%1 = %2").arg(aliasName).arg(localStr));
+    ui->listWidget_LocalString->addItem(QString("%1 = %2").arg(localize.referenceStr).arg(localize.localizedStr));
 }
 
 void MainWindow::ParseAsset_RawFile(QDataStream *aZoneFileStream) {
-    // Skip start separator FF FF FF FF (pointer?)
-    aZoneFileStream->skipRawData(4);
+    RawFile rawFile;
+    *aZoneFileStream >> rawFile;
 
-    quint32 gscLength;
-    *aZoneFileStream >> gscLength;
-
-    // Skip unknown 4 byte data
-    aZoneFileStream->skipRawData(4);
-
-    // Parse rawfile path
-    QString rawFilePath;
-    char scriptPathChar;
-    *aZoneFileStream >> scriptPathChar;
-    while (scriptPathChar != 0) {
-        rawFilePath += scriptPathChar;
-        *aZoneFileStream >> scriptPathChar;
-    }
+    QString rawFilePath = rawFile.rawFilePath;
     rawFilePath.replace(",", "");
     const QStringList pathParts = rawFilePath.split('/');
     if (pathParts.size() == 0) {
@@ -722,21 +538,7 @@ void MainWindow::ParseAsset_RawFile(QDataStream *aZoneFileStream) {
             parentItem = newChildItem;
         }
     }
-
-    // Parse gsc contents
-    QString rawFileContents;
-    char rawFileContentsChar;
-    *aZoneFileStream >> rawFileContentsChar;
-    while (rawFileContentsChar != 0 && rawFileContentsChar != -1) {
-        rawFileContents += rawFileContentsChar;
-        *aZoneFileStream >> rawFileContentsChar;
-    }
-    mRawFileMap[rawFilePath] = (rawFileContents.isEmpty()) ? ("EMPTY") : (rawFileContents);
-    // qDebug() << QString("%1: %2").arg(rawFilePath).arg(rawFileContents);
-}
-
-void MainWindow::ParseAsset_PhysPreset(QDataStream *aZoneFileStream) {
-
+    mRawFileMap[rawFilePath] = (rawFile.rawFileContents.isEmpty()) ? ("EMPTY") : (rawFile.rawFileContents);
 }
 
 void MainWindow::ParseAsset_XModel(QDataStream *aZoneFileStream) {
@@ -769,10 +571,6 @@ void MainWindow::ParseAsset_TechSet(QDataStream *aZoneFileStream) {
     //qDebug() << "Tech Set: " << techSetName;
 }
 
-void MainWindow::ParseAsset_Image(QDataStream *aZoneFileStream) {
-
-}
-
 void MainWindow::ParseAsset_LoadedSound(QDataStream *aZoneFileStream) {
 
 }
@@ -781,31 +579,11 @@ void MainWindow::ParseAsset_ColMapMP(QDataStream *aZoneFileStream) {
 
 }
 
-void MainWindow::ParseAsset_GameMapSP(QDataStream *aZoneFileStream) {
-
-}
-
-void MainWindow::ParseAsset_GameMapMP(QDataStream *aZoneFileStream) {
-
-}
-
-void MainWindow::ParseAsset_LightDef(QDataStream *aZoneFileStream) {
-
-}
-
-void MainWindow::ParseAsset_UIMap(QDataStream *aZoneFileStream) {
-
-}
-
-void MainWindow::ParseAsset_SNDDriverGlobals(QDataStream *aZoneFileStream) {
-
-}
-
-void MainWindow::ParseAsset_AIType(QDataStream *aZoneFileStream) {
-
-}
-
 void MainWindow::ParseAsset_FX(QDataStream *aZoneFileStream) {
+
+}
+
+void MainWindow::ParseAsset_Font(QDataStream *aZoneFileStream) {
 
 }
 
@@ -889,6 +667,437 @@ void MainWindow::ParseAsset_XAnim(QDataStream *aZoneFileStream) {
 
 void MainWindow::ParseAsset_MenuFile(QDataStream *aZoneFileStream) {
     //MENU_FILE
+    aZoneFileStream->skipRawData(4); // Separator
+
+    // Parse menu def count
+    quint32 menuDefCount;
+    *aZoneFileStream >> menuDefCount;
+
+    if (menuDefCount > 1000) { return; }
+    for (int i = 0; i < menuDefCount; i++) {
+        aZoneFileStream->skipRawData(4); // Separator
+
+        // Read in x_anim file name
+        QString menuFilepath;
+        char menuFilepathChar;
+        *aZoneFileStream >> menuFilepathChar;
+        while (menuFilepathChar != 0) {
+            menuFilepath += menuFilepathChar;
+            *aZoneFileStream >> menuFilepathChar;
+        }
+        qDebug() << "Parsing " << menuFilepath;
+
+        QTreeWidgetItem *menuFilePathNode = new QTreeWidgetItem(ui->treeWidget_Menus);
+
+        aZoneFileStream->skipRawData(4); // Separator
+
+        QByteArray menuNamePtr(4, Qt::Uninitialized);
+        aZoneFileStream->readRawData(menuNamePtr.data(), 4);
+        QTreeWidgetItem *menuNamePtrNode = new QTreeWidgetItem(menuFilePathNode);
+        menuNamePtrNode->setText(0, QString("Menu name ptr: %1").arg(menuNamePtr.toHex().toUpper()));
+
+        QTreeWidgetItem *menuRectNode = new QTreeWidgetItem(menuFilePathNode);
+        menuRectNode->setText(0, "Menu Rect");
+
+        float menuRectX, menuRectY, menuRectWidth, menuRectHeight;
+        *aZoneFileStream >> menuRectX >> menuRectY >> menuRectWidth >> menuRectHeight;
+        QTreeWidgetItem *menuRectXNode = new QTreeWidgetItem(menuRectNode);
+        menuRectXNode->setText(0, QString("X: %1").arg(menuRectX));
+        QTreeWidgetItem *menuRectYNode = new QTreeWidgetItem(menuRectNode);
+        menuRectYNode->setText(0, QString("Y: %1").arg(menuRectY));
+        QTreeWidgetItem *menuRectWidthNode = new QTreeWidgetItem(menuRectNode);
+        menuRectWidthNode->setText(0, QString("Width: %1").arg(menuRectWidth));
+        QTreeWidgetItem *menuRectHeightNode = new QTreeWidgetItem(menuRectNode);
+        menuRectHeightNode->setText(0, QString("Height: %1").arg(menuRectHeight));
+
+        MENU_H_ALIGNMENT hAlign;
+        *aZoneFileStream >> hAlign;
+        QTreeWidgetItem *hAlignNode = new QTreeWidgetItem(menuRectNode);
+        QString hAlignStr = Utils::MenuHAlignToStr(hAlign);
+        hAlignNode->setText(0, QString("Horiz. Align: %1").arg(hAlignStr));
+
+        MENU_V_ALIGNMENT vAlign;
+        *aZoneFileStream >> vAlign;
+        QTreeWidgetItem *vAlignNode = new QTreeWidgetItem(menuRectNode);
+        QString vAlignStr = Utils::MenuVAlignToStr(vAlign);
+        vAlignNode->setText(0, QString("Vert. Align: %1").arg(vAlignStr));
+
+        float rectClientX, rectClientY, rectClientWidth, rectClientHeight;
+        *aZoneFileStream >> rectClientX >> rectClientY >> rectClientWidth >> rectClientHeight;
+        QTreeWidgetItem *menuRectClientNode = new QTreeWidgetItem(menuFilePathNode);
+        menuRectClientNode->setText(0, "Menu Client Rect");
+        QTreeWidgetItem *menuRectClientXNode = new QTreeWidgetItem(menuRectClientNode);
+        menuRectClientXNode->setText(0, QString("X: %1").arg(rectClientX));
+        QTreeWidgetItem *menuRectClientYNode = new QTreeWidgetItem(menuRectClientNode);
+        menuRectClientYNode->setText(0, QString("Y: %1").arg(rectClientY));
+        QTreeWidgetItem *menuRectClientWidthNode = new QTreeWidgetItem(menuRectClientNode);
+        menuRectClientWidthNode->setText(0, QString("Width: %1").arg(rectClientWidth));
+        QTreeWidgetItem *menuRectClientHeightNode = new QTreeWidgetItem(menuRectClientNode);
+        menuRectClientHeightNode->setText(0, QString("Height: %1").arg(rectClientHeight));
+
+        // Client horizontal alignment
+        MENU_H_ALIGNMENT hClientAlign;
+        *aZoneFileStream >> hClientAlign;
+        QTreeWidgetItem *hClientAlignNode = new QTreeWidgetItem(menuRectClientNode);
+        QString hClientAlignStr = Utils::MenuHAlignToStr(hAlign);
+        hClientAlignNode->setText(0, QString("Horiz. Align: %1").arg(hClientAlignStr));
+
+        // Client vertical alignment
+        MENU_V_ALIGNMENT vClientAlign;
+        *aZoneFileStream >> vClientAlign;
+        QTreeWidgetItem *vClientAlignNode = new QTreeWidgetItem(menuRectClientNode);
+        QString vClientAlignStr = Utils::MenuVAlignToStr(vAlign);
+        vClientAlignNode->setText(0, QString("Vert. Align: %1").arg(vClientAlignStr));
+
+        quint32 groupPtr; // Should be const char *
+        *aZoneFileStream >> groupPtr;
+
+        MENU_WINDOW_STYLE style;
+        *aZoneFileStream >> style;
+
+        MENU_WINDOW_BORDER border;
+        *aZoneFileStream >> border;
+
+        quint32 ownerDraw, ownerDrawFlags;
+        *aZoneFileStream >> ownerDraw >> ownerDrawFlags;
+
+        float borderSize;
+        *aZoneFileStream >> borderSize;
+
+        int staticFlags, dynamicFlags, nextTime;
+        *aZoneFileStream >> staticFlags >> dynamicFlags >> nextTime;
+
+        QTreeWidgetItem *colorsNode = new QTreeWidgetItem(menuFilePathNode);
+        colorsNode->setText(0, "Menu Colors");
+
+        float foregroundColorR, foregroundColorG, foregroundColorB, foregroundColorA,
+            backgroundColorR, backgroundColorG, backgroundColorB, backgroundColorA,
+            borderColorR, borderColorG, borderColorB, borderColorA,
+            outlineColorR, outlineColorG, outlineColorB, outlineColorA;
+        *aZoneFileStream >> foregroundColorR >> foregroundColorG >> foregroundColorB >> foregroundColorA
+            >> backgroundColorR >> backgroundColorG >> backgroundColorB >> backgroundColorA
+            >> borderColorR >> borderColorG >> borderColorB >> borderColorA
+            >> outlineColorR >> outlineColorG >> outlineColorB >> outlineColorA;
+
+        QTreeWidgetItem *foregroundColorNode = new QTreeWidgetItem(colorsNode);
+        foregroundColorNode->setText(0, QString("Foreground Color: RGBA(%1, %2, %3, %4)")
+                                            .arg(foregroundColorR).arg(foregroundColorG).arg(foregroundColorB).arg(foregroundColorA));
+        foregroundColorNode->setBackground(1, Utils::ColorFromNormalized(foregroundColorR, foregroundColorG, foregroundColorB, foregroundColorA));
+        QTreeWidgetItem *backgroundColorNode = new QTreeWidgetItem(colorsNode);
+        backgroundColorNode->setText(0, QString("Background Color: RGBA(%1, %2, %3, %4)")
+                                            .arg(backgroundColorR).arg(backgroundColorG).arg(backgroundColorB).arg(backgroundColorA));
+        backgroundColorNode->setBackground(1, Utils::ColorFromNormalized(backgroundColorR, backgroundColorG, backgroundColorB, backgroundColorA));
+        QTreeWidgetItem *borderColorNode = new QTreeWidgetItem(colorsNode);
+        borderColorNode->setText(0, QString("Borer Color: RGBA(%1, %2, %3, %4)")
+                                        .arg(borderColorR).arg(borderColorG).arg(borderColorB).arg(borderColorA));
+        borderColorNode->setBackground(1, Utils::ColorFromNormalized(borderColorR, borderColorG, borderColorB, borderColorA));
+        QTreeWidgetItem *outlineColorNode = new QTreeWidgetItem(colorsNode);
+        outlineColorNode->setText(0, QString("Outline Color: RGBA(%1, %2, %3, %4)")
+                                         .arg(outlineColorR).arg(outlineColorG).arg(outlineColorB).arg(outlineColorA));
+        outlineColorNode->setBackground(1, Utils::ColorFromNormalized(outlineColorR, outlineColorG, outlineColorB, outlineColorA));
+
+        quint32 materialPtr; // Should be Material *
+        *aZoneFileStream >> materialPtr;
+
+        quint32 fontPtr, fullScreen, itemCount, fontIndex;
+        *aZoneFileStream >> fontPtr >> fullScreen >> itemCount >> fontIndex;
+
+        quint32 cursorItem, fadeCycle;
+        *aZoneFileStream >> cursorItem >> fadeCycle;
+
+        float fadeClamp, fadeAmount, fadeInAmount, blurRadius;
+        *aZoneFileStream >> fadeClamp >> fadeAmount >> fadeInAmount >> blurRadius;
+
+        quint32 onOpenPtr, onFocusPtr, onClosePtr, onESCPtr; // Should be const char *
+        *aZoneFileStream >> onOpenPtr >> onFocusPtr >> onClosePtr >> onESCPtr;
+
+        quint32 onKeyPtr; // Should be ItemKeyHandler *
+        *aZoneFileStream >> onKeyPtr;
+
+        quint32 visibleExpCount, expEntryPtr; // components of statement_s
+        *aZoneFileStream >> visibleExpCount >> expEntryPtr;
+
+        quint32 allowedBindingPtr, soundNamePtr; // Should be const char *
+        *aZoneFileStream >> allowedBindingPtr >> soundNamePtr;
+
+        quint32 imageTrack;
+        *aZoneFileStream >> imageTrack;
+
+        float focusColorR, focusColorG, focusColorB, focusColorA;
+        *aZoneFileStream >> focusColorR >> focusColorG >> focusColorB >> focusColorA;
+        QTreeWidgetItem *focusColorNode = new QTreeWidgetItem(colorsNode);
+        focusColorNode->setText(0, QString("Focus Color: RGBA(%1, %2, %3, %4)")
+                                         .arg(focusColorR).arg(focusColorG).arg(focusColorB).arg(focusColorA));
+        focusColorNode->setBackground(1, Utils::ColorFromNormalized(focusColorR, focusColorG, focusColorB, focusColorA));
+
+        //QTreeWidgetItem *menuDefChildNode = new QTreeWidgetItem(menuDefNode);
+        //menuDefChildNode->setText(0, menuDefName);
+
+        float disabledColorR, disabledColorG, disabledColorB, disabledColorA;
+        *aZoneFileStream >> disabledColorR >> disabledColorG >> disabledColorB >> disabledColorA;
+        QTreeWidgetItem *disabledColorNode = new QTreeWidgetItem(colorsNode);
+        disabledColorNode->setText(0, QString("Disabled Color: RGBA(%1, %2, %3, %4)")
+                                         .arg(disabledColorR).arg(disabledColorG).arg(disabledColorB).arg(disabledColorA));
+        disabledColorNode->setBackground(1, Utils::ColorFromNormalized(disabledColorR, disabledColorG, disabledColorB, disabledColorA));
+
+        quint32 rectXExpCount, rectXExpPtr; // components of statement_s
+        *aZoneFileStream >> rectXExpCount >> rectXExpPtr;
+
+        quint32 rectYExpCount, rectYExpPtr; // components of statement_s
+        *aZoneFileStream >> rectYExpCount >> rectYExpPtr;
+
+        aZoneFileStream->skipRawData(4); // Separator
+
+        QString menuDefName;
+        char menuDefNameChar;
+        int menuDefNameLen = 0;
+        *aZoneFileStream >> menuDefNameChar;
+        while (menuDefNameChar != 0 && menuDefNameLen < 30) {
+            menuDefNameLen++;
+            menuDefName += menuDefNameChar;
+            *aZoneFileStream >> menuDefNameChar;
+        }
+
+        menuFilePathNode->setText(0, QString("%1 - %2").arg(menuDefName).arg(menuFilepath));
+
+        QString defString;
+        char defStringChar;
+        int defStringLen = 0;
+        *aZoneFileStream >> defStringChar;
+        while (defStringChar != 0 && defStringLen < 30) {
+            defStringLen++;
+            defString += defStringChar;
+            *aZoneFileStream >> defStringChar;
+        }
+        aZoneFileStream->skipRawData(4 * 10);
+
+
+        QTreeWidgetItem *itemsNode = new QTreeWidgetItem(menuFilePathNode);
+        itemsNode->setText(0, "Item Definitions");
+
+        quint32 itemWindowDefNamePtr;
+        *aZoneFileStream >> itemWindowDefNamePtr;
+
+        QTreeWidgetItem *itemRectNode = new QTreeWidgetItem(itemsNode);
+        itemRectNode->setText(0, "Item Text Rect");
+
+        float itemRectX, itemRectY, itemRectWidth, itemRectHeight;
+        *aZoneFileStream >> itemRectX >> itemRectY >> itemRectWidth >> itemRectHeight;
+        QTreeWidgetItem *itemRectXNode = new QTreeWidgetItem(itemRectNode);
+        itemRectXNode->setText(0, QString("X: %1").arg(itemRectX));
+        QTreeWidgetItem *itemRectYNode = new QTreeWidgetItem(itemRectNode);
+        itemRectYNode->setText(0, QString("Y: %1").arg(itemRectY));
+        QTreeWidgetItem *itemRectWidthNode = new QTreeWidgetItem(itemRectNode);
+        itemRectWidthNode->setText(0, QString("Width: %1").arg(itemRectWidth));
+        QTreeWidgetItem *itemRectHeightNode = new QTreeWidgetItem(itemRectNode);
+        itemRectHeightNode->setText(0, QString("Height: %1").arg(itemRectHeight));
+
+        MENU_H_ALIGNMENT itemHAlignment;
+        *aZoneFileStream >> itemHAlignment;
+        QTreeWidgetItem *hTextAlignNode = new QTreeWidgetItem(itemRectNode);
+        QString hTextAlignStr = Utils::MenuHAlignToStr(itemHAlignment);
+        hTextAlignNode->setText(0, QString("Horiz. Align: %1").arg(hTextAlignStr));
+
+        MENU_V_ALIGNMENT itemVAlignment;
+        *aZoneFileStream >> itemVAlignment;
+        QTreeWidgetItem *vTextAlignNode = new QTreeWidgetItem(itemRectNode);
+        QString vTextAlignStr = Utils::MenuVAlignToStr(itemVAlignment);
+        vTextAlignNode->setText(0, QString("Vert. Align: %1").arg(vTextAlignStr));
+
+        quint32 itemGroupPtr; // Should be const char*
+        *aZoneFileStream >> itemGroupPtr;
+
+        MENU_WINDOW_STYLE itemWindowStyle;
+        *aZoneFileStream >> itemWindowStyle;
+
+        MENU_WINDOW_BORDER itemWindowBorder;
+        *aZoneFileStream >> itemWindowBorder;
+
+        quint32 itemOwnerDraw, itemOwnerDrawFlags;
+        *aZoneFileStream >> itemOwnerDraw >> itemOwnerDrawFlags;
+
+        float itemBorderSize;
+        *aZoneFileStream >> itemBorderSize;
+
+        int itemStaticFlags, itemDynamicFlags, itemNextTime;
+        *aZoneFileStream >> itemStaticFlags >> itemDynamicFlags >> itemNextTime;
+
+        float itemForegroundColorR, itemForegroundColorG, itemForegroundColorB, itemForegroundColorA,
+            itemBackgroundColorR, itemBackgroundColorG, itemBackgroundColorB, itemBackgroundColorA,
+            itemBorderColorR, itemBorderColorG, itemBorderColorB, itemBorderColorA,
+            itemOutlineColorR, itemOutlineColorG, itemOutlineColorB, itemOutlineColorA;
+        *aZoneFileStream >> itemForegroundColorR >> itemForegroundColorG >> itemForegroundColorB >> itemForegroundColorA
+            >> itemBackgroundColorR >> itemBackgroundColorG >> itemBackgroundColorB >> itemBackgroundColorA
+            >> itemBorderColorR >> itemBorderColorG >> itemBorderColorB >> itemBorderColorA
+            >> itemOutlineColorR >> itemOutlineColorG >> itemOutlineColorB >> itemOutlineColorA;
+
+        quint32 itemMaterialPtr; // Should be Material *
+        *aZoneFileStream >> itemMaterialPtr;
+
+        QTreeWidgetItem *itemTextRectNode = new QTreeWidgetItem(itemsNode);
+        itemTextRectNode->setText(0, "Item Text Rect");
+
+        float itemTextRectX, itemTextRectY, itemTextRectWidth, itemTextRectHeight;
+        *aZoneFileStream >> itemTextRectX >> itemTextRectY >> itemTextRectWidth >> itemTextRectHeight;
+        QTreeWidgetItem *itemTextRectXNode = new QTreeWidgetItem(itemTextRectNode);
+        itemTextRectXNode->setText(0, QString("X: %1").arg(itemTextRectX));
+        QTreeWidgetItem *itemTextRectYNode = new QTreeWidgetItem(itemTextRectNode);
+        itemTextRectYNode->setText(0, QString("Y: %1").arg(itemTextRectY));
+        QTreeWidgetItem *itemTextRectWidthNode = new QTreeWidgetItem(itemTextRectNode);
+        itemTextRectWidthNode->setText(0, QString("Width: %1").arg(itemTextRectWidth));
+        QTreeWidgetItem *itemTextRectHeightNode = new QTreeWidgetItem(itemTextRectNode);
+        itemTextRectHeightNode->setText(0, QString("Height: %1").arg(itemTextRectHeight));
+
+        MENU_H_ALIGNMENT itemText_hAlign;
+        *aZoneFileStream >> itemText_hAlign;
+        QTreeWidgetItem *hItemTextAlignNode = new QTreeWidgetItem(itemTextRectNode);
+        QString hItemTextAlignStr = Utils::MenuHAlignToStr(itemText_hAlign);
+        hItemTextAlignNode->setText(0, QString("Horiz. Align: %1").arg(hItemTextAlignStr));
+
+        MENU_V_ALIGNMENT itemText_vAlign;
+        *aZoneFileStream >> itemText_vAlign;
+        QTreeWidgetItem *vItemTextAlignNode = new QTreeWidgetItem(itemTextRectNode);
+        QString vItemTextAlignStr = Utils::MenuVAlignToStr(itemText_vAlign);
+        vItemTextAlignNode->setText(0, QString("Vert. Align: %1").arg(vItemTextAlignStr));
+
+
+        MENU_ITEM_TYPE itemType;
+        *aZoneFileStream >> itemType;
+
+        quint32 dataType, alignment;
+        *aZoneFileStream >> dataType >> alignment;
+
+        MENU_FONT_TYPE fontEnum;
+        *aZoneFileStream >> fontEnum;
+
+        quint32 textAlignMode;
+        *aZoneFileStream >> textAlignMode;
+
+        float textalignx, textaligny, textscale;
+        *aZoneFileStream >> textalignx >> textaligny >> textscale;
+
+        MENU_ITEM_TEXTSTYLE textStyle;
+        *aZoneFileStream >> textStyle;
+
+        int gameMsgWindowIndex, gameMsgWindowMode;
+        *aZoneFileStream >> gameMsgWindowIndex >> gameMsgWindowMode;
+
+        quint32 testPtr; // const char *
+        *aZoneFileStream >> testPtr;
+
+        quint32 textSavegameInfo;
+        *aZoneFileStream >> textSavegameInfo;
+
+        quint32 parentPtr; // menuDef_t *
+        *aZoneFileStream >> parentPtr;
+
+        quint32 mouseEnterText, mouseExitText, mouseEnter, mouseExit,
+            action, onAccept, onFocus, leaveFocus, dvar, dvarTest; // const char *
+        *aZoneFileStream >> mouseEnterText >> mouseExitText >> mouseEnter >> mouseExit
+            >> action >> onAccept >> onFocus >> leaveFocus >> dvar >> dvarTest;
+
+        quint32 keyHandlerPtr; // ItemKeyHandler *
+        *aZoneFileStream >> keyHandlerPtr;
+
+        quint32 enableDvarPtr; // const char *
+        *aZoneFileStream >> enableDvarPtr;
+
+        quint32 dvarFlags;
+        *aZoneFileStream >> dvarFlags;
+
+        quint32 focusSoundPtr; // snd_alias_list_t *;
+        *aZoneFileStream >> focusSoundPtr;
+
+        float special;
+        *aZoneFileStream >> special;
+
+        quint32 cursorPos;
+        *aZoneFileStream >> cursorPos;
+
+        // itemDefData_t typeData;
+
+        // listBoxDef_s *listBox;
+
+        quint32 startPos, endPos, drawPadding;
+        *aZoneFileStream >> startPos >> endPos >> drawPadding;
+
+        float elementWidth, elementHeight;
+        *aZoneFileStream >> elementWidth >> elementHeight;
+
+        quint32 elementStyle, numColumns;
+        *aZoneFileStream >> elementStyle >> numColumns;
+
+        //columnInfo_s columnInfo[16];
+
+        quint32 doubleClickPtr; // const char *
+        *aZoneFileStream >> doubleClickPtr;
+
+
+        int notselectable, noScrollBars, usePaging;
+        *aZoneFileStream >> notselectable >> noScrollBars >> usePaging;
+
+        float itemSelectBorderColorR, itemSelectBorderColorG, itemSelectBorderColorB, itemSelectBorderColorA,
+            itemDisableColorR, itemDisableColorG, itemDisableColorB, itemDisableColorA,
+            itemFocusColor2R, itemFocusColor2G, itemFocusColor2B, itemFocusColor2A;
+        *aZoneFileStream >> itemSelectBorderColorR >> itemSelectBorderColorG >> itemSelectBorderColorB >> itemSelectBorderColorA
+            >> itemDisableColorR >> itemDisableColorG >> itemDisableColorB >> itemDisableColorA
+            >> itemFocusColor2R >> itemFocusColor2G >> itemFocusColor2B >> itemFocusColor2A;
+
+        quint32 selectIconPtr, backgroundItemListboxPtr, highlightTexturePtr; // Material *
+        *aZoneFileStream >> selectIconPtr >> backgroundItemListboxPtr >> highlightTexturePtr;
+
+        // editFieldDef_s *editField;
+
+        float minVal, maxVal, defVal, range;
+        *aZoneFileStream >> minVal >> maxVal >> defVal >> range;
+
+        int maxChars, maxCharsGotoNext, maxPaintChars, paintOffset;
+        *aZoneFileStream >> maxChars >> maxCharsGotoNext >> maxPaintChars >> paintOffset;
+
+        // multiDef_s *multi;
+
+        QVector<quint32> dvarListPtrs = QVector<quint32>(32);
+        for (int i = 0; i < 32; i++) {
+            quint32 dvarList;
+            *aZoneFileStream >> dvarList;
+            dvarListPtrs.push_back(dvarList);
+        }
+
+        QVector<quint32> dvarStrPtrs = QVector<quint32>(32);
+        for (int i = 0; i < 32; i++) {
+            quint32 dvarStr;
+            *aZoneFileStream >> dvarStr;
+            dvarStrPtrs.push_back(dvarStr);
+        }
+
+        QVector<float> dvarValues = QVector<float>(32);
+        for (int i = 0; i < 32; i++) {
+            float dvarValue;
+            *aZoneFileStream >> dvarValue;
+            dvarValues.push_back(dvarValue);
+        }
+
+        quint32 count, strDef;
+        *aZoneFileStream >> count >> strDef;
+
+        quint32 enumDvarNamePtr; // const char *
+        *aZoneFileStream >> enumDvarNamePtr;
+
+        quint32 dataPtr; // void *
+        *aZoneFileStream >> dataPtr;
+
+        quint32 itemImageTrack;
+        *aZoneFileStream >> itemImageTrack;
+
+        //statement_s visibleExp;
+        //statement_s textExp;
+        //statement_s materialExp;
+        //statement_s rectXExp;
+        //statement_s rectYExp;
+        //statement_s rectWExp;
+        //statement_s rectHExp;
+        //statement_s foreColorAExp;
+    }
 }
 
 void MainWindow::ParseAsset_Weapon(QDataStream *aZoneFileStream) {
@@ -958,216 +1167,185 @@ void MainWindow::ParseAsset_StringTable(QDataStream *aZoneFileStream) {
 }
 
 void MainWindow::on_pushButton_FastFile_clicked() {
-    // Try to prompt user to open fastfile
-    QFile *fastFile;
-    if (!(fastFile = OpenFastFile())) {
-        QMessageBox::warning(this, "Warning!", QString("Failed to open FastFile!."));
-        return;
-    }
-
-    // Parse data from fast file header
-    ParseFFHeader(fastFile);
-
-    // Decompress fastfile and close
-    const QByteArray fastFileData = fastFile->readAll();
-    const QByteArray decompressedData = DecompressZLIB(fastFileData);
-    // ui->plainTextEdit_ZoneDump->setPlainText(decompressedData.toHex());
-
-    const QString zoneFilePath = fastFile->fileName().replace(".ff", ".zone");
-    fastFile->close();
-
-    // Check zone file is writeable
-    QFile *zoneFile = new QFile(zoneFilePath);
-    if (!zoneFile->open(QIODevice::ReadWrite)) {
-        qDebug() << QString("Zone file could not be written to: '%1'").arg(zoneFilePath);
-        return;
-    }
-    // Write zone data
-    zoneFile->write(decompressedData);
-    zoneFile->close();
-
-    // Open zone file as little endian stream
-    QDataStream zoneFileStream(decompressedData);
-    zoneFileStream.setByteOrder(QDataStream::LittleEndian);
-
-    // Parse data from zone file header
-    ParseZoneHeader(&zoneFileStream);
-    ParseZoneIndex(&zoneFileStream);
-
-    // Track current and consecutive assets
-    int assetIndex = 0;
-
-    // Iterate asset types found in index
-    for (auto [assetType, assetCount] : mTypeMap.asKeyValueRange()) {
-        // Get asset description from type
-        QString assetStr = Utils::AssetTypeToString(assetType);
-
-        // Insert row and populate
-        ui->tableWidget_Index->insertRow(assetIndex);
-        ui->tableWidget_Index->setItem(assetIndex, 0, new QTableWidgetItem(assetType));
-        ui->tableWidget_Index->setItem(assetIndex, 1, new QTableWidgetItem(assetStr));
-        ui->tableWidget_Index->setItem(assetIndex, 2, new QTableWidgetItem(QString::number(assetCount)));
-
-        // Update count
-        assetIndex++;
-    }
-
-    for (int i = 0; i < mTypeOrder.size(); i++) {
-        const QString typeHex = mTypeOrder[i];
-        const QString typeStr = Utils::AssetTypeToString(typeHex);
-
-        // qDebug() << "Parsing Asset of Type: " << typeHex;
-        if (typeStr == "LOCAL STRING") { // localized string asset
-            ParseAsset_LocalString(&zoneFileStream);
-        } else if (typeStr == "RAW FILE") { // gsc
-            ParseAsset_RawFile(&zoneFileStream);
-        } else if (typeStr == "PHYS PRESET") { // physpreset
-            ParseAsset_PhysPreset(&zoneFileStream);
-        } else if (typeStr == "MODEL") { // xmodel
-            ParseAsset_XModel(&zoneFileStream);
-        } else if (typeStr == "MATERIAL") { // material
-            ParseAsset_Material(&zoneFileStream);
-        } else if (typeStr == "SHADER") { // pixelshader
-            ParseAsset_PixelShader(&zoneFileStream);
-        } else if (typeStr == "TECH SET") { // techset include
-            ParseAsset_TechSet(&zoneFileStream);
-        } else if (typeStr == "IMAGE") { // image
-            ParseAsset_Image(&zoneFileStream);
-        } else if (typeStr == "SOUND") { // loaded_sound
-            ParseAsset_LoadedSound(&zoneFileStream);
-        } else if (typeStr == "COLLISION MAP") { // col_map_mp
-            ParseAsset_ColMapMP(&zoneFileStream);
-        } else if (typeStr == "MP MAP") { // game_map_sp
-            ParseAsset_GameMapSP(&zoneFileStream);
-        } else if (typeStr == "SP MAP") { // game_map_mp
-            ParseAsset_GameMapMP(&zoneFileStream);
-        } else if (typeStr == "LIGHT DEF") { // lightdef
-            ParseAsset_LightDef(&zoneFileStream);
-        } else if (typeStr == "UI MAP") { // ui_map
-            ParseAsset_UIMap(&zoneFileStream);
-        } else if (typeStr == "SND DRIVER GLOBALS") { // snddriverglobals
-            ParseAsset_SNDDriverGlobals(&zoneFileStream);
-        } else if (typeStr == "AI TYPE") { // aitype
-            ParseAsset_AIType(&zoneFileStream);
-        } else if (typeStr == "EFFECT") { // aitype
-            ParseAsset_FX(&zoneFileStream);
-        } else if (typeStr == "ANIMATION") { // aitype
-            ParseAsset_XAnim(&zoneFileStream);
-        } else if (typeStr == "STRING TABLE") { // string_table
-            ParseAsset_StringTable(&zoneFileStream);
-        } else if (typeStr == "MENU") { // string_table
-            ParseAsset_MenuFile(&zoneFileStream);
-        } else if (typeStr == "WEAPON") { // string_table
-            ParseAsset_Weapon(&zoneFileStream);
-        } else if (typeStr == "D3DBSP DUMP") { // string_table
-            ParseAsset_D3DBSP(&zoneFileStream);
-        } else if (typeStr != "UNKNOWN") {
-            qDebug() << "Found bad asset type!" << typeStr;
-        }
-    }
-
-    // Close zone file
-    zoneFile->close();
-
-    // Clean up
-    delete zoneFile;
-    delete fastFile;
+    // Open fast file
+    QString fastFilePath = GetFastFilePath();
+    OpenFastFile(fastFilePath);
 }
 
-void MainWindow::on_pushButton_FastFile_2_clicked() {
-    // Check zone file is writeable
-    QFile *zoneFile;
-    if (!(zoneFile = OpenZoneFile())) {
-        QMessageBox::warning(this, "Warning!", QString("Failed to open FastFile!."));
-        return;
-    }
-    const QByteArray decompressedData = zoneFile->readAll();
+void MainWindow::on_pushButton_ZoneFile_clicked() {
+    const QString zoneFilePath = GetZoneFilePath();
+    OpenZoneFile(zoneFilePath);
+}
 
+void MainWindow::LogOpenedFile(QString aFileName)
+{
+    mRecentFiles.enqueue(aFileName);
+    mRecentFiles.removeDuplicates();
+
+    RefreshRecentFileMenu();
+}
+
+void MainWindow::RefreshRecentFileMenu()
+{
+    foreach (QAction* action, mRecentFileActions) {
+        ui->menuRecent_Fast_Files->removeAction(action);
+        ui->menuRecent_Zone_Files->removeAction(action);
+
+        action->deleteLater();
+    }
+    mRecentFileActions.clear();
+
+    foreach (QString recentFileText, mRecentFiles) {
+        if (recentFileText.contains(".ff")) {
+            QAction *recentFastFileAction = new QAction(ui->menuRecent_Fast_Files);
+            recentFastFileAction->setText(recentFileText);
+            mRecentFileActions << recentFastFileAction;
+            ui->menuRecent_Fast_Files->addAction(recentFastFileAction);
+
+            connect(recentFastFileAction, &QAction::triggered, this, [&, this, recentFileText](bool checked = false) {
+                OpenFastFile(recentFileText);
+            });
+        } else if (recentFileText.contains(".zone")) {
+            QAction *recentZoneFileAction = new QAction(ui->menuRecent_Zone_Files);
+            recentZoneFileAction->setText(recentFileText);
+            mRecentFileActions << recentZoneFileAction;
+            ui->menuRecent_Zone_Files->addAction(recentZoneFileAction);
+
+            connect(recentZoneFileAction, &QAction::triggered, this, [&, this, recentFileText](bool checked = false) {
+                OpenZoneFile(recentFileText);
+            });
+        }
+    }
+}
+
+void MainWindow::ParseZoneFile(QByteArray aDecompressedData) {
     // Open zone file as little endian stream
-    QDataStream zoneFileStream(decompressedData);
+    QDataStream zoneFileStream(aDecompressedData);
     zoneFileStream.setByteOrder(QDataStream::LittleEndian);
+    zoneFileStream.setFloatingPointPrecision(QDataStream::SinglePrecision);
 
     // Parse data from zone file header
-    ParseZoneHeader(&zoneFileStream);
-    ParseZoneIndex(&zoneFileStream);
+    Zone zone;
+    zoneFileStream >> zone;
+
+    // Add header data to ui
+    ui->spinBox_FileSize->setValue(zone.zoneFileSize);
+    ui->spinBox_TagCount->setValue(zone.tagCount);
+    ui->spinBox_RecordCount->setValue(zone.recordCount);
+    // Add unknowns to ui
+    ui->lineEdit_U1->setText(QString::number(zone.unknown1, 16).toUpper());
+    ui->spinBox_U1->setValue(zone.unknown1);
+    ui->lineEdit_U2->setText(QString::number(zone.unknown2, 16).toUpper());
+    ui->spinBox_U2->setValue(zone.unknown2);
+    ui->lineEdit_U3->setText(QString::number(zone.unknown3, 16).toUpper());
+    ui->spinBox_U3->setValue(zone.unknown3);
+    ui->lineEdit_U4->setText(QString::number(zone.unknown4, 16).toUpper());
+    ui->spinBox_U4->setValue(zone.unknown4);
+    ui->lineEdit_U5->setText(QString::number(zone.unknown5, 16).toUpper());
+    ui->spinBox_U5->setValue(zone.unknown5);
+    ui->lineEdit_U6->setText(QString::number(zone.unknown6, 16).toUpper());
+    ui->spinBox_U6->setValue(zone.unknown6);
+    ui->lineEdit_U7->setText(QString::number(zone.unknown7, 16).toUpper());
+    ui->spinBox_U7->setValue(zone.unknown7);
+    ui->lineEdit_U8->setText(QString::number(zone.unknown8, 16).toUpper());
+    ui->spinBox_U8->setValue(zone.unknown8);
+    ui->lineEdit_U9->setText(QString::number(zone.unknown9, 16).toUpper());
+    ui->spinBox_U9->setValue(zone.unknown9);
+    ui->lineEdit_U10->setText(QString::number(zone.unknown10, 16).toUpper());
+    ui->spinBox_U10->setValue(zone.unknown10);
+    ui->lineEdit_U11->setText(QString::number(zone.unknown11, 16).toUpper());
+    ui->spinBox_U11->setValue(zone.unknown11);
+    // Add tags to ui list
+    foreach (const QString tag, zone.tags) {
+        ui->listWidget_Tags->addItem(tag);
+    }
+
+    // Track past assets and counts
+    int consecutiveIndex = 0;
+    int consecutiveCount = 0;
+    ASSET_TYPE lastAssetType = ASSET_UNKNOWN;
+    foreach (ASSET_TYPE assetType, zone.assetTypes) {
+        const QString typeStr = Utils::AssetTypeToString(assetType);
+
+        if (!mTypeMap.contains(assetType)) {
+            mTypeMap[assetType] = 0;
+        }
+        mTypeMap[assetType]++;
+
+        // Set lastAsset as current if first run
+        if (lastAssetType == ASSET_UNKNOWN) {
+            lastAssetType = assetType;
+        }
+
+        // Track counts or populate asset order table
+        if (lastAssetType == assetType) {
+            // Count consecutive assets
+            consecutiveCount++;
+        } else {
+            // Insert row and populate for the previous asset type
+            ui->tableWidget_Order->insertRow(consecutiveIndex);
+            ui->tableWidget_Order->setItem(consecutiveIndex, 0, new QTableWidgetItem(Utils::AssetTypeToString(lastAssetType)));
+            ui->tableWidget_Order->setItem(consecutiveIndex, 1, new QTableWidgetItem(QString::number(consecutiveCount)));
+
+            // Update counts and asset type
+            consecutiveCount = 1;
+            consecutiveIndex++;
+            lastAssetType = assetType;
+        }
+
+        // qDebug() << "Parsing Asset of Type: " << typeHex;
+        if (typeStr == "ANIMATION") { // aitype
+            ParseAsset_XAnim(&zoneFileStream);
+        } else if (typeStr == "MODEL") { // xmodel
+            ParseAsset_XModel(&zoneFileStream);
+        } else if (typeStr == "MATERIAL") { // material
+            ParseAsset_Material(&zoneFileStream);
+        } else if (typeStr == "TECH SET") { // techset include
+            ParseAsset_TechSet(&zoneFileStream);
+        } else if (typeStr == "SOUND") { // loaded_sound
+            ParseAsset_LoadedSound(&zoneFileStream);
+        } else if (typeStr == "COLLISION MAP") { // col_map_mp
+            ParseAsset_ColMapMP(&zoneFileStream);
+        } else if (typeStr == "SHADER") { // pixelshader
+            ParseAsset_PixelShader(&zoneFileStream);
+        } else if (typeStr == "D3DBSP DUMP") { // string_table
+            ParseAsset_D3DBSP(&zoneFileStream);
+        } else if (typeStr == "FONT") { // font
+            ParseAsset_Font(&zoneFileStream);
+        } else if (typeStr == "MENU") { // string_table
+            ParseAsset_MenuFile(&zoneFileStream);
+        } else if (typeStr == "LOCAL STRING") { // localized string asset
+            ParseAsset_Localize(&zoneFileStream);
+        } else if (typeStr == "WEAPON") { // string_table
+            ParseAsset_Weapon(&zoneFileStream);
+        } else if (typeStr == "EFFECT") { // aitype
+            ParseAsset_FX(&zoneFileStream);
+        } else if (typeStr == "RAW FILE") { // gsc
+            // ParseAsset_RawFile(&zoneFileStream);
+            RawFile rawFile = RawFile();
+            zoneFileStream >> rawFile;
+            mRawFilesVec << rawFile;
+        } else if (typeStr == "STRING TABLE") { // string_table
+            ParseAsset_StringTable(&zoneFileStream);
+        } else {
+            qDebug() << "Found bad asset type!" << typeStr;
+        }
+    }
 
     // Track current and consecutive assets
     int assetIndex = 0;
 
     // Iterate asset types found in index
     for (auto [assetType, assetCount] : mTypeMap.asKeyValueRange()) {
-        // Get asset description from type
-        QString assetStr = Utils::AssetTypeToString(assetType);
-
+        const QString typeStr = Utils::AssetTypeToString(assetType);
         // Insert row and populate
         ui->tableWidget_Index->insertRow(assetIndex);
-        ui->tableWidget_Index->setItem(assetIndex, 0, new QTableWidgetItem(assetType));
-        ui->tableWidget_Index->setItem(assetIndex, 1, new QTableWidgetItem(assetStr));
-        ui->tableWidget_Index->setItem(assetIndex, 2, new QTableWidgetItem(QString::number(assetCount)));
+        ui->tableWidget_Index->setItem(assetIndex, 0, new QTableWidgetItem(typeStr));
+        ui->tableWidget_Index->setItem(assetIndex, 1, new QTableWidgetItem(QString::number(assetCount)));
 
         // Update count
         assetIndex++;
     }
-
-    for (int i = 0; i < mTypeOrder.size(); i++) {
-        const QString typeHex = mTypeOrder[i];
-        const QString typeStr = Utils::AssetTypeToString(typeHex);
-
-        // qDebug() << "Parsing Asset of Type: " << typeHex;
-        if (typeStr == "LOCAL STRING") { // localized string asset
-            ParseAsset_LocalString(&zoneFileStream);
-        } else if (typeStr == "RAW FILE") { // gsc
-            ParseAsset_RawFile(&zoneFileStream);
-        } else if (typeStr == "PHYS PRESET") { // physpreset
-            ParseAsset_PhysPreset(&zoneFileStream);
-        } else if (typeStr == "MODEL") { // xmodel
-            ParseAsset_XModel(&zoneFileStream);
-        } else if (typeStr == "MATERIAL") { // material
-            ParseAsset_Material(&zoneFileStream);
-        } else if (typeStr == "SHADER") { // pixelshader
-            ParseAsset_PixelShader(&zoneFileStream);
-        } else if (typeStr == "TECH SET") { // techset include
-            ParseAsset_TechSet(&zoneFileStream);
-        } else if (typeStr == "IMAGE") { // image
-            ParseAsset_Image(&zoneFileStream);
-        } else if (typeStr == "SOUND") { // loaded_sound
-            ParseAsset_LoadedSound(&zoneFileStream);
-        } else if (typeStr == "COLLISION MAP") { // col_map_mp
-            ParseAsset_ColMapMP(&zoneFileStream);
-        } else if (typeStr == "MP MAP") { // game_map_sp
-            ParseAsset_GameMapSP(&zoneFileStream);
-        } else if (typeStr == "SP MAP") { // game_map_mp
-            ParseAsset_GameMapMP(&zoneFileStream);
-        } else if (typeStr == "LIGHT DEF") { // lightdef
-            ParseAsset_LightDef(&zoneFileStream);
-        } else if (typeStr == "UI MAP") { // ui_map
-            ParseAsset_UIMap(&zoneFileStream);
-        } else if (typeStr == "SND DRIVER GLOBALS") { // snddriverglobals
-            ParseAsset_SNDDriverGlobals(&zoneFileStream);
-        } else if (typeStr == "AI TYPE") { // aitype
-            ParseAsset_AIType(&zoneFileStream);
-        } else if (typeStr == "EFFECT") { // aitype
-            ParseAsset_FX(&zoneFileStream);
-        } else if (typeStr == "ANIMATION") { // aitype
-            ParseAsset_XAnim(&zoneFileStream);
-        } else if (typeStr == "STRING TABLE") { // string_table
-            ParseAsset_StringTable(&zoneFileStream);
-        } else if (typeStr == "MENU") { // string_table
-            ParseAsset_MenuFile(&zoneFileStream);
-        } else if (typeStr == "WEAPON") { // string_table
-            ParseAsset_Weapon(&zoneFileStream);
-        } else if (typeStr == "D3DBSP DUMP") { // string_table
-            ParseAsset_D3DBSP(&zoneFileStream);
-        } else if (typeStr != "UNKNOWN") {
-            qDebug() << "Found bad asset type!" << typeStr;
-        }
-    }
-
-    // Close zone file
-    zoneFile->close();
-
-    // Clean up
-    delete zoneFile;
 }
 
 int MainWindow::LoadFile_D3DBSP(const QString aFilePath) {

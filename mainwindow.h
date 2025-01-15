@@ -2,8 +2,11 @@
 #define MAINWINDOW_H
 
 #include "enums.h"
+#include "rawfile.h"
 #include "structs.h"
 #include "utils.h"
+#include "localize.h"
+#include "zone.h"
 
 #include <QMainWindow>
 #include <QFileDialog>
@@ -12,6 +15,8 @@
 #include <QDebug>
 #include <QTableWidgetItem>
 #include <QTreeWidgetItem>
+#include <QSettings>
+#include <QQueue>
 
 #include <Qt3DCore/QEntity>
 #include <Qt3DRender/QCamera>
@@ -79,50 +84,41 @@ public:
 
 private slots:
     void on_pushButton_FastFile_clicked();
-    void on_pushButton_FastFile_2_clicked();
+    void on_pushButton_ZoneFile_clicked();
 
-    QFile *OpenFastFile();
-    QFile *OpenZoneFile();
-    void ParseFFHeader(QFile *aFastFilePtr);
+    void LogOpenedFile(QString aFileName);
+    void RefreshRecentFileMenu();
+
+    QString GetFastFilePath();
+    QString GetZoneFilePath();
+
+    QByteArray OpenFastFile(QString aFastFilePath);
+    QByteArray OpenZoneFile(QString aZoneFilePath);
+
+    void ParseFFHeader(QByteArray aFastFileData);
     void ParseFFCompany(QDataStream *aFastFileStream);
     void ParseFFFileType(QDataStream *afastFileStream);
     void ParseFFSignage(QDataStream *afastFileStream);
     void ParseFFMagic(QDataStream *afastFileStream);
     void ParseFFVersion(QDataStream *afastFileStream);
 
-    void ParseZoneHeader(QDataStream *aZoneFileStream);
-    void ParseZoneSize(QDataStream *aZoneFileStream);
+    void ParseZoneFile(QByteArray aDecompressedData);
 
-    void ParseZoneUnknownsA(QDataStream *aZoneFileStream);
-    void ParseZoneUnknownsB(QDataStream *aZoneFileStream);
-    void ParseZoneUnknownsC(QDataStream *aZoneFileStream);
-    void ParseZoneTagCount(QDataStream *aZoneFileStream);
-    void ParseZoneRecordCount(QDataStream *aZoneFileStream);
-    void ParseZoneTags(QDataStream *aZoneFileStream);
-    void ParseZoneIndex(QDataStream *aZoneFileStream);
-
-    void ParseAsset_LocalString(QDataStream *aZoneFileStream);
-    void ParseAsset_RawFile(QDataStream *aZoneFileStream);
-    void ParseAsset_PhysPreset(QDataStream *aZoneFileStream);
+    void ParseAsset_XAnim(QDataStream *aZoneFileStream);
     void ParseAsset_XModel(QDataStream *aZoneFileStream);
     void ParseAsset_Material(QDataStream *aZoneFileStream);
-    void ParseAsset_PixelShader(QDataStream *aZoneFileStream);
     void ParseAsset_TechSet(QDataStream *aZoneFileStream);
-    void ParseAsset_Image(QDataStream *aZoneFileStream);
     void ParseAsset_LoadedSound(QDataStream *aZoneFileStream);
     void ParseAsset_ColMapMP(QDataStream *aZoneFileStream);
-    void ParseAsset_GameMapSP(QDataStream *aZoneFileStream);
-    void ParseAsset_GameMapMP(QDataStream *aZoneFileStream);
-    void ParseAsset_LightDef(QDataStream *aZoneFileStream);
-    void ParseAsset_UIMap(QDataStream *aZoneFileStream);
-    void ParseAsset_SNDDriverGlobals(QDataStream *aZoneFileStream);
-    void ParseAsset_AIType(QDataStream *aZoneFileStream);
-    void ParseAsset_FX(QDataStream *aZoneFileStream);
-    void ParseAsset_XAnim(QDataStream *aZoneFileStream);
-    void ParseAsset_StringTable(QDataStream *aZoneFileStream);
-    void ParseAsset_MenuFile(QDataStream *aZoneFileStream);
-    void ParseAsset_Weapon(QDataStream *aZoneFileStream);
+    void ParseAsset_PixelShader(QDataStream *aZoneFileStream);
     void ParseAsset_D3DBSP(QDataStream *aZoneFileStream);
+    void ParseAsset_Font(QDataStream *aZoneFileStream);
+    void ParseAsset_MenuFile(QDataStream *aZoneFileStream);
+    void ParseAsset_Localize(QDataStream *aZoneFileStream);
+    void ParseAsset_Weapon(QDataStream *aZoneFileStream);
+    void ParseAsset_FX(QDataStream *aZoneFileStream);
+    void ParseAsset_RawFile(QDataStream *aZoneFileStream);
+    void ParseAsset_StringTable(QDataStream *aZoneFileStream);
 
     int LoadFile_D3DBSP(const QString aFilePath);
 
@@ -131,18 +127,23 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-    QMap<QString, int> mTypeMap;
+    QMap<ASSET_TYPE, int> mTypeMap;
     QStringList mTypeOrder;
     quint32 mTagCount;
     quint32 mRecordCount;
     QMap<QString, QString> mRawFileMap;
     QMap<QString, QTreeWidgetItem*> mTreeMap;
     QMap<QString, QVector<QPair<QString, QString>>> mStrTableMap;
+    QQueue<QString> mRecentFiles;
+    bool mSettingsValid;
+
+    QVector<QAction*> mRecentFileActions;
 
     quint32 mBSPVersion;
     quint32 mDiskLumpCount;
     QVector<quint32> mDiskLumpOrder;
     QMap<quint32, Lump> mLumps;
 
+    QVector<RawFile> mRawFilesVec;
 };
 #endif // MAINWINDOW_H
