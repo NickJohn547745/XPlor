@@ -21,4 +21,16 @@
         <file>data/d3dbsp/asset_viewer.d3dbsp</file>
         <file>data/d3dbsp/barebones.d3dbsp</file>
     </qresource>
+    <qresource prefix="/images">
+        <file>data/images/XPlor.png</file>
+        <file>data/images/copy.svg</file>
+        <file>data/images/cut.svg</file>
+        <file>data/images/new_file.svg</file>
+        <file>data/images/open_file.svg</file>
+        <file>data/images/open_folder.svg</file>
+        <file>data/images/paste.svg</file>
+        <file>data/images/refresh.svg</file>
+        <file>data/images/save.svg</file>
+        <file>data/images/multiple.png</file>
+    </qresource>
 </RCC>

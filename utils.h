@@ -5,6 +5,8 @@
 
 #include <QString>
 #include <QtZlib/zlib.h>
+#include <QFileDialog>
+#include <QMessageBox>
 
 class Utils {
 public:
@@ -163,6 +165,69 @@ public:
 
     static quint32 PaddingSize(quint32 size) {
         return PadInt4(size) - size;
+    }
+
+    static QString GetOpenFastFileName(QWidget *parent = nullptr) {
+        // Open file dialog to steam apps
+        const QString steamPath = "C:/Program Files (x86)/Steam/steamapps/common/Call of Duty World at War/zone/english/";
+        const QString fastFilePath = QFileDialog::getOpenFileName(parent, "Open Fast File", steamPath, "Fast File (*.ff);;All Files (*.*)");
+        if (fastFilePath.isNull()) {
+            // User pressed cancel
+            return "";
+        } else if (!QFile::exists(fastFilePath)) {
+            QMessageBox::warning(parent, "Warning!", QString("%1 does not exist!.").arg(fastFilePath));
+            return "";
+        }
+        return fastFilePath;
+    }
+
+    static QString GetOpenZoneFileName(QWidget *parent = nullptr) {
+        // Open file dialog to steam apps
+        const QString steamPath = "C:/Program Files (x86)/Steam/steamapps/common/Call of Duty World at War/zone/english/";
+        const QString zoneFilePath = QFileDialog::getOpenFileName(parent, "Open Zone File", steamPath, "Zone File (*.zone);;All Files (*.*)");
+        if (zoneFilePath.isNull()) {
+            // User pressed cancel
+            return "";
+        } else if (!QFile::exists(zoneFilePath)) {
+            QMessageBox::warning(parent, "Warning!", QString("%1 does not exist!.").arg(zoneFilePath));
+            return nullptr;
+        }
+        return zoneFilePath;
+    }
+
+    static QString CompanyEnumToStr(FF_COMPANY aCompany) {
+        switch (aCompany) {
+        case COMPANY_NONE:
+            return "None";
+        case COMPANY_INFINITY_WARD:
+            return "Infinity Ward";
+        case COMPANY_TREYARCH:
+            return "Treyarch";
+        case COMPANY_SLEDGEHAMMER:
+            return "Sledgehammer";
+        case COMPANY_NEVERSOFT:
+            return "Neversoft";
+        }
+    }
+
+    static QString FileTypeEnumToStr(FF_FILETYPE aFileType) {
+        switch (aFileType) {
+        case FILETYPE_NONE:
+            return "None";
+        case FILETYPE_FAST_FILE:
+            return "Fast File";
+        }
+    }
+
+    static QString SignageEnumToStr(FF_SIGNAGE aSignage) {
+        switch (aSignage) {
+        case SIGNAGE_NONE:
+            return "None";
+        case SIGNAGE_SIGNED:
+            return "Signed";
+        case SIGNAGE_UNSIGNED:
+            return "Unsigned";
+        }
     }
 };
 
