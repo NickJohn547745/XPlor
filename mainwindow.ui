@@ -25,7 +25,21 @@
 }</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QHBoxLayout" name="horizontalLayout"/>
+   <layout class="QGridLayout" name="gridLayout">
+    <item row="0" column="0">
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="currentIndex">
+       <number>-1</number>
+      </property>
+      <property name="tabsClosable">
+       <bool>true</bool>
+      </property>
+      <property name="movable">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+   </layout>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
@@ -55,16 +69,8 @@
      <property name="icon">
       <iconset theme="QIcon::ThemeIcon::FolderNew"/>
      </property>
-     <addaction name="actionFile"/>
-     <addaction name="actionFolder"/>
-     <addaction name="actionNew_File"/>
-     <addaction name="actionNew_Fast_File_2"/>
-     <addaction name="actionNew_Zone_File_2"/>
-     <addaction name="actionFrom_Clipboard"/>
-     <addaction name="actionMaterial"/>
-     <addaction name="actionSound"/>
     </widget>
-    <addaction name="actionNew"/>
+    <addaction name="actionNew_File_2"/>
     <addaction name="actionNew_Fast_File"/>
     <addaction name="actionNew_Zone_File"/>
     <addaction name="separator"/>
@@ -103,7 +109,7 @@
     <addaction name="separator"/>
     <addaction name="actionFind_2"/>
     <addaction name="actionEdit_Value"/>
-    <addaction name="actionEdit_as_SNBT"/>
+    <addaction name="actionEdit_as_Hex"/>
     <addaction name="separator"/>
     <addaction name="menuUndo_History"/>
     <addaction name="menuRedo_History"/>
@@ -132,7 +138,7 @@
    </attribute>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
-  <action name="actionNew">
+  <action name="actionNew_File_2">
    <property name="icon">
     <iconset theme="QIcon::ThemeIcon::DocumentNew"/>
    </property>
@@ -294,7 +300,7 @@
     <string>Edit Value</string>
    </property>
   </action>
-  <action name="actionEdit_as_SNBT">
+  <action name="actionEdit_as_Hex">
    <property name="text">
     <string>Edit as Hex</string>
    </property>

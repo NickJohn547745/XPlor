@@ -1,25 +1,254 @@
 #include "mainwindow.h"
+#include "aboutdialog.h"
+#include "fastfile.h"
 #include "qheaderview.h"
+#include "techsetviewer.h"
 #include "ui_mainwindow.h"
+#include "compressor.h"
+#include "dds_structs.h"
+#include "iwifile.h"
+#include "ddsfile.h"
+
+#include <qmath.h>
+
+#include "DevILSDK/include/IL/il.h"
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
-    , ui(new Ui::MainWindow) {
+    : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
+
+    setAcceptDrops(true);
 
     mTypeMap = QMap<QString, int>();
     mTypeOrder = QStringList();
     mRawFileMap = QMap<QString, QString>();
-    mTreeMap = QMap<QString, QTreeWidgetItem*>();
+    mImageMap = QMap<QString, Image>();
+    mTreeMap = QMap<QString, QTreeWidgetItem *>();
     mStrTableMap = QMap<QString, QVector<QPair<QString, QString>>>();
     mBSPVersion = 0;
     mDiskLumpCount = 0;
     mDiskLumpOrder = QVector<quint32>();
     mLumps = QMap<quint32, Lump>();
-    mTreeWidget = new QTreeWidget();
-    mRootItem = mTreeWidget->invisibleRootItem();
-    mScriptEditor = new QPlainTextEdit();
-    mModelViewer = new ModelViewer();
+    mTreeWidget = new XTreeWidget(this);
+
+    //ModelViewer *mModelViewer = new ModelViewer(container);
+    //mModelViewer->setAcceptDrops(false);
+
+    ui->tabWidget->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(ui->tabWidget, &QTabWidget::customContextMenuRequested, this, [this](const QPoint &pos) {
+        if (pos.isNull())
+            return;
+
+        int tabIndex = ui->tabWidget->tabBar()->tabAt(pos);
+        QMenu *contextMenu = new QMenu(this);
+
+        QAction *closeAction = new QAction("Close");
+        contextMenu->addAction(closeAction);
+        connect(closeAction, &QAction::triggered, this, [this, &tabIndex](bool checked) {
+            Q_UNUSED(checked);
+
+            ui->tabWidget->removeTab(tabIndex);
+        });
+
+        QMenu *closeMultipleAction = new QMenu("Close Multiple Tabs");
+
+        QAction *closeAllAction = new QAction("Close All");
+        closeMultipleAction->addAction(closeAllAction);
+        connect(closeAllAction, &QAction::triggered, this, [this](bool checked) {
+            Q_UNUSED(checked);
+
+            ui->tabWidget->clear();
+        });
+
+        QAction *closeAllButAction = new QAction("Close All BUT This");
+        closeMultipleAction->addAction(closeAllButAction);
+        connect(closeAllButAction, &QAction::triggered, this, [this, &tabIndex](bool checked) {
+            Q_UNUSED(checked);
+
+            for (int i = 0; i < ui->tabWidget->count(); i++) {
+                if (i != tabIndex) {
+                    ui->tabWidget->removeTab(i);
+                }
+            }
+        });
+
+        QAction *closeLeftAction = new QAction("Close All to the Left");
+        closeMultipleAction->addAction(closeLeftAction);
+        connect(closeLeftAction, &QAction::triggered, this, [this, &tabIndex](bool checked) {
+            Q_UNUSED(checked);
+
+            for (int i = 0; i < tabIndex; i++) {
+                ui->tabWidget->removeTab(i);
+            }
+        });
+
+        QAction *closeRightAction = new QAction("Close All to the Right");
+        closeMultipleAction->addAction(closeRightAction);
+        connect(closeRightAction, &QAction::triggered, this, [this, &tabIndex](bool checked) {
+            Q_UNUSED(checked);
+
+            for (int i = tabIndex + 1; i < ui->tabWidget->count(); i++) {
+                ui->tabWidget->removeTab(i);
+            }
+        });
+
+        contextMenu->addMenu(closeMultipleAction);
+
+        QPoint pt(pos);
+        contextMenu->exec(ui->tabWidget->mapToGlobal(pt));
+
+        delete contextMenu;
+    });
+
+    connect(ui->tabWidget, &QTabWidget::tabCloseRequested, this, [this](int index) {
+        ui->tabWidget->removeTab(index);
+    });
+
+    connect(mTreeWidget, &XTreeWidget::RawFileSelected, this, [this](std::shared_ptr<RawFile> rawFile) {
+        QPlainTextEdit *scriptEditor = new QPlainTextEdit(this);
+        scriptEditor->setAcceptDrops(false);
+
+        if (rawFile->contents.isEmpty()) {
+            scriptEditor->setPlainText("EMPTY");
+        } else {
+            scriptEditor->setPlainText(rawFile->contents);
+        }
+
+        QString fileStem = rawFile->path.split('/').last();
+        for (int i = 0; i < ui->tabWidget->count(); i++) {
+            if (ui->tabWidget->tabText(i) == fileStem) {
+                return;
+            }
+        }
+
+        ui->tabWidget->addTab(scriptEditor, fileStem);
+        ui->tabWidget->setTabIcon(ui->tabWidget->count() - 1, QIcon(":/icons/icons/Icon_GSCFile.png"));
+        ui->tabWidget->setCurrentIndex(ui->tabWidget->count() - 1);
+    });
+
+    connect(mTreeWidget, &XTreeWidget::ImageSelected, this, [this](std::shared_ptr<Image> image) {
+        ImageWidget *mImageWidget = new ImageWidget(this);
+        mImageWidget->setAcceptDrops(false);
+        mImageWidget->SetImage(image);
+
+        QString fileStem = image->materialName;
+        for (int i = 0; i < ui->tabWidget->count(); i++) {
+            if (ui->tabWidget->tabText(i) == fileStem) {
+                return;
+            }
+        }
+
+        ui->tabWidget->addTab(mImageWidget, fileStem);
+        ui->tabWidget->setTabIcon(ui->tabWidget->count() - 1, QIcon(":/icons/icons/Icon_Image.png"));
+        ui->tabWidget->setCurrentIndex(ui->tabWidget->count() - 1);
+    });
+
+    connect(mTreeWidget, &XTreeWidget::MenuSelected, this, [this](std::shared_ptr<Menu> menu) {
+        Q_UNUSED(menu);
+    });
+
+    connect(mTreeWidget, &XTreeWidget::DDSFileSelected, this, [this](std::shared_ptr<DDSFile> ddsFile) {
+        DDSViewer *ddsViewer = new DDSViewer(this);
+        ddsViewer->setAcceptDrops(false);
+        ddsViewer->SetDDSFile(ddsFile);
+
+        QString fileStem = ddsFile->fileStem + ".dds";
+        for (int i = 0; i < ui->tabWidget->count(); i++) {
+            if (ui->tabWidget->tabText(i) == fileStem) {
+                return;
+            }
+        }
+
+        ui->tabWidget->addTab(ddsViewer, fileStem);
+        ui->tabWidget->setTabIcon(ui->tabWidget->count() - 1, QIcon(":/icons/icons/Icon_DDSFile.png"));
+        ui->tabWidget->setCurrentIndex(ui->tabWidget->count() - 1);
+    });
+
+    connect(mTreeWidget, &XTreeWidget::IWIFileSelected, this, [this](std::shared_ptr<IWIFile> iwiFile) {
+        IWIViewer *iwiViewer = new IWIViewer(this);
+        iwiViewer->setAcceptDrops(false);
+        iwiViewer->SetIWIFile(iwiFile);
+
+        QString fileStem = iwiFile->fileStem + ".iwi";
+        for (int i = 0; i < ui->tabWidget->count(); i++) {
+            if (ui->tabWidget->tabText(i) == fileStem) {
+                return;
+            }
+        }
+
+        ui->tabWidget->addTab(iwiViewer, fileStem);
+        ui->tabWidget->setTabIcon(ui->tabWidget->count() - 1, QIcon(":/icons/icons/Icon_IWIFile.png"));
+        ui->tabWidget->setCurrentIndex(ui->tabWidget->count() - 1);
+    });
+
+    connect(mTreeWidget, &XTreeWidget::FastFileSelected, this, [this](std::shared_ptr<FastFile> aFastFile) {
+        FastFileViewer *fastFileViewer = new FastFileViewer(this);
+        fastFileViewer->setAcceptDrops(false);
+        fastFileViewer->SetFastFile(aFastFile);
+
+        QString fileStem = aFastFile->GetFileStem();
+        for (int i = 0; i < ui->tabWidget->count(); i++) {
+            if (ui->tabWidget->tabText(i) == fileStem) {
+                return;
+            }
+        }
+
+        ui->tabWidget->addTab(fastFileViewer, fileStem);
+        ui->tabWidget->setTabIcon(ui->tabWidget->count() - 1, QIcon(":/icons/icons/Icon_FastFile.png"));
+        ui->tabWidget->setCurrentIndex(ui->tabWidget->count() - 1);
+    });
+
+    connect(mTreeWidget, &XTreeWidget::ZoneFileSelected, this, [this](std::shared_ptr<ZoneFile> aZoneFile) {
+        ZoneFileViewer *zoneFileViewer = new ZoneFileViewer(this);
+        zoneFileViewer->setAcceptDrops(false);
+        zoneFileViewer->SetZoneFile(aZoneFile);
+
+        QString fileStem = aZoneFile->GetFileStem();
+        for (int i = 0; i < ui->tabWidget->count(); i++) {
+            if (ui->tabWidget->tabText(i) == fileStem) {
+                return;
+            }
+        }
+
+        ui->tabWidget->addTab(zoneFileViewer, fileStem);
+        ui->tabWidget->setTabIcon(ui->tabWidget->count() - 1, QIcon(":/icons/icons/Icon_ZoneFile.png"));
+        ui->tabWidget->setCurrentIndex(ui->tabWidget->count() - 1);
+    });
+
+    connect(mTreeWidget, &XTreeWidget::LocalStringSelected, this, [this](std::shared_ptr<ZoneFile> aZoneFile) {
+        LocalStringViewer *localStrViewer = new LocalStringViewer(this);
+        localStrViewer->setAcceptDrops(false);
+        localStrViewer->SetZoneFile(aZoneFile);
+
+        QString fileStem = aZoneFile->GetFileStem() + ".str";
+        for (int i = 0; i < ui->tabWidget->count(); i++) {
+            if (ui->tabWidget->tabText(i) == fileStem) {
+                return;
+            }
+        }
+
+        ui->tabWidget->addTab(localStrViewer, fileStem);
+        ui->tabWidget->setTabIcon(ui->tabWidget->count() - 1, QIcon(":/icons/icons/Icon_String.png"));
+        ui->tabWidget->setCurrentIndex(ui->tabWidget->count() - 1);
+    });
+
+    connect(mTreeWidget, &XTreeWidget::TechSetSelected, this, [this](std::shared_ptr<TechSet> aTechSet) {
+
+        TechSetViewer *techSetViewer = new TechSetViewer(this);
+        techSetViewer->setAcceptDrops(false);
+        techSetViewer->SetTechSet(aTechSet);
+
+        QString fileStem = aTechSet->name;
+        for (int i = 0; i < ui->tabWidget->count(); i++) {
+            if (ui->tabWidget->tabText(i) == fileStem) {
+                return;
+            }
+        }
+
+        ui->tabWidget->addTab(techSetViewer, aTechSet->name);
+        ui->tabWidget->setTabIcon(ui->tabWidget->count() - 1, QIcon(":/icons/icons/Icon_TechSetFile.png"));
+        ui->tabWidget->setCurrentIndex(ui->tabWidget->count() - 1);
+    });
 
     // Connect Help > About dialog
     connect(ui->actionAbout, &QAction::triggered, this, [this](bool checked) {
@@ -31,35 +260,46 @@ MainWindow::MainWindow(QWidget *parent)
         delete aboutDialog;
     });
 
-    connect(ui->actionOpen_Fast_File, &QAction::triggered, this, [this](bool checked) {
-        Q_UNUSED(checked);
-        OpenFastFile();
-    });
-    connect(ui->actionOpen_Zone_File, &QAction::triggered, this, [this](bool checked) {
-        Q_UNUSED(checked);
-        OpenZoneFile();
-    });
-
+    connect(ui->actionOpen_Fast_File, &QAction::triggered, this,
+            [this](bool checked) {
+                Q_UNUSED(checked);
+                OpenFastFile();
+            });
+    connect(ui->actionOpen_Zone_File, &QAction::triggered, this,
+            [this](bool checked) {
+                Q_UNUSED(checked);
+                OpenZoneFile();
+            });
 
     QDockWidget *treeDockWidget = new QDockWidget(this);
-    mTreeWidget->header()->hide();
     treeDockWidget->setWidget(mTreeWidget);
     addDockWidget(Qt::LeftDockWidgetArea, treeDockWidget);
 
-    setCentralWidget(mScriptEditor);
+    ui->toolBar->addAction(ui->actionNew_Fast_File);
+    ui->toolBar->addAction(ui->actionNew_Zone_File);
+    ui->toolBar->addAction(ui->actionOpen_Fast_File);
+    ui->toolBar->addAction(ui->actionOpen_Zone_File);
+    ui->toolBar->addAction(ui->actionOpen_Folder);
+    ui->toolBar->addAction(ui->actionSave);
+    ui->toolBar->addSeparator();
+    ui->toolBar->addAction(ui->actionCut);
+    ui->toolBar->addAction(ui->actionCopy);
+    ui->toolBar->addAction(ui->actionPaste);
+    ui->toolBar->addSeparator();
 
-    LoadFile_D3DBSP(":/d3dbsp/data/d3dbsp/barebones.d3dbsp");
+    ui->toolBar->addSeparator();
+
+    ui->toolBar->addSeparator();
+    ui->toolBar->addAction(ui->actionFind_2);
 
     Reset();
 }
 
-MainWindow::~MainWindow() {
-    delete ui;
-}
+MainWindow::~MainWindow() { delete ui; }
 
 void MainWindow::Reset() {
     // Clear data tree
-    mTreeWidget->clear();
+    // mTreeWidget->clear();
 
     // Reset class vars
     mTypeMap.clear();
@@ -78,66 +318,15 @@ void MainWindow::Reset() {
     and opens the selected file.
 */
 bool MainWindow::OpenFastFile(const QString aFastFilePath) {
-    if (aFastFilePath.isEmpty()) { return false; }
-
-    // Reset dialog before opening new file
-    Reset();
-
-    // Add fast file as tree widget root
-    const QString fastFileStem = aFastFilePath.split('/').last();
-    QTreeWidgetItem *fastFileItem = new QTreeWidgetItem(mRootItem);
-    fastFileItem->setText(0, fastFileStem);
-    mRootItem = fastFileItem;
-
-    // Check fastfile can be read
-    QFile *fastFileObj = new QFile(aFastFilePath);
-    if (!fastFileObj->open(QIODevice::ReadOnly)) {
-        QMessageBox::warning(this, "Warning!", QString("Failed to open FastFile: %1!")
-                                                   .arg(aFastFilePath));
+    FastFile fastFile;
+    if (!fastFile.Load(aFastFilePath)) {
+        qDebug() << "Error: Failed to load fast file!";
         return false;
     }
-
-    // Decompress fastfile and close
-    const QByteArray fastFileData = fastFileObj->readAll();
-    const QByteArray decompressedData = Compressor::DecompressZLIB(fastFileData);
-
-    // Open zone file as little endian stream
-    QDataStream fastFileStream(fastFileData);
-    fastFileStream.setByteOrder(QDataStream::LittleEndian);
-
-    // Parse data from fast file header
-    FastFile fastFile = FastFileParser::ParseFFHeader(&fastFileStream);
-
-    QTreeWidgetItem *metaDataItem = new QTreeWidgetItem(mRootItem);
-    metaDataItem->setText(0, "Metadata");
-
-    QTreeWidgetItem *companyItem = new QTreeWidgetItem(metaDataItem);
-    companyItem->setText(0, "Company: " + Utils::CompanyEnumToStr(fastFile.company));
-    QTreeWidgetItem *fileTypeItem = new QTreeWidgetItem(metaDataItem);
-    fileTypeItem->setText(0, "File Type: " + Utils::FileTypeEnumToStr(fastFile.fileType));
-    QTreeWidgetItem *signageItem = new QTreeWidgetItem(metaDataItem);
-    signageItem->setText(0, "Signage: " + Utils::SignageEnumToStr(fastFile.signage));
-    QTreeWidgetItem *magicItem = new QTreeWidgetItem(metaDataItem);
-    magicItem->setText(0, "Magic: " + fastFile.magic);
-    QTreeWidgetItem *versionItem = new QTreeWidgetItem(metaDataItem);
-    versionItem->setText(0, "Version: " + QString::number(fastFile.version));
-
-    const QString zoneFilePath = fastFileObj->fileName().replace(".ff", ".zone");
-    fastFileObj->close();
-
-    // Check zone file is writeable
-    QFile *zoneFile = new QFile(zoneFilePath);
-    if (!zoneFile->open(QIODevice::ReadWrite)) {
-        qDebug() << QString("Zone file could not be written to: '%1'").arg(zoneFilePath);
-        return false;
-    }
-
-    // Write zone data
-    zoneFile->write(decompressedData);
-    zoneFile->close();
+    mTreeWidget->AddFastFile(std::make_shared<FastFile>(fastFile));
 
     // Open zone file after decompressing ff and writing
-    return OpenZoneFile(zoneFilePath);
+    return false;
 }
 
 /*
@@ -161,133 +350,15 @@ bool MainWindow::OpenFastFile() {
     Opens a file dialog in the steam folder,
     and opens the selected file.
 */
-bool MainWindow::OpenZoneFile(const QString aZoneFilePath) {
-    if (aZoneFilePath.isEmpty()) { return false; }
+bool MainWindow::OpenZoneFile(const QString aZoneFilePath, bool fromFF) {
+    Q_UNUSED(fromFF);
 
-    // Reset dialog before opening new file
-    //Reset();
-
-    //ui->lineEdit_ZoneFile->setText(zoneFilePath);
-
-    const QString zoneFileStem = aZoneFilePath.split('/').last();
-    QTreeWidgetItem *zoneItem = new QTreeWidgetItem(mRootItem);
-    zoneItem->setText(0, zoneFileStem);
-    mRootItem = zoneItem;
-
-    //setWindowTitle(QString("FastFile Wizard - %1").arg(zoneFileStem));
-
-    // Check zone file can be read
-    QFile *zoneFileObj = new QFile(aZoneFilePath);
-    if (!zoneFileObj->open(QIODevice::ReadOnly)) {
-        QMessageBox::warning(this, "Warning!", QString("%1 could not be read!.").arg(aZoneFilePath));
+    ZoneFile zoneFile;
+    if (!zoneFile.Load(aZoneFilePath)) {
+        qDebug() << "Error: Failed to load zone file!";
         return false;
     }
-    const QByteArray decompressedData = zoneFileObj->readAll();
-
-    // Open zone file as little endian stream
-    QDataStream zoneFileStream(decompressedData);
-    zoneFileStream.setByteOrder(QDataStream::LittleEndian);
-
-    // Parse data from zone file header
-    ZoneFile zoneFile = ZoneFileParser::ParseZoneHeader(&zoneFileStream);
-
-    if (zoneFile.tagCount) {
-        QTreeWidgetItem *tagsItem = new QTreeWidgetItem(mRootItem);
-        tagsItem->setText(0, QString("Tags [%1]")
-                                 .arg(zoneFile.tags.length()));
-        foreach (const QString tag, zoneFile.tags) {
-            QTreeWidgetItem *tagItem = new QTreeWidgetItem(tagsItem);
-            tagItem->setText(0, tag);
-        }
-    }
-
-    QTreeWidgetItem *indexRecordsItem = new QTreeWidgetItem(mRootItem);
-    QTreeWidgetItem *assetsItem = new QTreeWidgetItem(mRootItem);
-
-    mRootItem = indexRecordsItem;
-
-    int consecutiveCount = 1;
-    QString lastRecord = "";
-    zoneFile.records = ZoneFileParser::ParseZoneIndex(&zoneFileStream, zoneFile.recordCount);
-    indexRecordsItem->setText(0, QString("Index Records [%1]")
-                                     .arg(zoneFile.records.length()));
-
-    foreach (const QString record, zoneFile.records) {
-        if (lastRecord.isEmpty()) {
-            lastRecord = record;
-            continue;
-        } else if (lastRecord == record) {
-            consecutiveCount++;
-            continue;
-        }
-        QTreeWidgetItem *recordItem = new QTreeWidgetItem(mRootItem);
-        recordItem->setText(0, QString("%1 [%2]")
-                                   .arg(Utils::AssetTypeToString(lastRecord))
-                                   .arg(consecutiveCount));
-        lastRecord = record;
-        consecutiveCount = 1;
-    }
-
-    mRootItem = assetsItem;
-
-    // Parse current and consecutive assets
-    AssetMap assetMap = ZoneFileParser::ParseAssets(&zoneFileStream, zoneFile.records);
-    assetsItem->setText(0, QString("Assets"));
-
-    if (!assetMap.rawFiles.isEmpty()) {
-        QTreeWidgetItem *rawFilesItem = new QTreeWidgetItem(mRootItem);
-        foreach (const RawFile rawFile, assetMap.rawFiles) {
-            QTreeWidgetItem *rawFileItem = new QTreeWidgetItem(rawFilesItem);
-            rawFileItem->setText(0, rawFile.path);
-        }
-        rawFilesItem->setText(0, QString("Raw Files [%1]")
-                                     .arg(assetMap.rawFiles.length()));
-    }
-
-    if (!assetMap.localStrings.isEmpty()) {
-        QTreeWidgetItem *localStrsItem = new QTreeWidgetItem(mRootItem);
-        foreach (const LocalString localString, assetMap.localStrings) {
-            QTreeWidgetItem *localStrItem = new QTreeWidgetItem(localStrsItem);
-            localStrItem->setText(0, localString.string);
-        }
-        localStrsItem->setText(0, QString("Local Strings [%1]")
-                                     .arg(assetMap.localStrings.length()));
-    }
-
-    if (!assetMap.stringTables.isEmpty()) {
-        QTreeWidgetItem *strTablesItem = new QTreeWidgetItem(mRootItem);
-        foreach (const StringTable stringTable, assetMap.stringTables) {
-            QTreeWidgetItem *strTableItem = new QTreeWidgetItem(strTablesItem);
-            strTableItem->setText(0, stringTable.name);
-        }
-        strTablesItem->setText(0, QString("String Tables [%1]")
-                                      .arg(assetMap.stringTables.length()));
-    }
-
-    if (!assetMap.techSets.isEmpty()) {
-        QTreeWidgetItem *techSetsItem = new QTreeWidgetItem(mRootItem);
-        foreach (const TechSet techSet, assetMap.techSets) {
-            QTreeWidgetItem *techSetItem = new QTreeWidgetItem(techSetsItem);
-            techSetItem->setText(0, techSet.name);
-        }
-        techSetsItem->setText(0, QString("Tech Sets [%1]")
-                                      .arg(assetMap.techSets.length()));
-    }
-
-    if (!assetMap.animations.isEmpty()) {
-        QTreeWidgetItem *animationsItem = new QTreeWidgetItem(mRootItem);
-        animationsItem->setText(0, "Animations");
-        foreach (const Animation animation, assetMap.animations) {
-            QTreeWidgetItem *animationItem = new QTreeWidgetItem(animationsItem);
-            animationItem->setText(0, animation.name);
-        }
-        animationsItem->setText(0, QString("Animations [%1]")
-                                     .arg(assetMap.animations.length()));
-    }
-
-    // Clean up zone file
-    zoneFileObj->close();
-    delete zoneFileObj;
+    mTreeWidget->AddZoneFile(std::make_shared<ZoneFile>(zoneFile));
 
     return true;
 }
@@ -298,7 +369,6 @@ bool MainWindow::OpenZoneFile() {
         qDebug() << "Failed to open Zone file!";
         return false;
     }
-    mRootItem = mTreeWidget->invisibleRootItem();
     return true;
 }
 
@@ -328,7 +398,8 @@ int MainWindow::LoadFile_D3DBSP(const QString aFilePath) {
     mDiskLumpOrder.resize(mDiskLumpCount);
 
     // Read Lump Index Entries
-    quint32 lumpOffset = sizeof(quint32) * 3 + sizeof(LumpIndexEntry) * mDiskLumpCount;
+    quint32 lumpOffset =
+        sizeof(quint32) * 3 + sizeof(LumpIndexEntry) * mDiskLumpCount;
 
     for (quint32 i = 0; i < mDiskLumpCount; i++) {
         LumpIndexEntry indexEntry;
@@ -341,7 +412,9 @@ int MainWindow::LoadFile_D3DBSP(const QString aFilePath) {
         lump.content.resize(indexEntry.length);
         lump.isEmpty = false;
 
-        qDebug() << "Lump Type:" << Utils::LumpTypeToString((LUMP_TYPE)indexEntry.type) << "Lump Size:" << indexEntry.length;
+        qDebug() << "Lump Type:"
+                 << Utils::LumpTypeToString((LUMP_TYPE)indexEntry.type)
+                 << "Lump Size:" << indexEntry.length;
 
         // Handle offsets and padding
         qint64 currentPos = file.pos();
@@ -355,3 +428,292 @@ int MainWindow::LoadFile_D3DBSP(const QString aFilePath) {
     return 0; // Success
 }
 
+struct Command {
+    quint32 size = 0;
+    bool compressed = false;
+};
+quint32 DXT1 = 0x31545844;  // 'DXT1'
+quint32 DXT3 = 0x33545844;  // 'DXT3'
+quint32 DXT5 = 0x35545844;  // 'DXT5'
+
+int MainWindow::LoadFile_IWI(const QString aFilePath) {
+    mTreeWidget->AddIWIFile(std::make_shared<IWIFile>(aFilePath));
+
+    return 0;
+}
+
+int MainWindow::LoadFile_DDSFiles(const QStringList aFilePaths) {
+    for (const QString &filePath : aFilePaths) {
+        if (!filePath.endsWith(".dds", Qt::CaseInsensitive)) {
+            qDebug() << "Error: Invalid filename " << filePath;
+            return -1;
+        }
+        mTreeWidget->AddDDSFile(std::make_shared<DDSFile>(filePath));
+    }
+    return 0;
+}
+
+int MainWindow::LoadFile_DDS(const QString aFilePath) {
+    if (!aFilePath.endsWith(".dds", Qt::CaseInsensitive)) {
+        qDebug() << "Error: Invalid filename " << aFilePath;
+        return -1;
+    }
+    mTreeWidget->AddDDSFile(std::make_shared<DDSFile>(aFilePath));
+    return 0;
+}
+
+int MainWindow::LoadFile_XSUB(const QString aFilePath) {
+    QFile file(aFilePath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        qDebug() << "Error: Unable to open file" << aFilePath;
+        return 1; // ERR_FILE_NOT_FOUND
+    }
+
+    QDataStream stream(&file);
+    stream.setByteOrder(QDataStream::LittleEndian);
+
+    QByteArray magic(4, Qt::Uninitialized);
+    stream.readRawData(magic.data(), 4);
+    if (magic != "KAPI") {
+        qDebug() << "Wrong magic, invalid XSUB file!";
+        return -1;
+    }
+    qDebug() << "Magic: " << magic;
+
+    stream.skipRawData(5 * 4);
+
+    quint32 fileSize;
+    stream >> fileSize;
+    qDebug() << "File Size: " << fileSize;
+
+    return 0; // Success
+}
+
+int MainWindow::LoadFile_IPAK(const QString aFilePath) {
+    QFile file(aFilePath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        qDebug() << "Error: Unable to open file" << aFilePath;
+        return 1; // ERR_FILE_NOT_FOUND
+    }
+
+    QDataStream stream(&file);
+    stream.setByteOrder(QDataStream::BigEndian);
+
+    IPAKHeader header;
+    stream >> header;
+
+    if (header.version == "50000") {
+        if (header.magic == "KAPI") {
+            stream.setByteOrder(QDataStream::LittleEndian);
+        } else if (header.magic == "IPAK") {
+            stream.setByteOrder(QDataStream::BigEndian);
+        } else {
+            qDebug() << "Invalid IPAK file!";
+            return -1;
+        }
+    } else {
+        qDebug() << "Invalid IPAK file version!";
+        return -1;
+    }
+
+    qDebug() << "IPAK File " << "\n"
+             << "- Platform: " << header.platform << "\n"
+             << "- Magic: " << header.magic << "\n"
+             << "- Size: " << header.size << "\n"
+             << "- Version: " << header.version << "\n"
+             << "- Sections: " << header.sectionCount;
+
+    QDir outputFolder = QDir(QDir::currentPath() + "/output");
+    outputFolder.remove(QDir::currentPath() + "/output");
+    outputFolder.mkdir(QDir::currentPath() + "/output");
+
+    QVector<IPAKDataChunkMetaData> metas = QVector<IPAKDataChunkMetaData>();
+
+    QVector<IPAKIndexEntry> entries = QVector<IPAKIndexEntry>();
+    QVector<IPAKSection> sections = QVector<IPAKSection>(header.sectionCount);
+    for (uint i = 0; i < header.sectionCount; i++) {
+        IPAKSection currentSection;
+        stream >> currentSection;
+        sections << currentSection;
+
+        qDebug() << "   - IPAK Section " << i + 1 << "\n"
+                 << "    - Type: " << currentSection.type << " -> " << currentSection.typeInt << "\n"
+                 << "    - Offset: " << currentSection.offset << "\n"
+                 << "    - Item (IWI) Count: " << currentSection.itemCount << "\n"
+                 << "    - Size: " << currentSection.size;
+
+        qint64 sectionPos = stream.device()->pos();
+        stream.device()->seek(currentSection.offset);
+
+        QString sectionType = currentSection.type;
+        if (sectionType == "Data") {
+            IPAKDataChunkHeader chunkHeader;
+            stream >> chunkHeader;
+            qDebug() << "     - Chunk Header\n"
+                     << "      - Count: " << chunkHeader.count << "\n"
+                     << "      - Offset: " << chunkHeader.offset;
+
+            for (uint j = 0; j < 31; j++) {
+                IPAKDataChunkCommand command;
+                stream >> command;
+                if (!command.size) { continue; }
+                chunkHeader.commands << command;
+                qDebug() << "         - Command\n"
+                         << "          - Size: " << command.size << "\n"
+                         << "          - Compressed: " << command.compressed;
+
+            }
+            for (uint j = 0; j < chunkHeader.count; j++) {
+                auto command = chunkHeader.commands[j];
+
+                qDebug() << "Reading from " << stream.device()->pos();
+                QByteArray data = stream.device()->read(command.size);
+                qDebug() << " to " << stream.device()->pos();
+
+                QString outputFilePath = outputFolder.filePath(QString("%1.iwi").arg(j));
+                if (command.compressed) {
+                    data = Compressor::DecompressLZO(data);
+                }
+                QFile outputFile(outputFilePath);
+                if (!outputFile.open(QIODevice::WriteOnly)) {
+                    qDebug() << "Failed to extract IPAK file.";
+                }
+                qDebug() << "           - File Name: " << outputFile.fileName();
+                outputFile.write(data);
+                outputFile.close();
+            }
+
+
+            qDebug() << stream.device()->pos();
+            stream.skipRawData(sizeof(quint32) * (31 - chunkHeader.count));
+            qDebug() << stream.device()->pos();
+        } else if (sectionType == "Index") {
+            for (uint j = 0; j < currentSection.itemCount; j++) {
+                IPAKIndexEntry entry;
+                stream >> entry;
+
+                if (entry.size == 0) { continue; }
+
+                entries << entry;
+
+                quint64 entryPos = stream.device()->pos();
+                qDebug() << "     - Index Entry " << j + 1 << "\n"
+                         << "      - Name Hash: " << entry.nameHash << "\n"
+                         << "      - Data Hash: " << entry.dataHash << "\n"
+                         << "      - Offset: " << entry.offset << "\n"
+                         << "      - Size: " << entry.size;
+
+                stream.device()->seek(entry.offset);
+
+                QByteArray sectionData(entry.size, Qt::Uninitialized);
+                stream.readRawData(sectionData.data(), entry.size);
+
+                const QString entryKey = QString::number(entry.nameHash);
+                QFile outputFile(outputFolder.filePath(QString("%1.dds").arg(entryKey)));
+                if (!outputFile.open(QIODevice::WriteOnly)) {
+                    qDebug() << "Failed to extract IPAK file.";
+                }
+                qDebug() << "      - File Name: " << outputFile.fileName();
+                outputFile.write(sectionData);
+                outputFile.close();
+
+                stream.device()->seek(entryPos);
+            }
+        }
+        stream.device()->seek(sectionPos);
+        qDebug() << stream.device()->pos();
+    }
+
+    return 0; // Success
+}
+
+void MainWindow::dragEnterEvent(QDragEnterEvent *event) {
+    const QMimeData *mimeData = event->mimeData();
+    bool goodDrag = true;
+    if (mimeData->hasUrls()) {
+        foreach (const QUrl url, mimeData->urls()) {
+            if (!url.toString().contains(".ff") &&
+                !url.toString().contains(".zone") &&
+                !url.toString().contains(".ipak") &&
+                !url.toString().contains(".d3dbsp") &&
+                !url.toString().contains(".lzoin") &&
+                !url.toString().contains(".xsub") &&
+                !url.toString().contains(".iwi") &&
+                !url.toString().contains(".dds")) {
+                goodDrag = false;
+            }
+        }
+    } else {
+        goodDrag = false;
+    }
+    if (goodDrag) {
+        event->acceptProposedAction();
+    }
+}
+
+void MainWindow::dragMoveEvent(QDragMoveEvent *event) {
+    Q_UNUSED(event);
+}
+
+void MainWindow::dragLeaveEvent(QDragLeaveEvent *event) {
+    Q_UNUSED(event);
+}
+
+void MainWindow::dropEvent(QDropEvent *event) {
+    const QMimeData *mimeData = event->mimeData();
+    if (mimeData->hasUrls()) {
+        QStringList ddsPaths = QStringList();
+        foreach (const QUrl url, mimeData->urls()) {
+            const QString urlStr = url.toLocalFile();
+            if (urlStr.contains(".zone")) {
+                OpenZoneFile(urlStr);
+            } else if (urlStr.contains(".ff")) {
+                OpenFastFile(urlStr);
+            } else if (urlStr.contains(".ipak")) {
+                qDebug() << "LoadFile_IPAK Returned: " << LoadFile_IPAK(urlStr);
+            } else if (urlStr.contains(".xsub")) {
+                qDebug() << "LoadFile_XSUB Returned: " << LoadFile_XSUB(urlStr);
+            } else if (urlStr.contains(".iwi")) {
+                qDebug() << "LoadFile_IWI Returned: " << LoadFile_IWI(urlStr);
+            } else if (urlStr.contains(".dds")) {
+                if (mimeData->urls().size() == 1) {
+                    qDebug() << "LoadFile_DDS Returned: " << LoadFile_DDS(urlStr);
+                } else {
+                    ddsPaths << urlStr;
+                }
+            } else if (urlStr.contains(".d3dbsp")) {
+                LoadFile_D3DBSP(urlStr);
+            } else if (urlStr.contains(".lzoin")) {
+                QFile lzoFile(urlStr);
+                if (!lzoFile.open(QIODevice::ReadOnly)) {
+                    qDebug() << "LZO: Failed to read file!";
+                    continue;
+                }
+                QByteArray data = Compressor::DecompressLZO(lzoFile.readAll());
+                lzoFile.close();
+
+                if (data.isEmpty()) {
+                    qDebug() << "LZO: Decompressor gave empty result!";
+                    continue;
+                }
+
+                QFile outputFile(url.toLocalFile().replace("lzoin", "lzoout"));
+                if (!outputFile.open(QIODevice::WriteOnly)) {
+                    qDebug() << "LZO: Failed to write file!";
+                    continue;
+                }
+                outputFile.write(data);
+                outputFile.close();
+            } else {
+                const QString ext = urlStr.split('.').last();
+                ui->statusBar->showMessage(
+                    QString("Can't display dropped file! .%1").arg(ext));
+            }
+        }
+        if (ddsPaths.size() > 1) {
+            qDebug() << "LoadFile_DDSFiles Returned: " << LoadFile_DDSFiles(ddsPaths);
+        }
+    } else {
+        ui->statusBar->showMessage("Can't display dropped data!");
+    }
+}
