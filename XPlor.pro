@@ -1,6 +1,7 @@
 QT       += core gui 3dcore 3drender 3dinput 3dextras
 
 RC_ICONS = XPlor.ico
+
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += c++17
@@ -69,7 +70,3 @@ RESOURCES += \
 LIBS += -L$$PWD/DevILSDK/lib/x64/Unicode/Release -lDevIL
 LIBS += -L$$PWD/DevILSDK/lib/x64/Unicode/Release -lILU
 LIBS += -L$$PWD/DevILSDK/lib/x64/Unicode/Release -lILUT
-
-#LIBS += -L"C:/Program Files (x86)/Windows Kits/10/Lib/10.0.26100.0/um/x64" -ldxcompiler
-
-
