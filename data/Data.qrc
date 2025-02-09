@@ -1,0 +1,57 @@
+<RCC>
+    <qresource prefix="/obj">
+        <file>obj/defaultactor_LOD0.XMODEL_BIN</file>
+        <file>obj/defaultactor_LOD0.XMODEL_EXPORT</file>
+        <file>obj/defaultactor_LOD0.bin</file>
+        <file>obj/defaultactor_LOD0.cast</file>
+        <file>obj/defaultactor_LOD0.gltf</file>
+        <file>obj/defaultactor_LOD0.ma</file>
+        <file>obj/defaultactor_LOD0.mesh.ascii</file>
+        <file>obj/defaultactor_LOD0.obj</file>
+        <file>obj/defaultactor_LOD0.semodel</file>
+        <file>obj/defaultactor_LOD0.smd</file>
+        <file>obj/defaultactor_LOD0_BIND.mel</file>
+        <file>obj/defaultactor_LOD0_cosmetics.mel</file>
+        <file>obj/diffusemap.png</file>
+        <file>obj/mtl_body_default_character.mtl</file>
+        <file>obj/mtl_body_default_character_images.txt</file>
+        <file>obj/normalmap.png</file>
+    </qresource>
+    <qresource prefix="/d3dbsp">
+        <file>d3dbsp/asset_viewer.d3dbsp</file>
+        <file>d3dbsp/barebones.d3dbsp</file>
+    </qresource>
+    <qresource prefix="/images">
+        <file>images/XPlor.png</file>
+        <file>images/copy.svg</file>
+        <file>images/cut.svg</file>
+        <file>images/multiple.png</file>
+        <file>images/new_file.svg</file>
+        <file>images/open_file.svg</file>
+        <file>images/open_folder.svg</file>
+        <file>images/paste.svg</file>
+        <file>images/refresh.svg</file>
+        <file>images/save.svg</file>
+    </qresource>
+    <qresource prefix="/icons">
+        <file>icons/Icon_COD4.png</file>
+        <file>icons/Icon_COD5.png</file>
+        <file>icons/Icon_COD6.png</file>
+        <file>icons/Icon_COD7.png</file>
+        <file>icons/Icon_COD8.png</file>
+        <file>icons/Icon_COD9.png</file>
+        <file>icons/Icon_DDSFile.png</file>
+        <file>icons/Icon_FastFile.png</file>
+        <file>icons/Icon_IWIFile.png</file>
+        <file>icons/Icon_PC.png</file>
+        <file>icons/Icon_Playstation.png</file>
+        <file>icons/Icon_Xbox.png</file>
+        <file>icons/Icon_ZoneFile.png</file>
+        <file>icons/Icon_GSCFile.png</file>
+        <file>icons/Icon_StringFile.png</file>
+        <file>icons/Icon_TechSetFile.png</file>
+        <file>icons/Icon_WAVFile.png</file>
+        <file>icons/Icon_MenuFile.png</file>
+        <file>icons/Icon_Image.png</file>
+    </qresource>
+</RCC>

@@ -1,5 +1,5 @@
-#ifndef STRUCTS_H
-#define STRUCTS_H
+#ifndef D3DBSP_STRUCTS_H
+#define D3DBSP_STRUCTS_H
 
 #include <QByteArray>
 
@@ -16,4 +16,4 @@ struct LumpIndexEntry {
     quint32 length;
 };
 
-#endif // STRUCTS_H
+#endif // D3DBSP_STRUCTS_H

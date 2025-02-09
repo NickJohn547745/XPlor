@@ -5,6 +5,8 @@
 
 #include <QString>
 #include <QtZlib/zlib.h>
+#include <QFileDialog>
+#include <QMessageBox>
 
 class Utils {
 public:
@@ -35,18 +37,24 @@ public:
             return "TECH SET";
         } else if (cleanedType == "18000000") { // weapon                 PARTIALLY VERIFIED
             return "WEAPON";
-        } else if (cleanedType == "11000000") { // d3dbsp dump            PARTIALLY VERIFIED
-            return "D3DBSP DUMP";
+        } else if (cleanedType == "11000000") { // gfx map                PARTIALLY VERIFIED
+            return "GFX MAP";
         } else if (cleanedType == "12000000") { // light_def              PARTIALLY VERIFIED
             return "LIGHT DEF";
         } else if (cleanedType == "14000000") { // font                   PARTIALLY VERIFIED
             return "FONT";
         } else if (cleanedType == "05000000") { // xmodel                 PARTIALLY VERIFIED
             return "MODEL";
-        } else if (cleanedType == "0D000000") { // shader                 PARTIALLY VERIFIED
-            return "SHADER";
+        } else if (cleanedType == "0D000000") { // d3dbsp                 PARTIALLY VERIFIED
+            return "D3DBSP";
+        } else if (cleanedType == "06000000") { // image                  PARTIALLY VERIFIED
+            return "IMAGE";
+        } else if (cleanedType == "0E000000") { // game map sp            PARTIALLY VERIFIED
+            return "GAME MAP SP";
+        } else if (cleanedType == "0B000000") { // col map sp             PARTIALLY VERIFIED
+            return "COL MAP SP";
         }
-        return "UNKNOWN";
+        return aAssetType;
     }
 
     /*
@@ -163,6 +171,138 @@ public:
 
     static quint32 PaddingSize(quint32 size) {
         return PadInt4(size) - size;
+    }
+
+    static QString GetOpenFastFileName(QWidget *parent = nullptr) {
+        // Open file dialog to steam apps
+        const QString steamPath = "C:/Program Files (x86)/Steam/steamapps/common/Call of Duty World at War/zone/english/";
+        const QString fastFilePath = QFileDialog::getOpenFileName(parent, "Open Fast File", steamPath, "Fast File (*.ff);;All Files (*.*)");
+        if (fastFilePath.isNull()) {
+            // User pressed cancel
+            return "";
+        } else if (!QFile::exists(fastFilePath)) {
+            QMessageBox::warning(parent, "Warning!", QString("%1 does not exist!.").arg(fastFilePath));
+            return "";
+        }
+        return fastFilePath;
+    }
+
+    static QString GetOpenZoneFileName(QWidget *parent = nullptr) {
+        // Open file dialog to steam apps
+        const QString steamPath = "C:/Program Files (x86)/Steam/steamapps/common/Call of Duty World at War/zone/english/";
+        const QString zoneFilePath = QFileDialog::getOpenFileName(parent, "Open Zone File", steamPath, "Zone File (*.zone);;All Files (*.*)");
+        if (zoneFilePath.isNull()) {
+            // User pressed cancel
+            return "";
+        } else if (!QFile::exists(zoneFilePath)) {
+            QMessageBox::warning(parent, "Warning!", QString("%1 does not exist!.").arg(zoneFilePath));
+            return nullptr;
+        }
+        return zoneFilePath;
+    }
+
+    static QString CompanyEnumToStr(FF_COMPANY aCompany) {
+        switch (aCompany) {
+        case COMPANY_NONE:
+            return "None";
+        case COMPANY_INFINITY_WARD:
+            return "Infinity Ward";
+        case COMPANY_TREYARCH:
+            return "Treyarch";
+        case COMPANY_SLEDGEHAMMER:
+            return "Sledgehammer";
+        case COMPANY_NEVERSOFT:
+            return "Neversoft";
+        }
+        return "None";
+    }
+
+    static QString FileTypeEnumToStr(FF_FILETYPE aFileType) {
+        switch (aFileType) {
+        case FILETYPE_NONE:
+            return "None";
+        case FILETYPE_FAST_FILE:
+            return "Fast File";
+        }
+        return "None";
+    }
+
+    static QString SignageEnumToStr(FF_SIGNAGE aSignage) {
+        switch (aSignage) {
+        case SIGNAGE_NONE:
+            return "None";
+        case SIGNAGE_SIGNED:
+            return "Signed";
+        case SIGNAGE_UNSIGNED:
+            return "Unsigned";
+        }
+        return "None";
+    }
+
+    static QString MenuVAlignToStr(MENU_V_ALIGNMENT align) {
+        if (align == VERTICAL_ALIGN_SUBTOP) {
+            return "VERTICAL_ALIGN_SUBTOP";
+        } else if (align == VERTICAL_ALIGN_TOP) {
+            return "VERTICAL_ALIGN_TOP";
+        } else if (align == VERTICAL_ALIGN_CENTER) {
+            return "VERTICAL_ALIGN_CENTER";
+        } else if (align == VERTICAL_ALIGN_BOTTOM) {
+            return "VERTICAL_ALIGN_BOTTOM";
+        } else if (align == VERTICAL_ALIGN_FULLSCREEN) {
+            return "VERTICAL_ALIGN_FULLSCREEN";
+        } else if (align == VERTICAL_ALIGN_NOSCALE) {
+            return "VERTICAL_ALIGN_NOSCALE";
+        } else if (align == VERTICAL_ALIGN_TO480) {
+            return "VERTICAL_ALIGN_TO480";
+        } else if (align == VERTICAL_ALIGN_CENTER_SAFEAREA) {
+            return "VERTICAL_ALIGN_CENTER_SAFEAREA";
+        } else if (align == VERTICAL_ALIGN_MAX) {
+            return "VERTICAL_ALIGN_CENTER_SAFEAREA";
+        } else if (align == VERTICAL_ALIGN_DEFAULT) {
+            return "VERTICAL_ALIGN_SUBTOP";
+        }
+        return "VERTICAL_ALIGN_SUBTOP";
+    }
+
+    static QString MenuHAlignToStr(MENU_H_ALIGNMENT align) {
+        if (align == HORIZONTAL_ALIGN_SUBLEFT) {
+            return "HORIZONTAL_ALIGN_SUBLEFT";
+        } else if (align == HORIZONTAL_ALIGN_LEFT) {
+            return "HORIZONTAL_ALIGN_LEFT";
+        } else if (align == HORIZONTAL_ALIGN_CENTER) {
+            return "HORIZONTAL_ALIGN_CENTER";
+        } else if (align == HORIZONTAL_ALIGN_RIGHT) {
+            return "HORIZONTAL_ALIGN_RIGHT";
+        } else if (align == HORIZONTAL_ALIGN_FULLSCREEN) {
+            return "HORIZONTAL_ALIGN_FULLSCREEN";
+        } else if (align == HORIZONTAL_ALIGN_NOSCALE) {
+            return "HORIZONTAL_ALIGN_NOSCALE";
+        } else if (align == HORIZONTAL_ALIGN_TO640) {
+            return "HORIZONTAL_ALIGN_TO640";
+        } else if (align == HORIZONTAL_ALIGN_CENTER_SAFEAREA) {
+            return "HORIZONTAL_ALIGN_CENTER_SAFEAREA";
+        } else if (align == HORIZONTAL_ALIGN_MAX) {
+            return "HORIZONTAL_ALIGN_CENTER_SAFEAREA";
+        } else if (align == HORIZONTAL_ALIGN_DEFAULT) {
+            return "HORIZONTAL_ALIGN_SUBLEFT";
+        }
+        return "HORIZONTAL_ALIGN_SUBLEFT";
+    }
+
+    static QColor ColorFromNormalized(float r, float g, float b, float a) {
+        // Ensure values are clamped between 0 and 1
+        r = qBound(0.0f, r, 1.0f);
+        g = qBound(0.0f, g, 1.0f);
+        b = qBound(0.0f, b, 1.0f);
+        a = qBound(0.0f, a, 1.0f);
+
+        // Convert to 0-255 scale
+        int red = static_cast<int>(r * 255);
+        int green = static_cast<int>(g * 255);
+        int blue = static_cast<int>(b * 255);
+        int alpha = static_cast<int>(a * 255);
+
+        return QColor(red, green, blue, alpha);
     }
 };
 
