@@ -14,7 +14,7 @@ public:
     ZoneFile &operator=(const ZoneFile &other);
 
     bool Load(const QString aFilePath, FF_PLATFORM platform = FF_PLATFORM_PC);
-    bool Load(const QByteArray aFileData, const QString aFileStem, FF_PLATFORM platform = FF_PLATFORM_PC);
+    bool Load(const QByteArray aFileData, const QString aFileStem, FF_PLATFORM platform = FF_PLATFORM_NONE, FF_GAME game = FF_GAME_NONE);
 
     QString GetFileStem();
     quint32 GetSize();
@@ -25,27 +25,25 @@ public:
     AssetMap GetAssetMap();
 
 private slots:
-    void pParseZoneHeader(QDataStream *aZoneFileStream);
+    void pParseZoneHeader(QDataStream *aZoneFileStream, FF_GAME game);
     quint32 pParseZoneSize(QDataStream *aZoneFileStream);
     void pParseZoneUnknownsA(QDataStream *aZoneFileStream);
     quint32 pParseZoneTagCount(QDataStream *aZoneFileStream);
     quint32 pParseZoneRecordCount(QDataStream *aZoneFileStream);
     void pParseZoneUnknownsB(QDataStream *aZoneFileStream);
     void pParseZoneUnknownsC(QDataStream *aZoneFileStream);
-    QStringList pParseZoneTags(QDataStream *aZoneFileStream, quint32 tagCount);
-    QStringList pParseZoneIndex(QDataStream *aZoneFileStream, quint32 recordCount);
-    AssetMap pParseAssets(QDataStream *aZoneFileStream, QStringList assetOrder);
+    QStringList pParseZoneTags(QDataStream *aZoneFileStream, quint32 tagCount, FF_GAME game);
+    QStringList pParseZoneIndex(QDataStream *aZoneFileStream, quint32 recordCount, FF_GAME game);
+    AssetMap pParseAssets(QDataStream *aZoneFileStream, QStringList assetOrder, FF_GAME game);
     LocalString pParseAsset_LocalString(QDataStream *aZoneFileStream);
     RawFile pParseAsset_RawFile(QDataStream *aZoneFileStream);
     void pParseAsset_PhysPreset(QDataStream *aZoneFileStream);
     Model pParseAsset_Model(QDataStream *aZoneFileStream);
     void pParseAsset_Material(QDataStream *aZoneFileStream);
     Shader pParseAsset_Shader(QDataStream *aZoneFileStream);
-    bool pReadUntilString(QDataStream* stream, const QString& targetString);
-    bool pReadUntilHex(QDataStream* stream, const QString& hexString);
     TechSet pParseAsset_TechSet(QDataStream *aZoneFileStream);
     Image pParseAsset_Image(QDataStream *aZoneFileStream);
-    void pParseAsset_LoadedSound(QDataStream *aZoneFileStream);
+    SoundAsset pParseAsset_Sound(QDataStream *aZoneFileStream);
     void pParseAsset_ColMapMP(QDataStream *aZoneFileStream);
     void pParseAsset_GameMapSP(QDataStream *aZoneFileStream);
     void pParseAsset_GameMapMP(QDataStream *aZoneFileStream);

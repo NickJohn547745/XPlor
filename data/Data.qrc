@@ -53,5 +53,23 @@
         <file>icons/Icon_WAVFile.png</file>
         <file>icons/Icon_MenuFile.png</file>
         <file>icons/Icon_Image.png</file>
+        <file>icons/Icon_Model.png</file>
+        <file>icons/Icon_StringTable.png</file>
+        <file>icons/Icon_Sound.png</file>
+        <file>icons/Icon_Pause.png</file>
+        <file>icons/Icon_Play.png</file>
+        <file>icons/Icon_SkipBack.png</file>
+        <file>icons/Icon_SkipForward.png</file>
+        <file>icons/Icon_Stop.png</file>
+        <file>icons/Icon_Editor.png</file>
+        <file>icons/Icon_Views.png</file>
+        <file>icons/Icon_Tree.png</file>
+        <file>icons/Icon_Copy.png</file>
+        <file>icons/Icon_Cut.png</file>
+        <file>icons/Icon_Find.png</file>
+        <file>icons/Icon_NewFile.png</file>
+        <file>icons/Icon_Paste.png</file>
+        <file>icons/Icon_Save.png</file>
+        <file>icons/Icon_OpenFile.png</file>
     </qresource>
 </RCC>

@@ -1,7 +1,10 @@
 #include "mainwindow.h"
 #include "aboutdialog.h"
 #include "fastfile.h"
+#include "preferenceeditor.h"
 #include "qheaderview.h"
+#include "soundviewer.h"
+#include "stringtableviewer.h"
 #include "techsetviewer.h"
 #include "ui_mainwindow.h"
 #include "compressor.h"
@@ -33,6 +36,11 @@ MainWindow::MainWindow(QWidget *parent)
 
     //ModelViewer *mModelViewer = new ModelViewer(container);
     //mModelViewer->setAcceptDrops(false);
+
+    connect(ui->actionPreferences, &QAction::triggered, this, [this](bool checked = false) {
+        PreferenceEditor *prefEditor = new PreferenceEditor(this);
+        prefEditor->exec();
+    });
 
     ui->tabWidget->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(ui->tabWidget, &QTabWidget::customContextMenuRequested, this, [this](const QPoint &pos) {
@@ -102,6 +110,10 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->tabWidget, &QTabWidget::tabCloseRequested, this, [this](int index) {
         ui->tabWidget->removeTab(index);
+    });
+
+    connect(mTreeWidget, &XTreeWidget::Cleared, this, [this]() {
+        ui->tabWidget->clear();
     });
 
     connect(mTreeWidget, &XTreeWidget::RawFileSelected, this, [this](std::shared_ptr<RawFile> rawFile) {
@@ -248,6 +260,51 @@ MainWindow::MainWindow(QWidget *parent)
         ui->tabWidget->addTab(techSetViewer, aTechSet->name);
         ui->tabWidget->setTabIcon(ui->tabWidget->count() - 1, QIcon(":/icons/icons/Icon_TechSetFile.png"));
         ui->tabWidget->setCurrentIndex(ui->tabWidget->count() - 1);
+    });
+
+    connect(mTreeWidget, &XTreeWidget::StrTableSelected, this, [this](std::shared_ptr<StringTable> aStrTable) {
+
+        StringTableViewer *strTableViewer = new StringTableViewer(this);
+        strTableViewer->setAcceptDrops(false);
+        strTableViewer->SetStringTable(aStrTable);
+
+        QString fileStem = aStrTable->name;
+        for (int i = 0; i < ui->tabWidget->count(); i++) {
+            if (ui->tabWidget->tabText(i) == fileStem) {
+                return;
+            }
+        }
+
+        ui->tabWidget->addTab(strTableViewer, fileStem);
+        ui->tabWidget->setTabIcon(ui->tabWidget->count() - 1, QIcon(":/icons/icons/Icon_StringTable.png"));
+        ui->tabWidget->setCurrentIndex(ui->tabWidget->count() - 1);
+    });
+
+    connect(mTreeWidget, &XTreeWidget::SoundSelected, this, [this](std::shared_ptr<Sound> aSound) {
+
+        SoundViewer *soundViewer = new SoundViewer(this);
+        soundViewer->setAcceptDrops(false);
+        soundViewer->SetSound(aSound);
+
+        QString fileStem = aSound->path.split('/').last();
+        for (int i = 0; i < ui->tabWidget->count(); i++) {
+            if (ui->tabWidget->tabText(i) == fileStem) {
+                return;
+            }
+        }
+
+        ui->tabWidget->addTab(soundViewer, fileStem);
+        ui->tabWidget->setTabIcon(ui->tabWidget->count() - 1, QIcon(":/icons/icons/Icon_Sound.png"));
+        ui->tabWidget->setCurrentIndex(ui->tabWidget->count() - 1);
+    });
+
+    connect(mTreeWidget, &XTreeWidget::TabSelected, this, [this](QString tabName) {
+        for (int i = 0; i < ui->tabWidget->count(); i++) {
+            if (ui->tabWidget->tabText(i) == tabName) {
+                ui->tabWidget->setCurrentIndex(i);
+                break;
+            }
+        }
     });
 
     // Connect Help > About dialog

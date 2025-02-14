@@ -6,6 +6,7 @@
 #include "ddsfile.h"
 #include "iwifile.h"
 #include "fastfile.h"
+#include "xtreewidgetitem.h"
 #include "zonefile.h"
 
 #include <QTreeWidget>
@@ -18,7 +19,7 @@ public:
     ~XTreeWidget();
 
     void AddFastFile(std::shared_ptr<FastFile> aFastFile);
-    void AddZoneFile(std::shared_ptr<ZoneFile> aZoneFile, QTreeWidgetItem *aParentItem = nullptr);
+    void AddZoneFile(std::shared_ptr<ZoneFile> aZoneFile, XTreeWidgetItem *aParentItem = nullptr);
     void AddIWIFile(std::shared_ptr<IWIFile> aIWIFile);
     void AddDDSFile(std::shared_ptr<DDSFile> aDDSFile);
 
@@ -31,7 +32,11 @@ signals:
     void RawFileSelected(std::shared_ptr<RawFile> aRawFile);
     void ImageSelected(std::shared_ptr<Image> aImage);
     void TechSetSelected(std::shared_ptr<TechSet> aZoneFile);
+    void StrTableSelected(std::shared_ptr<StringTable> aStrTable);
     void MenuSelected(std::shared_ptr<Menu> aMenu);
+    void SoundSelected(std::shared_ptr<Sound> aSound);
+    void TabSelected(const QString aTabName);
+    void Cleared();
 
 protected:
     void ItemSelectionChanged();

@@ -10,6 +10,74 @@
 
 class Utils {
 public:
+    static bool ReadUntilString(QDataStream* stream, const QString& targetString) {
+        if (!stream || targetString.isEmpty()) {
+            return false; // Invalid input
+        }
+
+        QByteArray buffer;
+        QByteArray targetBytes = targetString.toUtf8(); // Handle multibyte characters
+        const int targetLength = targetBytes.size();
+        qDebug() << targetBytes << targetLength;
+
+        // Read as unsigned bytes to handle all possible values (0-255)
+        unsigned char byte;
+        while (!stream->atEnd()) {
+            // Read one byte at a time
+            *stream >> byte;
+            buffer.append(static_cast<char>(byte)); // Append as char for QByteArray
+
+            // Keep buffer size limited to the target length
+            if (buffer.size() > targetLength) {
+                buffer.remove(0, 1);
+            }
+
+            // Check if the buffer matches the target string in raw bytes
+            if (buffer == targetBytes) {
+                // Backup to the start of the matched string
+                stream->device()->seek(stream->device()->pos() - targetLength);
+                return true;
+            }
+        }
+
+        // Target string not found
+        return false;
+    }
+
+    static bool ReadUntilHex(QDataStream* stream, const QString& hexString) {
+        if (!stream || hexString.isEmpty() || hexString.size() % 2 != 0) {
+            return false; // Invalid input
+        }
+
+        // Convert hex string to byte array
+        QByteArray targetBytes = QByteArray::fromHex(hexString.toUtf8());
+        const int targetLength = targetBytes.size();
+
+        QByteArray buffer;
+        unsigned char byte;
+
+        while (!stream->atEnd()) {
+            // Read one byte at a time
+            *stream >> byte;
+            buffer.append(static_cast<char>(byte)); // Append as char for QByteArray
+
+            // Keep buffer size limited to the target length
+            if (buffer.size() > targetLength) {
+                buffer.remove(0, 1);
+            }
+
+            // Check if the buffer matches the target byte sequence
+            if (buffer == targetBytes) {
+                // Backup to the start of the matched sequence
+                stream->device()->seek(stream->device()->pos() - targetLength);
+                return true;
+            }
+        }
+
+        // Target sequence not found
+        return false;
+    }
+
     /*
     AssetTypeToString()
 

@@ -13,11 +13,20 @@ XTreeWidget::XTreeWidget(QWidget *parent)
     setContextMenuPolicy(Qt::CustomContextMenu);
     setSelectionMode(QTreeWidget::SingleSelection);
     setColumnCount(3);
-    setColumnWidth(0, 275);
-    setColumnWidth(1, 50);
-    setColumnWidth(2, 50);
     header()->hide();
     setMinimumWidth(350);
+    setSortingEnabled(true);
+
+    header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+
+    // Set the last two columns to a fixed width
+    //header()->setSectionResizeMode(1, QHeaderView::Fixed);
+    //header()->setSectionResizeMode(2, QHeaderView::Fixed);
+
+    // Adjust the fixed widths to suit your icon size (e.g., 32 pixels)
+    //header()->resizeSection(0, 275);
+    //header()->resizeSection(1, 32);
+    //header()->resizeSection(2, 32);
 
     connect(this, &QTreeWidget::itemSelectionChanged, this, &XTreeWidget::ItemSelectionChanged);
     connect(this, &XTreeWidget::customContextMenuRequested, this, &XTreeWidget::PrepareContextMenu);
@@ -28,7 +37,7 @@ XTreeWidget::~XTreeWidget() {
 }
 
 void XTreeWidget::AddFastFile(std::shared_ptr<FastFile> aFastFile) {
-    QTreeWidgetItem *fastFileItem = new QTreeWidgetItem(this);
+    XTreeWidgetItem *fastFileItem = new XTreeWidgetItem(this);
     fastFileItem->setText(0, aFastFile->GetFileStem());
     fastFileItem->setIcon(0, QIcon(":/icons/icons/Icon_FastFile.png"));
     if (aFastFile->GetPlatform() == "PC") {
@@ -55,14 +64,15 @@ void XTreeWidget::AddFastFile(std::shared_ptr<FastFile> aFastFile) {
     mFastFiles[aFastFile->GetFileStem().section(".", 0, 0)] = aFastFile;
 
     resizeColumnToContents(1);
+    setSortingEnabled(true);
 }
 
-void XTreeWidget::AddZoneFile(std::shared_ptr<ZoneFile> aZoneFile, QTreeWidgetItem *aParentItem) {
-    QTreeWidgetItem *zoneItem;
+void XTreeWidget::AddZoneFile(std::shared_ptr<ZoneFile> aZoneFile, XTreeWidgetItem *aParentItem) {
+    XTreeWidgetItem *zoneItem;
     if (aParentItem != nullptr) {
-        zoneItem = new QTreeWidgetItem(aParentItem);
+        zoneItem = new XTreeWidgetItem(aParentItem);
     } else {
-        zoneItem = new QTreeWidgetItem(this);
+        zoneItem = new XTreeWidgetItem(this);
     }
     zoneItem->setIcon(0, QIcon(":/icons/icons/Icon_ZoneFile.png"));
     zoneItem->setText(0, aZoneFile->GetFileStem());
@@ -70,40 +80,39 @@ void XTreeWidget::AddZoneFile(std::shared_ptr<ZoneFile> aZoneFile, QTreeWidgetIt
     auto assetMap = aZoneFile->GetAssetMap();
 
     if (!assetMap.localStrings.isEmpty()) {
-        QTreeWidgetItem *localStrRoot = new QTreeWidgetItem(zoneItem);
+        XTreeWidgetItem *localStrRoot = new XTreeWidgetItem(zoneItem);
         localStrRoot->setText(0, "String Files");
         localStrRoot->setIcon(0, QIcon(":/icons/icons/Icon_StringFile.png"));
 
-        QTreeWidgetItem *localStrItem = new QTreeWidgetItem(localStrRoot);
+        XTreeWidgetItem *localStrItem = new XTreeWidgetItem(localStrRoot);
         localStrItem->setText(0, aZoneFile->GetFileStem().section('.', 0, 0) + ".str");
         localStrItem->setIcon(0, QIcon(":/icons/icons/Icon_StringFile.png"));
     }
 
     if (!assetMap.techSets.isEmpty()) {
-        QTreeWidgetItem *techSetRoot = new QTreeWidgetItem(zoneItem);
+        XTreeWidgetItem *techSetRoot = new XTreeWidgetItem(zoneItem);
         techSetRoot->setText(0, "Tech Sets");
         techSetRoot->setIcon(0, QIcon(":/icons/icons/Icon_TechSetFile.png"));
 
         for (TechSet techSet : assetMap.techSets) {
-            QTreeWidgetItem *techSetItem = new QTreeWidgetItem(techSetRoot);
+            XTreeWidgetItem *techSetItem = new XTreeWidgetItem(techSetRoot);
             techSetItem->setText(0, techSet.name);
             techSetItem->setIcon(0, QIcon(":/icons/icons/Icon_TechSetFile.png"));
         }
     }
 
     if (!assetMap.rawFiles.isEmpty()) {
-        QTreeWidgetItem *rawFileRoot = new QTreeWidgetItem(zoneItem);
+        XTreeWidgetItem *rawFileRoot = new XTreeWidgetItem(zoneItem);
         rawFileRoot->setText(0, "Raw Files");
         rawFileRoot->setIcon(0, QIcon(":/icons/icons/Icon_GSCFile.png"));
         for (RawFile rawFile : assetMap.rawFiles) {
             if (!rawFile.length) { continue; }
 
-            QTreeWidgetItem *tempItem = rawFileRoot;
+            XTreeWidgetItem *tempItem = rawFileRoot;
             for (const QString &pathPart : rawFile.path.split('/')) {
                 bool childFound = false;
                 for (int i = 0; i < tempItem->childCount(); i++) {
-                    QTreeWidgetItem *childItem = tempItem->child(i);
-                    //qDebug() << "Child text: " << childItem->text(0);
+                    XTreeWidgetItem *childItem = dynamic_cast<XTreeWidgetItem*>(tempItem->child(i));
                     if (childItem->text(0) == pathPart) {
                         tempItem = childItem;
 
@@ -113,12 +122,12 @@ void XTreeWidget::AddZoneFile(std::shared_ptr<ZoneFile> aZoneFile, QTreeWidgetIt
                 }
 
                 if (pathPart.contains(".gsc")) {
-                    QTreeWidgetItem *rawFileItem = new QTreeWidgetItem(tempItem);
+                    XTreeWidgetItem *rawFileItem = new XTreeWidgetItem(tempItem);
                     rawFileItem->setText(0, pathPart);
 
                     tempItem = rawFileItem;
                 } else if (!childFound) {
-                    tempItem = new QTreeWidgetItem(tempItem);
+                    tempItem = new XTreeWidgetItem(tempItem);
                     tempItem->setText(0, pathPart);
                 }
 
@@ -128,16 +137,16 @@ void XTreeWidget::AddZoneFile(std::shared_ptr<ZoneFile> aZoneFile, QTreeWidgetIt
     }
 
     if (!assetMap.menuFiles.isEmpty()) {
-        QTreeWidgetItem *menuRoot = new QTreeWidgetItem(zoneItem);
+        XTreeWidgetItem *menuRoot = new XTreeWidgetItem(zoneItem);
         menuRoot->setText(0, "Menu Files");
         menuRoot->setIcon(0, QIcon(":/icons/icons/Icon_MenuFile.png"));
 
         int menuIndex = 1;
         for (MenuFile menuFile : assetMap.menuFiles) {
-            QTreeWidgetItem *menuFileRoot = new QTreeWidgetItem(menuRoot);
+            XTreeWidgetItem *menuFileRoot = new XTreeWidgetItem(menuRoot);
             menuFileRoot->setText(0, QString("Menu %1").arg(menuIndex));
             for (Menu menu : menuFile.menuDefs) {
-                QTreeWidgetItem *menuItem = new QTreeWidgetItem(menuFileRoot);
+                XTreeWidgetItem *menuItem = new XTreeWidgetItem(menuFileRoot);
                 menuItem->setText(0, menu.name);
                 menuItem->setIcon(0, QIcon(":/icons/icons/Icon_MenuFile.png"));
             }
@@ -146,14 +155,78 @@ void XTreeWidget::AddZoneFile(std::shared_ptr<ZoneFile> aZoneFile, QTreeWidgetIt
     }
 
     if (!assetMap.images.isEmpty()) {
-        QTreeWidgetItem *imageRoot = new QTreeWidgetItem(zoneItem);
+        XTreeWidgetItem *imageRoot = new XTreeWidgetItem(zoneItem);
         imageRoot->setText(0, "Images");
         imageRoot->setIcon(0, QIcon(":/icons/icons/Icon_Image.png"));
 
         for (Image image : assetMap.images) {
-            QTreeWidgetItem *imageItem = new QTreeWidgetItem(imageRoot);
+            XTreeWidgetItem *imageItem = new XTreeWidgetItem(imageRoot);
             imageItem->setText(0, image.materialName);
             imageItem->setIcon(0, QIcon(":/icons/icons/Icon_Image.png"));
+        }
+    }
+
+    if (!assetMap.models.isEmpty()) {
+        XTreeWidgetItem *modelsRoot = new XTreeWidgetItem(zoneItem);
+        modelsRoot->setText(0, "Models");
+        modelsRoot->setIcon(0, QIcon(":/icons/icons/Icon_Model.png"));
+
+        for (Model model: assetMap.models) {
+            XTreeWidgetItem *modelItem = new XTreeWidgetItem(modelsRoot);
+            modelItem->setText(0, model.modelName);
+            modelItem->setIcon(0, QIcon(":/icons/icons/Icon_Model.png"));
+        }
+    }
+
+    if (!assetMap.stringTables.isEmpty()) {
+        XTreeWidgetItem *strTableRoot = new XTreeWidgetItem(zoneItem);
+        strTableRoot->setText(0, "String Tables");
+        strTableRoot->setIcon(0, QIcon(":/icons/icons/Icon_StringTable.png"));
+
+        for (StringTable strTable: assetMap.stringTables) {
+            XTreeWidgetItem *modelItem = new XTreeWidgetItem(strTableRoot);
+            modelItem->setText(0, strTable.name);
+            modelItem->setIcon(0, QIcon(":/icons/icons/Icon_StringTable.png"));
+        }
+    }
+
+    if (!assetMap.sounds.isEmpty()) {
+        XTreeWidgetItem *soundsRoot = new XTreeWidgetItem(zoneItem);
+        soundsRoot->setText(0, "Sounds");
+        soundsRoot->setIcon(0, QIcon(":/icons/icons/Icon_Sound.png"));
+        for (SoundAsset soundAsset : assetMap.sounds) {
+            for (Sound sound : soundAsset.sounds) {
+            XTreeWidgetItem *tempItem = soundsRoot;
+
+                if (!sound.dataLength) { continue; }
+
+                for (const QString &pathPart : sound.path.split('/')) {
+                    if (pathPart.isEmpty()) { continue; }
+
+                    bool childFound = false;
+                    for (int i = 0; i < tempItem->childCount(); i++) {
+                        XTreeWidgetItem *childItem = dynamic_cast<XTreeWidgetItem*>(tempItem->child(i));
+                        if (childItem->text(0) == pathPart) {
+                            tempItem = childItem;
+
+                            childFound = true;
+                            break;
+                        }
+                    }
+
+                    if (pathPart.contains(".wav")) {
+                        XTreeWidgetItem *soundItem = new XTreeWidgetItem(tempItem);
+                        soundItem->setText(0, pathPart);
+
+                        tempItem = soundItem;
+                    } else if (!childFound) {
+                        tempItem = new XTreeWidgetItem(tempItem);
+                        tempItem->setText(0, pathPart);
+                    }
+
+                }
+                tempItem->setIcon(0, QIcon(":/icons/icons/Icon_Sound.png"));
+            }
         }
     }
 
@@ -265,6 +338,8 @@ void XTreeWidget::PrepareContextMenu(const QPoint &pos) {
             Q_UNUSED(checked);
 
             clear();
+
+            emit Cleared();
         });
 
         QAction *closeAllButAction = new QAction("Close All BUT This");
@@ -358,6 +433,98 @@ void XTreeWidget::PrepareContextMenu(const QPoint &pos) {
 
             //zoneFile->SaveFastFile();
         });
+    } else if (activeItem && activeText.contains(".wav")) {
+        XTreeWidgetItem *parentItem = dynamic_cast<XTreeWidgetItem*>(activeItem->parent());
+        while (parentItem && !parentItem->text(0).contains(".zone")) {
+            parentItem = dynamic_cast<XTreeWidgetItem*>(parentItem->parent());
+
+            if (parentItem == invisibleRootItem()) {
+                break;
+            }
+        }
+        if (parentItem && parentItem != invisibleRootItem() && parentItem->text(0).contains(".zone")) {
+            const QString fileStem = parentItem->text(0).section('.', 0, 0);
+            QVector<SoundAsset> soundAssets = mZoneFiles[fileStem]->GetAssetMap().sounds;
+            for (SoundAsset soundAsset : soundAssets) {
+                for (Sound sound : soundAsset.sounds) {
+                    if (sound.path.contains(activeText)) {
+                        QMenu *exportSubmenu = new QMenu("Export...", this);
+                        contextMenu->addMenu(exportSubmenu);
+
+                        QAction *exportWAVAction = new QAction("Export as WAV File");
+                        exportSubmenu->addAction(exportWAVAction);
+                        connect(exportWAVAction, &QAction::triggered, this, [sound](bool checked) {
+                            Q_UNUSED(checked);
+
+                            QDir dir = QDir::currentPath();
+                            if (!dir.exists("exports/")) {
+                                dir.mkdir("exports/");
+                            }
+
+                            if (!dir.exists("exports/sounds/")) {
+                                dir.mkdir("exports/sounds/");
+                            }
+
+                            const QString fileName = "exports/sounds/" + sound.path.split('/').last();
+                            QFile wavFile(fileName);
+                            if (!wavFile.open(QIODevice::WriteOnly)) {
+                                qDebug() << "Failed to write wav file!";
+                                return;
+                            }
+                            wavFile.write(sound.data);
+                            wavFile.close();
+                        });
+                        break;
+                    }
+                }
+            }
+        }
+    } else if (activeItem && activeText == "Sounds") {
+        XTreeWidgetItem *parentItem = dynamic_cast<XTreeWidgetItem*>(activeItem->parent());
+        while (parentItem && !parentItem->text(0).contains(".zone")) {
+            parentItem = dynamic_cast<XTreeWidgetItem*>(parentItem->parent());
+
+            if (parentItem == invisibleRootItem()) {
+                break;
+            }
+        }
+        if (parentItem && parentItem != invisibleRootItem() && parentItem->text(0).contains(".zone")) {
+            const QString fileStem = parentItem->text(0).section('.', 0, 0);
+            auto zoneFile = mZoneFiles[fileStem];
+
+            QMenu *exportSubmenu = new QMenu("Export...", this);
+            contextMenu->addMenu(exportSubmenu);
+
+            QAction *exportAllWAVAction = new QAction("Export ALL as WAV Files");
+            exportSubmenu->addAction(exportAllWAVAction);
+            connect(exportAllWAVAction, &QAction::triggered, this, [zoneFile](bool checked) {
+                Q_UNUSED(checked);
+
+                for (SoundAsset soundAsset : zoneFile->GetAssetMap().sounds) {
+                    for (Sound sound : soundAsset.sounds) {
+                        if (!sound.dataLength) { continue; }
+
+                        QDir dir = QDir::currentPath();
+                        if (!dir.exists("exports/")) {
+                            dir.mkdir("exports/");
+                        }
+
+                        if (!dir.exists("exports/sounds/")) {
+                            dir.mkdir("exports/sounds/");
+                        }
+
+                        const QString fileName = "exports/sounds/" + sound.path.split('/').last();
+                        QFile wavFile(fileName);
+                        if (!wavFile.open(QIODevice::WriteOnly)) {
+                            qDebug() << "Failed to write wav file!";
+                            return;
+                        }
+                        wavFile.write(sound.data);
+                        wavFile.close();
+                    }
+                }
+            });
+        }
     }
 
     QPoint pt(pos);
@@ -369,13 +536,15 @@ void XTreeWidget::PrepareContextMenu(const QPoint &pos) {
 void XTreeWidget::ItemSelectionChanged() {
     if (selectedItems().isEmpty()) { return; }
 
-    QTreeWidgetItem *selectedItem = selectedItems().first();
+    XTreeWidgetItem *selectedItem = dynamic_cast<XTreeWidgetItem*>(selectedItems().first());
     if (!selectedItem) { return; }
     if (selectedItem->text(0).isEmpty()) { return; }
     QString selectedText = selectedItem->text(0);
+    emit TabSelected(selectedText);
+
     const QString fileStem = selectedText.section(".", 0, 0);
 
-    QTreeWidgetItem *parentItem = selectedItem->parent();
+    XTreeWidgetItem *parentItem = dynamic_cast<XTreeWidgetItem*>(selectedItem->parent());
 
     if (selectedText.contains(".dds")) {
         if (!mDDSFiles.contains(fileStem)) {
@@ -409,11 +578,11 @@ void XTreeWidget::ItemSelectionChanged() {
         }
         emit LocalStringSelected(mZoneFiles[fileStem]);
     } else if (selectedText.contains(".gsc")) {
-        QTreeWidgetItem *zoneRoot = selectedItem;
+        XTreeWidgetItem *zoneRoot = selectedItem;
         if (!zoneRoot) { return; }
 
         while (!zoneRoot->text(0).contains(".zone")) {
-            zoneRoot = zoneRoot->parent();
+            zoneRoot = dynamic_cast<XTreeWidgetItem*>(zoneRoot->parent());
             if (!zoneRoot) { return; }
         }
 
@@ -431,7 +600,7 @@ void XTreeWidget::ItemSelectionChanged() {
             }
         }
     } else if (parentItem && (parentItem->text(0) == "Images")) {
-        QTreeWidgetItem *grandpaItem = parentItem->parent();
+        XTreeWidgetItem *grandpaItem = dynamic_cast<XTreeWidgetItem*>(parentItem->parent());
         if (grandpaItem && grandpaItem->text(0).contains(".zone")) {
             const QString fileStem = grandpaItem->text(0).section('.', 0, 0);
             QVector<Image> images = mZoneFiles[fileStem]->GetAssetMap().images;
@@ -443,7 +612,7 @@ void XTreeWidget::ItemSelectionChanged() {
             }
         }
     } else if (parentItem && (parentItem->text(0) == "Tech Sets")) {
-        QTreeWidgetItem *grandpaItem = parentItem->parent();
+        XTreeWidgetItem *grandpaItem = dynamic_cast<XTreeWidgetItem*>(parentItem->parent());
         if (grandpaItem && grandpaItem->text(0).contains(".zone")) {
             const QString fileStem = grandpaItem->text(0).section('.', 0, 0);
             auto techsets = mZoneFiles[fileStem]->GetAssetMap().techSets;
@@ -451,6 +620,39 @@ void XTreeWidget::ItemSelectionChanged() {
                 if (techset.name == selectedText) {
                     emit TechSetSelected(std::make_shared<TechSet>(techset));
                     break;
+                }
+            }
+        }
+    } else if (parentItem && (parentItem->text(0) == "String Tables")) {
+        XTreeWidgetItem *grandpaItem = dynamic_cast<XTreeWidgetItem*>(parentItem->parent());
+        if (grandpaItem && grandpaItem->text(0).contains(".zone")) {
+            const QString fileStem = grandpaItem->text(0).section('.', 0, 0);
+            QVector<StringTable> strTables = mZoneFiles[fileStem]->GetAssetMap().stringTables;
+            for (StringTable strTable : strTables) {
+                if (strTable.name == selectedText) {
+                    emit StrTableSelected(std::make_shared<StringTable>(strTable));
+                    break;
+                }
+            }
+        }
+    } else if (parentItem && selectedText.contains(".wav")) {
+        XTreeWidgetItem *grandpaItem = dynamic_cast<XTreeWidgetItem*>(parentItem->parent());
+        while (grandpaItem && !grandpaItem->text(0).contains(".zone")) {
+            grandpaItem = dynamic_cast<XTreeWidgetItem*>(grandpaItem->parent());
+
+            if (grandpaItem == invisibleRootItem()) {
+                break;
+            }
+        }
+        if (grandpaItem && grandpaItem != invisibleRootItem() && grandpaItem->text(0).contains(".zone")) {
+            const QString fileStem = grandpaItem->text(0).section('.', 0, 0);
+            QVector<SoundAsset> soundAssets = mZoneFiles[fileStem]->GetAssetMap().sounds;
+            for (SoundAsset soundAsset : soundAssets) {
+                for (Sound sound : soundAsset.sounds) {
+                    if (sound.path.contains(selectedText)) {
+                        emit SoundSelected(std::make_shared<Sound>(sound));
+                        break;
+                    }
                 }
             }
         }
@@ -485,7 +687,7 @@ void XTreeWidget::AddIWIFile(std::shared_ptr<IWIFile> aIWIFile) {
         }
     }
 
-    QTreeWidgetItem *iwiItem = new QTreeWidgetItem(this);
+    XTreeWidgetItem *iwiItem = new XTreeWidgetItem(this);
     iwiItem->setIcon(0, QIcon(":/icons/icons/Icon_IWIFile.png"));
     iwiItem->setText(0, iwiFileName);
     mIWIFiles[aIWIFile->fileStem.section(".", 0, 0)] = aIWIFile;
@@ -501,7 +703,7 @@ void XTreeWidget::AddDDSFile(std::shared_ptr<DDSFile> aDDSFile) {
         }
     }
 
-    QTreeWidgetItem *ddsItem = new QTreeWidgetItem(this);
+    XTreeWidgetItem *ddsItem = new XTreeWidgetItem(this);
     ddsItem->setIcon(0, QIcon(":/icons/icons/Icon_DDSFile.png"));
     ddsItem->setText(0, ddsFileName);
     mDDSFiles[aDDSFile->fileStem.section(".", 0, 0)] = aDDSFile;

@@ -12,12 +12,15 @@ enum FF_PLATFORM {
 
 enum FF_GAME {
     FF_GAME_NONE = 0x00,        // No game
-    FF_GAME_COD4 = 0x01,        // Modern Warware 1
-    FF_GAME_COD5 = 0x02,        // World at War
-    FF_GAME_COD6 = 0x03,        // Modern Warfare 2
-    FF_GAME_COD7 = 0x04,        // Black Ops 1
-    FF_GAME_COD8 = 0x05,        // Modern Warfare 3
-    FF_GAME_COD9 = 0x06,        // Black Ops 2
+    FF_GAME_COD1 = 0x01,        // Call of Duty
+    FF_GAME_COD2 = 0x02,        // Call of Duty 2
+    FF_GAME_COD3 = 0x03,        // Call of Duty 3
+    FF_GAME_COD4 = 0x04,        // Modern Warware 1
+    FF_GAME_COD5 = 0x05,        // World at War
+    FF_GAME_COD6 = 0x06,        // Modern Warfare 2
+    FF_GAME_COD7 = 0x07,        // Black Ops 1
+    FF_GAME_COD8 = 0x08,        // Modern Warfare 3
+    FF_GAME_COD9 = 0x09,        // Black Ops 2
 };
 
 enum IWI_VERSION {

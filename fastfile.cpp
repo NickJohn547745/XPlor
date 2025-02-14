@@ -4,42 +4,21 @@
 #include <QFile>
 #include <QDebug>
 
-FastFile::FastFile() :
-    fileStem(),
-    company(),
-    fileType(),
-    signage(),
-    magic(),
-    version() {
-}
-
 FastFile::~FastFile() {
 
 }
 
-FastFile::FastFile(const FastFile &aFastFile) {
-    fileStem = aFastFile.GetFileStem();
-    company = aFastFile.GetCompany();
-    fileType = aFastFile.GetFileType();
-    signage = aFastFile.GetSignage();
-    magic = aFastFile.GetMagic();
-    version = aFastFile.GetVersion();
-    zoneFile = aFastFile.zoneFile;
-    game = aFastFile.GetGame();
-    platform = aFastFile.GetPlatform();
-}
-
 FastFile &FastFile::operator=(const FastFile &other) {
     if (this != &other) {
-        fileStem = other.GetFileStem();
-        company = other.GetCompany();
-        fileType = other.GetFileType();
-        signage = other.GetSignage();
-        magic = other.GetMagic();
-        version = other.GetVersion();
-        zoneFile = other.zoneFile;
-        game = other.GetGame();
-        platform = other.GetPlatform();
+        mStem = other.GetStem();
+        mType = other.GetType();
+        mCompany = other.GetCompany();
+        mSignage = other.GetSignage();
+        mMagic = other.GetMagic();
+        mVersion = other.GetVersion();
+        mZoneFile = other.GetZoneFile();
+        mGame = other.GetGame();
+        mPlatform = other.GetPlatform();
     }
     return *this;
 }
@@ -52,13 +31,24 @@ bool FastFile::Load(const QByteArray aData) {
     fastFileStream.setByteOrder(QDataStream::LittleEndian);
 
     // Parse header values.
-    company   = pParseFFCompany(&fastFileStream);
-    fileType  = pParseFFFileType(&fastFileStream);
-    signage   = pParseFFSignage(&fastFileStream);
-    magic     = pParseFFMagic(&fastFileStream);
-    version   = pParseFFVersion(&fastFileStream);
-    platform  = pCalculateFFPlatform();
-    game      = pCalculateFFGame();
+    if (fastFileStream.device()->peek(2).toHex() == "0000") {
+        company   = COMPANY_INFINITY_WARD;
+        fileType  = FILETYPE_FAST_FILE;
+        signage   = SIGNAGE_UNSIGNED;
+        magic     = 0;
+        version   = 0;
+        platform  = "360";
+        game      = "COD2";
+
+    } else {
+        company   = pParseFFCompany(&fastFileStream);
+        fileType  = pParseFFFileType(&fastFileStream);
+        signage   = pParseFFSignage(&fastFileStream);
+        magic     = pParseFFMagic(&fastFileStream);
+        version   = pParseFFVersion(&fastFileStream);
+        platform  = pCalculateFFPlatform();
+        game      = pCalculateFFGame();
+    }
 
     if (game == "COD5") {
         // For COD5, simply decompress from offset 12.
@@ -189,6 +179,19 @@ bool FastFile::Load(const QByteArray aData) {
 
         // Load the zone file with the decompressed data (using an Xbox platform flag).
         zoneFile.Load(decompressedData, fileStem.section('.', 0, 0) + ".zone", FF_PLATFORM_XBOX);
+    } else if (game == "COD2") {
+        Utils::ReadUntilHex(&fastFileStream, "78");
+        QByteArray compressedData = aData.mid(fastFileStream.device()->pos());
+        QByteArray decompressedData = Compressor::DecompressZLIB(compressedData);
+
+        QFile testFile("exports/" + fileStem.split('.')[0] + ".zone");
+        if(testFile.open(QIODevice::WriteOnly)) {
+            testFile.write(decompressedData);
+            testFile.close();
+        }
+
+        // Load the zone file with the decompressed data (using an Xbox platform flag).
+        zoneFile.Load(decompressedData, fileStem.section('.', 0, 0) + ".zone", FF_PLATFORM_XBOX, FF_GAME_COD2);
     }
 
     return true;
@@ -220,42 +223,6 @@ bool FastFile::Load(const QString aFilePath) {
 
     // Open zone file after decompressing ff and writing
     return true;
-}
-
-QString FastFile::GetFileStem() const {
-    return fileStem;
-}
-
-FF_COMPANY FastFile::GetCompany() const {
-    return company;
-}
-
-FF_FILETYPE FastFile::GetFileType() const {
-    return fileType;
-}
-
-FF_SIGNAGE FastFile::GetSignage() const {
-    return signage;
-}
-
-QString FastFile::GetMagic() const {
-    return magic;
-}
-
-quint32 FastFile::GetVersion() const {
-    return version;
-}
-
-ZoneFile FastFile::GetZoneFile() const {
-    return zoneFile;
-}
-
-QString FastFile::GetGame() const {
-    return game;
-}
-
-QString FastFile::GetPlatform() const {
-    return platform;
 }
 
 FF_COMPANY FastFile::pParseFFCompany(QDataStream *afastFileStream) {

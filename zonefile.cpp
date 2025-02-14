@@ -69,7 +69,9 @@ bool ZoneFile::Load(const QString aFilePath, FF_PLATFORM platform) {
     return true;
 }
 
-bool ZoneFile::Load(const QByteArray aFileData, const QString aFileStem, FF_PLATFORM platform) {
+bool ZoneFile::Load(const QByteArray aFileData, const QString aFileStem, FF_PLATFORM platform, FF_GAME game) {
+    fileStem = aFileStem;
+
     // Open zone file as little endian stream
     QDataStream zoneFileStream(aFileData);
     if (platform == FF_PLATFORM_PC) {
@@ -79,12 +81,11 @@ bool ZoneFile::Load(const QByteArray aFileData, const QString aFileStem, FF_PLAT
     }
 
     // Parse data from zone file header
-    pParseZoneHeader(&zoneFileStream);
-    fileStem = aFileStem;
+    pParseZoneHeader(&zoneFileStream, game);
     records =
-        pParseZoneIndex(&zoneFileStream, recordCount);
+        pParseZoneIndex(&zoneFileStream, recordCount, game);
     assetMap =
-        pParseAssets(&zoneFileStream, records);
+        pParseAssets(&zoneFileStream, records, game);
 
     return true;
 }
@@ -117,22 +118,65 @@ AssetMap ZoneFile::GetAssetMap() {
     return assetMap;
 }
 
-void ZoneFile::pParseZoneHeader(QDataStream *aZoneFileStream) {
-    size = pParseZoneSize(aZoneFileStream);
-    pParseZoneUnknownsA(aZoneFileStream);
+void ZoneFile::pParseZoneHeader(QDataStream *aZoneFileStream, FF_GAME game) {
+    if (game != FF_GAME_COD2) {
+        size = pParseZoneSize(aZoneFileStream);
+        pParseZoneUnknownsA(aZoneFileStream);
+    }
 
     tagCount = pParseZoneTagCount(aZoneFileStream);
-    pParseZoneUnknownsB(aZoneFileStream);
 
+    quint32 extraCount;
+    if (game == FF_GAME_COD2) {
+        aZoneFileStream->skipRawData(4);
+        *aZoneFileStream >> extraCount;
+        qDebug() << "Extra Count: " << extraCount;
+        aZoneFileStream->skipRawData(4);
+    } else {
+        pParseZoneUnknownsB(aZoneFileStream);
+    }
     recordCount = pParseZoneRecordCount(aZoneFileStream);
 
     if (tagCount) {
-        pParseZoneUnknownsC(aZoneFileStream);
-        if (tagCount > 1) {
-            tags = pParseZoneTags(aZoneFileStream, tagCount);
+        if (game == FF_GAME_COD2) {
+
+        } else {
+            pParseZoneUnknownsC(aZoneFileStream);
         }
+        tags = pParseZoneTags(aZoneFileStream, tagCount, game);
     } else {
         aZoneFileStream->skipRawData(4);
+    }
+
+    int thingCount = 0;
+    if (game == FF_GAME_COD2) {
+        if (extraCount != 4294967295) {
+            qDebug() << "Pre Pos: " << aZoneFileStream->device()->pos();
+            for (int i = 0; i < extraCount; i++) {
+                quint32 thing;
+                *aZoneFileStream >> thing;
+
+                if (thing == 4294967295) {
+                    thingCount++;
+                }
+            }
+            qDebug() << "Post Pos: " << aZoneFileStream->device()->pos();
+            qDebug() << "Thing Count: " << thingCount;
+
+            QStringList tags2;
+            QString tag;
+            char zoneTagChar;
+            for (quint32 i = 0; i < thingCount; i++) {
+                *aZoneFileStream >> zoneTagChar;
+                while (zoneTagChar != 0) {
+                    tag += zoneTagChar;
+                    *aZoneFileStream >> zoneTagChar;
+                }
+                tags2 << tag;
+                tag.clear();
+            }
+            qDebug() << tags2;
+        }
     }
 }
 
@@ -235,11 +279,15 @@ void ZoneFile::pParseZoneUnknownsC(QDataStream *aZoneFileStream) {
 
     Parses the string tags ate the start of zone file
 */
-QStringList ZoneFile::pParseZoneTags(QDataStream *aZoneFileStream, quint32 tagCount) {
+QStringList ZoneFile::pParseZoneTags(QDataStream *aZoneFileStream, quint32 tagCount, FF_GAME game) {
     QStringList tags;
 
     // Byte 48-51: Repeated separators? ÿÿÿÿ x i
-    aZoneFileStream->skipRawData(4 * (tagCount - 1));
+    if (game == FF_GAME_COD2) {
+        aZoneFileStream->skipRawData(4 * (tagCount + 1));
+    } else {
+        aZoneFileStream->skipRawData(4 * (tagCount - 1));
+    }
 
     // Parse tags/strings before index
     QString zoneTag;
@@ -252,9 +300,6 @@ QStringList ZoneFile::pParseZoneTags(QDataStream *aZoneFileStream, quint32 tagCo
         }
         tags << zoneTag;
         zoneTag.clear();
-
-        qDebug() << "Peek: " << aZoneFileStream->device()->peek(8) << aZoneFileStream->device()->peek(8).contains(QByteArray::fromHex("FFFFFFFF"));
-        if (aZoneFileStream->device()->peek(8).contains(QByteArray::fromHex("FFFFFFFF"))) { break; }
     }
     return tags;
 }
@@ -264,11 +309,15 @@ QStringList ZoneFile::pParseZoneTags(QDataStream *aZoneFileStream, quint32 tagCo
 
     Parse the binary zone index data and populate table
 */
-QStringList ZoneFile::pParseZoneIndex(QDataStream *aZoneFileStream, quint32 recordCount) {
+QStringList ZoneFile::pParseZoneIndex(QDataStream *aZoneFileStream, quint32 recordCount, FF_GAME game) {
     QStringList result;
 
     // Don't parse if no records
     if (!recordCount) { return result; }
+
+    if (aZoneFileStream->device()->peek(4).toHex().contains("ffff")) {
+        aZoneFileStream->device()->seek(aZoneFileStream->device()->pos() - 2);
+    }
 
     // Parse index & map found asset types
     for (quint32 i = 0; i <= recordCount; i++) {
@@ -283,7 +332,7 @@ QStringList ZoneFile::pParseZoneIndex(QDataStream *aZoneFileStream, quint32 reco
     return result;
 }
 
-AssetMap ZoneFile::pParseAssets(QDataStream *aZoneFileStream, QStringList assetOrder) {
+AssetMap ZoneFile::pParseAssets(QDataStream *aZoneFileStream, QStringList assetOrder, FF_GAME game) {
     AssetMap result;
 
     aZoneFileStream->device()->seek(aZoneFileStream->device()->pos() - 8);
@@ -312,7 +361,7 @@ AssetMap ZoneFile::pParseAssets(QDataStream *aZoneFileStream, QStringList assetO
         } else if (typeStr == "IMAGE") { // image
             result.images << pParseAsset_Image(aZoneFileStream);
         } else if (typeStr == "SOUND") { // loaded_sound
-            pParseAsset_LoadedSound(aZoneFileStream);
+            result.sounds << pParseAsset_Sound(aZoneFileStream);
         } else if (typeStr == "COLLISION MAP") { // col_map_mp
             pParseAsset_ColMapMP(aZoneFileStream);
         } else if (typeStr == "MP MAP") { // game_map_sp
@@ -527,74 +576,6 @@ Shader ZoneFile::pParseAsset_Shader(QDataStream *aZoneFileStream) {
     return result;
 }
 
-bool ZoneFile::pReadUntilString(QDataStream* stream, const QString& targetString) {
-    if (!stream || targetString.isEmpty()) {
-        return false; // Invalid input
-    }
-
-    QByteArray buffer;
-    QByteArray targetBytes = targetString.toUtf8(); // Handle multibyte characters
-    const int targetLength = targetBytes.size();
-    qDebug() << targetBytes << targetLength;
-
-    // Read as unsigned bytes to handle all possible values (0-255)
-    unsigned char byte;
-    while (!stream->atEnd()) {
-        // Read one byte at a time
-        *stream >> byte;
-        buffer.append(static_cast<char>(byte)); // Append as char for QByteArray
-
-        // Keep buffer size limited to the target length
-        if (buffer.size() > targetLength) {
-            buffer.remove(0, 1);
-        }
-
-        // Check if the buffer matches the target string in raw bytes
-        if (buffer == targetBytes) {
-            // Backup to the start of the matched string
-            stream->device()->seek(stream->device()->pos() - targetLength);
-            return true;
-        }
-    }
-
-    // Target string not found
-    return false;
-}
-
-bool ZoneFile::pReadUntilHex(QDataStream* stream, const QString& hexString) {
-    if (!stream || hexString.isEmpty() || hexString.size() % 2 != 0) {
-        return false; // Invalid input
-    }
-
-    // Convert hex string to byte array
-    QByteArray targetBytes = QByteArray::fromHex(hexString.toUtf8());
-    const int targetLength = targetBytes.size();
-
-    QByteArray buffer;
-    unsigned char byte;
-
-    while (!stream->atEnd()) {
-        // Read one byte at a time
-        *stream >> byte;
-        buffer.append(static_cast<char>(byte)); // Append as char for QByteArray
-
-        // Keep buffer size limited to the target length
-        if (buffer.size() > targetLength) {
-            buffer.remove(0, 1);
-        }
-
-        // Check if the buffer matches the target byte sequence
-        if (buffer == targetBytes) {
-            // Backup to the start of the matched sequence
-            stream->device()->seek(stream->device()->pos() - targetLength);
-            return true;
-        }
-    }
-
-    // Target sequence not found
-    return false;
-}
-
 TechSet ZoneFile::pParseAsset_TechSet(QDataStream *aZoneFileStream) {
     TechSet result;
 
@@ -687,8 +668,121 @@ Image ZoneFile::pParseAsset_Image(QDataStream *aZoneFileStream) {
     return result;
 }
 
-void ZoneFile::pParseAsset_LoadedSound(QDataStream *aZoneFileStream) {
-    Q_UNUSED(aZoneFileStream);
+SoundAsset ZoneFile::pParseAsset_Sound(QDataStream *aZoneFileStream) {
+    SoundAsset result;
+
+    qDebug() << aZoneFileStream->device()->pos();
+
+    QByteArray rootNamePtr(4, Qt::Uninitialized);
+    aZoneFileStream->readRawData(rootNamePtr.data(), 4);
+    qDebug() << "Root name ptr: " << (QString)rootNamePtr.toHex();
+
+    aZoneFileStream->skipRawData(4);
+
+    *aZoneFileStream >> result.count;
+
+    if (rootNamePtr.toHex() == "ffffffff") {
+        // Read in sound file name
+        char soundNameChar;
+        *aZoneFileStream >> soundNameChar;
+        while (soundNameChar != 0) {
+            result.name += soundNameChar;
+            *aZoneFileStream >> soundNameChar;
+        }
+    }
+
+    int tagCount = 0;
+    int resultCount = 0;
+    for (int i = 0; i < result.count; i++) {
+        aZoneFileStream->skipRawData(12);
+
+        QByteArray tagPtr(4, Qt::Uninitialized);
+        aZoneFileStream->readRawData(tagPtr.data(), 4);
+
+        if (tagPtr.toHex() == "ffffffff") {
+            qDebug() << "Tag Ptr: " << tagPtr.toHex();
+            tagCount++;
+        }
+        aZoneFileStream->skipRawData(4);
+
+        QByteArray pathPtr(4, Qt::Uninitialized);
+        aZoneFileStream->readRawData(pathPtr.data(), 4);
+
+        if (pathPtr.toHex() == "ffffffff") {
+            qDebug() << "Path Ptr: " << pathPtr.toHex();
+            resultCount++;
+        }
+
+        aZoneFileStream->skipRawData(160);
+    }
+
+    for (int i = 0; i < tagCount; i++) {
+        // Read in tag?
+        QString tag;
+        char tagChar;
+        *aZoneFileStream >> tagChar;
+        while (tagChar != 0) {
+            tag += tagChar;
+            *aZoneFileStream >> tagChar;
+        }
+        qDebug() << "Tag: " << tag;
+    }
+
+    for (int i = 0; i < resultCount; i++) {
+        Sound sound;
+
+        if (aZoneFileStream->device()->peek(12).toHex().contains("ffffffff00000000")) {
+            aZoneFileStream->skipRawData(12);
+        }
+
+        aZoneFileStream->skipRawData(8);
+
+        qDebug() << "- " << aZoneFileStream->device()->pos();
+        QByteArray aliasPtr(4, Qt::Uninitialized);
+        aZoneFileStream->readRawData(aliasPtr.data(), 4);
+
+        QByteArray namePtr(4, Qt::Uninitialized);
+        aZoneFileStream->readRawData(namePtr.data(), 4);
+
+        *aZoneFileStream >> sound.dataLength;
+        qDebug() << "- Data length: " << sound.dataLength;
+
+        if (aliasPtr.toHex() == "ffffffff") {
+            // Read in sound alias name
+            char soundAliasChar;
+            *aZoneFileStream >> soundAliasChar;
+            while (soundAliasChar != 0) {
+                sound.alias += soundAliasChar;
+                *aZoneFileStream >> soundAliasChar;
+            }
+            qDebug() << "- Alias: " << sound.alias;
+        }
+
+        if (aZoneFileStream->device()->peek(4) == "RIFF") {
+            sound.path = sound.alias;
+            sound.alias = "";
+        } else if (namePtr.toHex() == "ffffffff") {
+            // Read in sound file path
+            char soundPathChar;
+            *aZoneFileStream >> soundPathChar;
+            while (soundPathChar != 0) {
+                sound.path += soundPathChar;
+                *aZoneFileStream >> soundPathChar;
+            }
+            sound.path.replace(",", "");
+            qDebug() << "- Path: " << sound.path;
+        }
+
+        if (sound.dataLength) {
+            QByteArray data(sound.dataLength, Qt::Uninitialized);
+            aZoneFileStream->readRawData(data.data(), sound.dataLength);
+            sound.data = data;
+        }
+        result.sounds.append(sound);
+    }
+    qDebug() << "- " << aZoneFileStream->device()->pos();
+
+    return result;
 }
 
 void ZoneFile::pParseAsset_ColMapMP(QDataStream *aZoneFileStream) {
@@ -1048,16 +1142,15 @@ StringTable ZoneFile::pParseAsset_StringTable(QDataStream *aZoneFileStream) {
         *aZoneFileStream >> stringTableNameChar;
     }
 
-    QVector<QString> tablePointers = QVector<QString>();
     for (quint32 i = 0; i < result.rowCount; i++) {
         QByteArray pointerData(4, Qt::Uninitialized);
         aZoneFileStream->readRawData(pointerData.data(), 4);
-        tablePointers.push_back(pointerData.toHex());
+        result.tablePointers.push_back(pointerData.toHex());
 
         aZoneFileStream->skipRawData(4);
     }
 
-    for (const QString &pointerAddr : tablePointers) {
+    for (const QString &pointerAddr : result.tablePointers) {
         QString leadingContent = "";
         if (pointerAddr == "FFFFFFFF") {
             char leadingContentChar;
@@ -1077,13 +1170,7 @@ StringTable ZoneFile::pParseAsset_StringTable(QDataStream *aZoneFileStream) {
             content += contentChar;
             *aZoneFileStream >> contentChar;
         }
-        QPair<QString, QString> tableEntry = QPair<QString, QString>();
-        tableEntry.first = leadingContent;
-        tableEntry.second = content;
-        //if (!mStrTableMap.contains(stringTableName)) {
-        //    mStrTableMap[stringTableName] = QVector<QPair<QString, QString>>();
-        //}
-        //mStrTableMap[stringTableName].push_back(tableEntry);
+        result.content[leadingContent] = content;
     }
     return result;
 }

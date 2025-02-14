@@ -6,6 +6,7 @@
 #include <QString>
 #include <QColor>
 #include <QRectF>
+#include <QMap>
 
 struct LocalString {
     QString string;
@@ -142,6 +143,8 @@ struct StringTable {
     quint32 columnCount;
     quint32 rowCount;
     QString name;
+    QVector<QString> tablePointers;
+    QMap<QString, QString> content;
 };
 
 struct Image {
@@ -319,6 +322,20 @@ struct MenuFile {
     QVector<Menu> menuDefs;
 };
 
+struct Sound {
+    QString path;
+    QString alias;
+    quint32 dataPtr;
+    quint32 dataLength;
+    QByteArray data;
+};
+
+struct SoundAsset {
+    QString name;
+    quint32 count;
+    QVector<Sound> sounds;
+};
+
 struct AssetMap {
     QVector<LocalString> localStrings;
     QVector<RawFile> rawFiles;
@@ -328,7 +345,7 @@ struct AssetMap {
     //QVector<Shader> shaders;
     QVector<TechSet> techSets;
     QVector<Image> images;
-    //QVector<Sound> sounds;
+    QVector<SoundAsset> sounds;
     //QVector<CollisionMap> collMaps;
     //QVector<LightDefinition> lightDefs;
     //QVector<UiMap> uiMaps;

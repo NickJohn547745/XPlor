@@ -1,4 +1,4 @@
-QT       += core gui 3dcore 3drender 3dinput 3dextras
+QT       += core gui multimedia
 
 RC_ICONS = XPlor.ico
 
@@ -11,6 +11,8 @@ SOURCES += \
     ddsfile.cpp \
     ddsviewer.cpp \
     fastfile.cpp \
+    fastfile_cod2.cpp \
+    fastfile_cod5.cpp \
     fastfileviewer.cpp \
     imagewidget.cpp \
     iwifile.cpp \
@@ -19,10 +21,13 @@ SOURCES += \
     lzokay.cpp \
     main.cpp \
     mainwindow.cpp \
-    modelviewer.cpp \
     iwifile.cpp \
+    preferenceeditor.cpp \
+    soundviewer.cpp \
+    stringtableviewer.cpp \
     techsetviewer.cpp \
     xtreewidget.cpp \
+    xtreewidgetitem.cpp \
     zonefile.cpp \
     zonefileviewer.cpp
 
@@ -36,6 +41,8 @@ HEADERS += \
     ddsviewer.h \
     enums.h \
     fastfile.h \
+    fastfile_cod2.h \
+    fastfile_cod5.h \
     fastfileviewer.h \
     imagewidget.h \
     ipak_structs.h \
@@ -45,11 +52,14 @@ HEADERS += \
     lzokay.hpp \
     lzx.h \
     mainwindow.h \
-    modelviewer.h \
+    preferenceeditor.h \
+    soundviewer.h \
+    stringtableviewer.h \
     techsetviewer.h \
     utils.h \
     xtreewidget.h \
     iwifile.h \
+    xtreewidgetitem.h \
     zonefile.h \
     zonefileviewer.h
 
@@ -61,11 +71,14 @@ FORMS += \
     iwiviewer.ui \
     localstringviewer.ui \
     mainwindow.ui \
+    modelviewer.ui \
+    preferenceeditor.ui \
+    soundviewer.ui \
+    stringtableviewer.ui \
     techsetviewer.ui \
     zonefileviewer.ui
 
-RESOURCES += \
-    data/Data.qrc
+RESOURCES += data/data.qrc
 
 LIBS += -L$$PWD/DevILSDK/lib/x64/Unicode/Release -lDevIL
 LIBS += -L$$PWD/DevILSDK/lib/x64/Unicode/Release -lILU
