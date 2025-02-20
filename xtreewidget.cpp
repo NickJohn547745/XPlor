@@ -38,7 +38,7 @@ XTreeWidget::~XTreeWidget() {
 
 void XTreeWidget::AddFastFile(std::shared_ptr<FastFile> aFastFile) {
     XTreeWidgetItem *fastFileItem = new XTreeWidgetItem(this);
-    fastFileItem->setText(0, aFastFile->GetFileStem());
+    fastFileItem->setText(0, aFastFile->GetStem() + ".ff");
     fastFileItem->setIcon(0, QIcon(":/icons/icons/Icon_FastFile.png"));
     if (aFastFile->GetPlatform() == "PC") {
         fastFileItem->setIcon(1, QIcon(":/icons/icons/Icon_PC.png"));
@@ -59,9 +59,9 @@ void XTreeWidget::AddFastFile(std::shared_ptr<FastFile> aFastFile) {
         fastFileItem->setIcon(2, QIcon(":/icons/icons/Icon_COD9.png"));
     }
 
-    AddZoneFile(std::make_shared<ZoneFile>(aFastFile->GetZoneFile()), fastFileItem);
+    AddZoneFile(aFastFile->GetZoneFile(), fastFileItem);
 
-    mFastFiles[aFastFile->GetFileStem().section(".", 0, 0)] = aFastFile;
+    mFastFiles[aFastFile->GetStem().section(".", 0, 0)] = aFastFile;
 
     resizeColumnToContents(1);
     setSortingEnabled(true);
@@ -75,7 +75,7 @@ void XTreeWidget::AddZoneFile(std::shared_ptr<ZoneFile> aZoneFile, XTreeWidgetIt
         zoneItem = new XTreeWidgetItem(this);
     }
     zoneItem->setIcon(0, QIcon(":/icons/icons/Icon_ZoneFile.png"));
-    zoneItem->setText(0, aZoneFile->GetFileStem());
+    zoneItem->setText(0, aZoneFile->GetStem());
 
     auto assetMap = aZoneFile->GetAssetMap();
 
@@ -85,7 +85,7 @@ void XTreeWidget::AddZoneFile(std::shared_ptr<ZoneFile> aZoneFile, XTreeWidgetIt
         localStrRoot->setIcon(0, QIcon(":/icons/icons/Icon_StringFile.png"));
 
         XTreeWidgetItem *localStrItem = new XTreeWidgetItem(localStrRoot);
-        localStrItem->setText(0, aZoneFile->GetFileStem().section('.', 0, 0) + ".str");
+        localStrItem->setText(0, aZoneFile->GetStem().section('.', 0, 0) + ".str");
         localStrItem->setIcon(0, QIcon(":/icons/icons/Icon_StringFile.png"));
     }
 
@@ -112,7 +112,8 @@ void XTreeWidget::AddZoneFile(std::shared_ptr<ZoneFile> aZoneFile, XTreeWidgetIt
             for (const QString &pathPart : rawFile.path.split('/')) {
                 bool childFound = false;
                 for (int i = 0; i < tempItem->childCount(); i++) {
-                    XTreeWidgetItem *childItem = dynamic_cast<XTreeWidgetItem*>(tempItem->child(i));
+                    QTreeWidgetItem *rawChildItem = tempItem->child(i);
+                    XTreeWidgetItem *childItem = dynamic_cast<XTreeWidgetItem*>(rawChildItem);
                     if (childItem->text(0) == pathPart) {
                         tempItem = childItem;
 
@@ -230,7 +231,7 @@ void XTreeWidget::AddZoneFile(std::shared_ptr<ZoneFile> aZoneFile, XTreeWidgetIt
         }
     }
 
-    mZoneFiles[aZoneFile->GetFileStem().section(".", 0, 0)] = aZoneFile;
+    mZoneFiles[aZoneFile->GetStem().section(".", 0, 0)] = aZoneFile;
 }
 
 void XTreeWidget::PrepareContextMenu(const QPoint &pos) {
@@ -659,22 +660,22 @@ void XTreeWidget::ItemSelectionChanged() {
     }
 }
 
-ZoneFile XTreeWidget::pFindZoneFile(const QString aFilePart) {
+std::shared_ptr<ZoneFile> XTreeWidget::pFindZoneFile(const QString aFilePart) {
     foreach (auto zoneFile, mZoneFiles) {
-        if (zoneFile->GetFileStem() == aFilePart) {
-            return *zoneFile.get();
+        if (zoneFile->GetStem() == aFilePart) {
+            return zoneFile;
         }
     }
-    return ZoneFile();
+    return nullptr;
 }
 
-FastFile XTreeWidget::pFindFastFile(const QString aFilePart) {
+std::shared_ptr<FastFile> XTreeWidget::pFindFastFile(const QString aFilePart) {
     foreach (auto fastFile, mFastFiles) {
-        if (fastFile->GetFileStem() == aFilePart) {
-            return *fastFile.get();
+        if (fastFile->GetStem() == aFilePart) {
+            return fastFile;
         }
     }
-    return FastFile();
+    return nullptr;
 }
 
 void XTreeWidget::AddIWIFile(std::shared_ptr<IWIFile> aIWIFile) {

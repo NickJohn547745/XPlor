@@ -18,9 +18,9 @@ FastFileViewer::~FastFileViewer()
 void FastFileViewer::SetFastFile(std::shared_ptr<FastFile> aFastFile) {
     mFastFile.swap(aFastFile);
 
-    ui->label_Title->setText(mFastFile->GetFileStem());
+    ui->label_Title->setText(mFastFile->GetStem());
     ui->comboBox_Company->setCurrentIndex(mFastFile->GetCompany());
-    ui->comboBox_FileType->setCurrentIndex(mFastFile->GetFileType());
+    ui->comboBox_FileType->setCurrentIndex(mFastFile->GetType());
     ui->checkBox_Signed->setChecked(mFastFile->GetSignage() == SIGNAGE_SIGNED);
     ui->lineEdit_Magic->setText(mFastFile->GetMagic());
     ui->spinBox_Version->setValue(mFastFile->GetVersion());

@@ -52,7 +52,7 @@ void LocalStringViewer::SetZoneFile(std::shared_ptr<ZoneFile> aZoneFile) {
     mLocalStrings.clear();
     ui->tableWidget_Strings->clear();
 
-    ui->label_Title->setText(aZoneFile->GetFileStem().section('.', 0, 0) + ".str");
+    ui->label_Title->setText(aZoneFile->GetStem().section('.', 0, 0) + ".str");
     for (LocalString localStr : aZoneFile->GetAssetMap().localStrings) {
         AddLocalString(localStr);
     }

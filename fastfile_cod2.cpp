@@ -1,5 +1,9 @@
 #include "fastfile_cod2.h"
 
+#include "utils.h"
+#include "compressor.h"
+#include "zonefile_cod2.h"
+
 #include <QFile>
 #include <QDebug>
 
@@ -8,10 +12,6 @@ FastFile_COD2::FastFile_COD2() {
 }
 
 FastFile_COD2::~FastFile_COD2() {
-
-}
-
-FastFile &FastFile_COD2::operator=(const FastFile &other) {
 
 }
 
@@ -59,6 +59,9 @@ bool FastFile_COD2::Load(const QByteArray aData) {
     QByteArray compressedData = aData.mid(fastFileStream.device()->pos());
     QByteArray decompressedData = Compressor::DecompressZLIB(compressedData);
 
+    QDir exportsDir(QDir::currentPath());
+    exportsDir.mkdir("exports");
+
     QFile testFile("exports/" + GetStem().split('.')[0] + ".zone");
     if(testFile.open(QIODevice::WriteOnly)) {
         testFile.write(decompressedData);
@@ -66,5 +69,9 @@ bool FastFile_COD2::Load(const QByteArray aData) {
     }
 
     // Load the zone file with the decompressed data (using an Xbox platform flag).
-    zoneFile.Load(decompressedData, GetStem().section('.', 0, 0) + ".zone", FF_PLATFORM_XBOX, FF_GAME_COD2);
+    ZoneFile_COD2 zoneFile;
+    zoneFile.Load(decompressedData, GetStem().section('.', 0, 0) + ".zone", FF_PLATFORM_XBOX);
+    SetZoneFile(std::make_shared<ZoneFile_COD2>(zoneFile));
+
+    return true;
 }

@@ -13,10 +13,10 @@ public:
     ZoneFile(const ZoneFile &aZoneFile);
     ZoneFile &operator=(const ZoneFile &other);
 
-    bool Load(const QString aFilePath, FF_PLATFORM platform = FF_PLATFORM_PC);
-    bool Load(const QByteArray aFileData, const QString aFileStem, FF_PLATFORM platform = FF_PLATFORM_NONE, FF_GAME game = FF_GAME_NONE);
+    virtual bool Load(const QByteArray aFileData, const QString aFileStem, FF_PLATFORM platform = FF_PLATFORM_NONE) = 0;
+    virtual QString AssetTypeToString(const QString aAssetType) = 0;
 
-    QString GetFileStem();
+    QString GetStem();
     quint32 GetSize();
     quint32 GetTagCount();
     QStringList GetTags();
@@ -24,50 +24,59 @@ public:
     QStringList GetRecords();
     AssetMap GetAssetMap();
 
+protected:
+    void SetStem(const QString aStem);
+    void SetSize(quint32 aSize);
+    void SetTagCount(quint32 aTagCount);
+    void SetTags(const QStringList aTags);
+    void SetRecordCount(quint32 aRecordCount);
+    void SetRecords(const QStringList aRecords);
+    void SetAssetMap(const AssetMap aAssetMap);
+
 private slots:
-    void pParseZoneHeader(QDataStream *aZoneFileStream, FF_GAME game);
-    quint32 pParseZoneSize(QDataStream *aZoneFileStream);
-    void pParseZoneUnknownsA(QDataStream *aZoneFileStream);
-    quint32 pParseZoneTagCount(QDataStream *aZoneFileStream);
-    quint32 pParseZoneRecordCount(QDataStream *aZoneFileStream);
-    void pParseZoneUnknownsB(QDataStream *aZoneFileStream);
-    void pParseZoneUnknownsC(QDataStream *aZoneFileStream);
-    QStringList pParseZoneTags(QDataStream *aZoneFileStream, quint32 tagCount, FF_GAME game);
-    QStringList pParseZoneIndex(QDataStream *aZoneFileStream, quint32 recordCount, FF_GAME game);
-    AssetMap pParseAssets(QDataStream *aZoneFileStream, QStringList assetOrder, FF_GAME game);
-    LocalString pParseAsset_LocalString(QDataStream *aZoneFileStream);
-    RawFile pParseAsset_RawFile(QDataStream *aZoneFileStream);
-    void pParseAsset_PhysPreset(QDataStream *aZoneFileStream);
-    Model pParseAsset_Model(QDataStream *aZoneFileStream);
-    void pParseAsset_Material(QDataStream *aZoneFileStream);
-    Shader pParseAsset_Shader(QDataStream *aZoneFileStream);
-    TechSet pParseAsset_TechSet(QDataStream *aZoneFileStream);
-    Image pParseAsset_Image(QDataStream *aZoneFileStream);
-    SoundAsset pParseAsset_Sound(QDataStream *aZoneFileStream);
-    void pParseAsset_ColMapMP(QDataStream *aZoneFileStream);
-    void pParseAsset_GameMapSP(QDataStream *aZoneFileStream);
-    void pParseAsset_GameMapMP(QDataStream *aZoneFileStream);
-    void pParseAsset_LightDef(QDataStream *aZoneFileStream);
-    void pParseAsset_UIMap(QDataStream *aZoneFileStream);
-    void pParseAsset_SNDDriverGlobals(QDataStream *aZoneFileStream);
-    void pParseAsset_AIType(QDataStream *aZoneFileStream);
-    void pParseAsset_FX(QDataStream *aZoneFileStream);
-    Animation pParseAsset_Animation(QDataStream *aZoneFileStream);
-    MenuFile pParseAsset_MenuFile(QDataStream *aZoneFileStream);
-    void pParseAsset_Weapon(QDataStream *aZoneFileStream);
-    void pParseAsset_D3DBSP(QDataStream *aZoneFileStream);
-    StringTable pParseAsset_StringTable(QDataStream *aZoneFileStream);
+    virtual void pParseZoneHeader(QDataStream *aZoneFileStream) = 0;
+    virtual quint32 pParseZoneSize(QDataStream *aZoneFileStream) = 0;
+    virtual void pParseZoneUnknownsA(QDataStream *aZoneFileStream) = 0;
+    virtual quint32 pParseZoneTagCount(QDataStream *aZoneFileStream) = 0;
+    virtual quint32 pParseZoneRecordCount(QDataStream *aZoneFileStream) = 0;
+    virtual void pParseZoneUnknownsB(QDataStream *aZoneFileStream) = 0;
+    virtual void pParseZoneUnknownsC(QDataStream *aZoneFileStream) = 0;
+    virtual QStringList pParseZoneTags(QDataStream *aZoneFileStream, quint32 tagCount) = 0;
+    virtual QStringList pParseZoneIndex(QDataStream *aZoneFileStream, quint32 recordCount) = 0;
+    virtual AssetMap pParseAssets(QDataStream *aZoneFileStream, QStringList assetOrder) = 0;
+    virtual LocalString pParseAsset_LocalString(QDataStream *aZoneFileStream) = 0;
+    virtual RawFile pParseAsset_RawFile(QDataStream *aZoneFileStream) = 0;
+    virtual void pParseAsset_PhysPreset(QDataStream *aZoneFileStream) = 0;
+    virtual Model pParseAsset_Model(QDataStream *aZoneFileStream) = 0;
+    virtual void pParseAsset_Material(QDataStream *aZoneFileStream) = 0;
+    virtual Shader pParseAsset_Shader(QDataStream *aZoneFileStream) = 0;
+    virtual TechSet pParseAsset_TechSet(QDataStream *aZoneFileStream) = 0;
+    virtual Image pParseAsset_Image(QDataStream *aZoneFileStream) = 0;
+    virtual SoundAsset pParseAsset_Sound(QDataStream *aZoneFileStream) = 0;
+    virtual void pParseAsset_ColMapMP(QDataStream *aZoneFileStream) = 0;
+    virtual void pParseAsset_GameMapSP(QDataStream *aZoneFileStream) = 0;
+    virtual void pParseAsset_GameMapMP(QDataStream *aZoneFileStream) = 0;
+    virtual void pParseAsset_LightDef(QDataStream *aZoneFileStream) = 0;
+    virtual void pParseAsset_UIMap(QDataStream *aZoneFileStream) = 0;
+    virtual void pParseAsset_SNDDriverGlobals(QDataStream *aZoneFileStream) = 0;
+    virtual void pParseAsset_AIType(QDataStream *aZoneFileStream) = 0;
+    virtual void pParseAsset_FX(QDataStream *aZoneFileStream) = 0;
+    virtual Animation pParseAsset_Animation(QDataStream *aZoneFileStream) = 0;
+    virtual MenuFile pParseAsset_MenuFile(QDataStream *aZoneFileStream) = 0;
+    virtual void pParseAsset_Weapon(QDataStream *aZoneFileStream) = 0;
+    virtual void pParseAsset_D3DBSP(QDataStream *aZoneFileStream) = 0;
+    virtual StringTable pParseAsset_StringTable(QDataStream *aZoneFileStream) = 0;
 
 private:
-    QString fileStem;
-    quint32 size;
-    quint32 tagCount;
-    QStringList tags;
-    quint32 recordCount;
-    QStringList records;
-    AssetMap assetMap;
-    QString platform;
-    QString game;
+    QString mStem;
+    quint32 mSize;
+    quint32 mTagCount;
+    QStringList mTags;
+    quint32 mRecordCount;
+    QStringList mRecords;
+    AssetMap mAssetMap;
+    QString mPlatform;
+    QString mGame;
 };
 
 #endif // ZONEFILE_H

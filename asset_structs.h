@@ -177,6 +177,36 @@ struct Image {
     quint32 unknown9;
 };
 
+struct Material {
+    QString name;
+    QString materialName;
+    quint32 size1;
+    quint32 size2;
+    IMAGE_COMPRESSION compression;
+    quint32 unknowna;
+    quint32 unknownb;
+    quint32 unknownc;
+    quint32 unknownd;
+    quint32 unknowne;
+    quint32 unknownf;
+    quint32 unknowng;
+    quint32 unknownh;
+    quint32 unknowni;
+    quint32 unknownj;
+    quint32 unknownk;
+    quint32 unknownl;
+    quint32 unknownm;
+    quint32 unknown1;
+    quint32 unknown2;
+    quint32 unknown3;
+    quint32 unknown4;
+    quint32 unknown5;
+    quint32 unknown6;
+    quint32 unknown7;
+    quint32 unknown8;
+    quint32 unknown9;
+};
+
 struct Menu {
     QString filePath;
     QString name;

@@ -9,8 +9,6 @@ public:
     FastFile_COD2();
     ~FastFile_COD2();
 
-    FastFile &operator=(const FastFile &other) override;
-
     bool Load(const QString aFilePath) override;
     bool Load(const QByteArray aData) override;
 };

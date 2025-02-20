@@ -1,4 +1,9 @@
 #include "fastfile_cod5.h"
+#include "zonefile_cod5.h"
+
+#include "utils.h"
+#include "compressor.h"
+#include "statusbarmanager.h"
 
 #include <QFile>
 #include <QDebug>
@@ -11,11 +16,9 @@ FastFile_COD5::~FastFile_COD5() {
 
 }
 
-FastFile &FastFile_COD5::operator=(const FastFile &other) {
-
-}
-
 bool FastFile_COD5::Load(const QString aFilePath) {
+    StatusBarManager::instance().updateStatus("Loading COD5 Fast File w/path", 1000);
+
     if (aFilePath.isEmpty()) {
         return false;
     }
@@ -42,6 +45,7 @@ bool FastFile_COD5::Load(const QString aFilePath) {
 }
 
 bool FastFile_COD5::Load(const QByteArray aData) {
+    StatusBarManager::instance().updateStatus("Loading COD5 Fast File w/data", 1000);
     QByteArray decompressedData;
 
     // Create a QDataStream on the input data.
@@ -50,23 +54,34 @@ bool FastFile_COD5::Load(const QByteArray aData) {
 
     // Parse header values.
     SetCompany(pParseFFCompany(&fastFileStream));
-    fileType  = pParseFFFileType(&fastFileStream);
-    signage   = pParseFFSignage(&fastFileStream);
-    magic     = pParseFFMagic(&fastFileStream);
-    version   = pParseFFVersion(&fastFileStream);
-    platform  = pCalculateFFPlatform();
-    game      = pCalculateFFGame();
+    SetType(pParseFFFileType(&fastFileStream));
+    SetSignage(pParseFFSignage(&fastFileStream));
+    SetMagic(pParseFFMagic(&fastFileStream));
+    quint32 version = pParseFFVersion(&fastFileStream);
+    SetVersion(version);
+    const QString platformStr = pCalculateFFPlatform(version);
+    SetPlatform(platformStr);
+    SetGame("COD5");
 
     // For COD5, simply decompress from offset 12.
     decompressedData = Compressor::DecompressZLIB(aData.mid(12));
 
-    QFile testFile("exports/" + fileStem.section('.', 0, 0) + ".zone");
+    QFile testFile("exports/" + GetStem().section('.', 0, 0) + ".zone");
     if(testFile.open(QIODevice::WriteOnly)) {
         testFile.write(decompressedData);
         testFile.close();
     }
 
-    zoneFile.Load(decompressedData, fileStem.section('.', 0, 0) + ".zone");
+    FF_PLATFORM platform = FF_PLATFORM_NONE;
+    if (platformStr == "PC") {
+        platform = FF_PLATFORM_PC;
+    } else if (platformStr == "360") {
+        platform = FF_PLATFORM_XBOX;
+    }
+
+    ZoneFile_COD5 zoneFile;
+    zoneFile.Load(decompressedData, GetStem().section('.', 0, 0) + ".zone", platform);
+    SetZoneFile(std::make_shared<ZoneFile_COD5>(zoneFile));
 
     return true;
 }

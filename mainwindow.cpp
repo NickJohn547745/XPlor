@@ -11,6 +11,7 @@
 #include "dds_structs.h"
 #include "iwifile.h"
 #include "ddsfile.h"
+#include "statusbarmanager.h"
 
 #include <qmath.h>
 
@@ -37,7 +38,21 @@ MainWindow::MainWindow(QWidget *parent)
     //ModelViewer *mModelViewer = new ModelViewer(container);
     //mModelViewer->setAcceptDrops(false);
 
-    connect(ui->actionPreferences, &QAction::triggered, this, [this](bool checked = false) {
+    mProgressBar = new QProgressBar(this);
+    mProgressBar->setMaximum(100);  // Default max value
+    mProgressBar->setVisible(false); // Initially hidden
+
+    connect(&StatusBarManager::instance(), &StatusBarManager::statusUpdated,
+            this, &MainWindow::HandleStatusUpdate);
+
+    connect(&StatusBarManager::instance(), &StatusBarManager::progressUpdated,
+            this, &MainWindow::HandleProgressUpdate);
+
+    statusBar()->addPermanentWidget(mProgressBar);
+
+    connect(ui->actionPreferences, &QAction::triggered, this, [this](bool checked) {
+        Q_UNUSED(checked);
+
         PreferenceEditor *prefEditor = new PreferenceEditor(this);
         prefEditor->exec();
     });
@@ -198,7 +213,7 @@ MainWindow::MainWindow(QWidget *parent)
         fastFileViewer->setAcceptDrops(false);
         fastFileViewer->SetFastFile(aFastFile);
 
-        QString fileStem = aFastFile->GetFileStem();
+        QString fileStem = aFastFile->GetStem();
         for (int i = 0; i < ui->tabWidget->count(); i++) {
             if (ui->tabWidget->tabText(i) == fileStem) {
                 return;
@@ -215,7 +230,7 @@ MainWindow::MainWindow(QWidget *parent)
         zoneFileViewer->setAcceptDrops(false);
         zoneFileViewer->SetZoneFile(aZoneFile);
 
-        QString fileStem = aZoneFile->GetFileStem();
+        QString fileStem = aZoneFile->GetStem();
         for (int i = 0; i < ui->tabWidget->count(); i++) {
             if (ui->tabWidget->tabText(i) == fileStem) {
                 return;
@@ -232,7 +247,7 @@ MainWindow::MainWindow(QWidget *parent)
         localStrViewer->setAcceptDrops(false);
         localStrViewer->SetZoneFile(aZoneFile);
 
-        QString fileStem = aZoneFile->GetFileStem() + ".str";
+        QString fileStem = aZoneFile->GetStem() + ".str";
         for (int i = 0; i < ui->tabWidget->count(); i++) {
             if (ui->tabWidget->tabText(i) == fileStem) {
                 return;
@@ -375,15 +390,11 @@ void MainWindow::Reset() {
     and opens the selected file.
 */
 bool MainWindow::OpenFastFile(const QString aFastFilePath) {
-    FastFile fastFile;
-    if (!fastFile.Load(aFastFilePath)) {
-        qDebug() << "Error: Failed to load fast file!";
-        return false;
-    }
-    mTreeWidget->AddFastFile(std::make_shared<FastFile>(fastFile));
+    std::shared_ptr<FastFile> fastFile = FastFile::Create(aFastFilePath);
+    mTreeWidget->AddFastFile(fastFile);
 
     // Open zone file after decompressing ff and writing
-    return false;
+    return true;
 }
 
 /*
@@ -408,14 +419,15 @@ bool MainWindow::OpenFastFile() {
     and opens the selected file.
 */
 bool MainWindow::OpenZoneFile(const QString aZoneFilePath, bool fromFF) {
+    Q_UNUSED(aZoneFilePath);
     Q_UNUSED(fromFF);
 
-    ZoneFile zoneFile;
-    if (!zoneFile.Load(aZoneFilePath)) {
-        qDebug() << "Error: Failed to load zone file!";
-        return false;
-    }
-    mTreeWidget->AddZoneFile(std::make_shared<ZoneFile>(zoneFile));
+    //ZoneFile zoneFile;
+    //if (!zoneFile.Load(aZoneFilePath)) {
+    //    qDebug() << "Error: Failed to load zone file!";
+    //    return false;
+    //}
+    //mTreeWidget->AddZoneFile(std::make_shared<ZoneFile>(zoneFile));
 
     return true;
 }
@@ -508,6 +520,20 @@ int MainWindow::LoadFile_DDSFiles(const QStringList aFilePaths) {
         mTreeWidget->AddDDSFile(std::make_shared<DDSFile>(filePath));
     }
     return 0;
+}
+
+void MainWindow::HandleStatusUpdate(const QString &message, int timeout) {
+    statusBar()->showMessage(message, timeout);
+    mProgressBar->setVisible(false); // Hide progress bar if just a message
+}
+
+void MainWindow::HandleProgressUpdate(const QString &message, int progress, int max) {
+    mProgressBar->setMaximum(max);
+    mProgressBar->setValue(progress);
+    mProgressBar->setVisible(true);
+
+    QString progressText = QString("%1 (%2/%3)").arg(message).arg(progress).arg(max);
+    statusBar()->showMessage(progressText);
 }
 
 int MainWindow::LoadFile_DDS(const QString aFilePath) {

@@ -5,6 +5,7 @@
 #include "QtZlib/zlib.h"
 #include "lzokay.hpp"
 #include "lzx.h"
+#include "statusbarmanager.h"
 
 #include <stdint.h>
 #include <stddef.h>
@@ -54,7 +55,10 @@ public:
         char buffer[4096];
 
         // Decompress until we reach the stream end.
+        int index = 0;
         do {
+            StatusBarManager::instance().updateProgressStatus("Processing Decompressing ZLib Data", index++, index++);
+
             strm.next_out = reinterpret_cast<Bytef*>(buffer);
             strm.avail_out = sizeof(buffer);
 

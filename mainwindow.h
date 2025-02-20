@@ -24,6 +24,7 @@
 #include <QDockWidget>
 #include <QPlainTextEdit>
 #include <QMimeData>
+#include <QProgressBar>
 #include <windows.h>
 
 QT_BEGIN_NAMESPACE
@@ -55,6 +56,9 @@ private slots:
     int LoadFile_DDS(const QString aFilePath);
     int LoadFile_DDSFiles(const QStringList aFilePaths);
 
+    void HandleStatusUpdate(const QString &message, int timeout);
+    void HandleProgressUpdate(const QString &message, int progress, int max);
+
 protected:
     void dragEnterEvent(QDragEnterEvent *event) override;
     void dragMoveEvent(QDragMoveEvent *event) override;
@@ -72,6 +76,7 @@ private:
     QMap<QString, QTreeWidgetItem*> mTreeMap;
     QMap<QString, QVector<QPair<QString, QString>>> mStrTableMap;
     XTreeWidget *mTreeWidget;
+    QProgressBar *mProgressBar;
 
     quint32 mBSPVersion;
     quint32 mDiskLumpCount;

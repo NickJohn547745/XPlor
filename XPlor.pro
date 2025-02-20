@@ -13,6 +13,8 @@ SOURCES += \
     fastfile.cpp \
     fastfile_cod2.cpp \
     fastfile_cod5.cpp \
+    fastfile_cod7.cpp \
+    fastfile_cod9.cpp \
     fastfileviewer.cpp \
     imagewidget.cpp \
     iwifile.cpp \
@@ -24,11 +26,16 @@ SOURCES += \
     iwifile.cpp \
     preferenceeditor.cpp \
     soundviewer.cpp \
+    statusbarmanager.cpp \
     stringtableviewer.cpp \
     techsetviewer.cpp \
     xtreewidget.cpp \
     xtreewidgetitem.cpp \
     zonefile.cpp \
+    zonefile_cod2.cpp \
+    zonefile_cod5.cpp \
+    zonefile_cod7.cpp \
+    zonefile_cod9.cpp \
     zonefileviewer.cpp
 
 HEADERS += \
@@ -43,6 +50,8 @@ HEADERS += \
     fastfile.h \
     fastfile_cod2.h \
     fastfile_cod5.h \
+    fastfile_cod7.h \
+    fastfile_cod9.h \
     fastfileviewer.h \
     imagewidget.h \
     ipak_structs.h \
@@ -54,6 +63,7 @@ HEADERS += \
     mainwindow.h \
     preferenceeditor.h \
     soundviewer.h \
+    statusbarmanager.h \
     stringtableviewer.h \
     techsetviewer.h \
     utils.h \
@@ -61,6 +71,10 @@ HEADERS += \
     iwifile.h \
     xtreewidgetitem.h \
     zonefile.h \
+    zonefile_cod2.h \
+    zonefile_cod5.h \
+    zonefile_cod7.h \
+    zonefile_cod9.h \
     zonefileviewer.h
 
 FORMS += \

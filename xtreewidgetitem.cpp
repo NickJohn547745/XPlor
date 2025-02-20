@@ -14,12 +14,17 @@ bool XTreeWidgetItem::operator<(const QTreeWidgetItem &other) const {
     // Attempt to cast the other item to our custom type.
     const XTreeWidgetItem* otherItem = dynamic_cast<const XTreeWidgetItem*>(&other);
     if (otherItem) {
-        if ((this->childCount() > 0) != (otherItem->childCount() > 0))
-            return this->childCount() <= 0; // true if this item is a group and other is not
+        bool thisIsGroup = this->childCount() > 0;
+        bool otherIsGroup = otherItem->childCount() > 0;
+
+        if (thisIsGroup != otherIsGroup) {
+            return otherIsGroup; // Groups should come before non-groups
+        }
     }
     // Fallback to the default string comparison on the current sort column.
-    return !QTreeWidgetItem::operator<(other);
+    return QTreeWidgetItem::operator<(other);
 }
+
 
 XTreeWidgetItem& XTreeWidgetItem::operator=(const XTreeWidgetItem &other)
 {

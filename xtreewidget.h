@@ -48,8 +48,8 @@ private:
     QMap<QString, std::shared_ptr<DDSFile>> mDDSFiles;
     QMap<QString, std::shared_ptr<IWIFile>> mIWIFiles;
 
-    ZoneFile pFindZoneFile(const QString aFilePart);
-    FastFile pFindFastFile(const QString aFilePart);
+    std::shared_ptr<ZoneFile> pFindZoneFile(const QString aFilePart);
+    std::shared_ptr<FastFile> pFindFastFile(const QString aFilePart);
 };
 
 #endif // XTREEWIDGET_H

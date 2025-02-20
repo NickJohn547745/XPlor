@@ -29,7 +29,7 @@ void ZoneFileViewer::SetZoneFile(std::shared_ptr<ZoneFile> aZoneFile) {
 
     const QStringList tags = aZoneFile->GetTags();
     ui->listWidget_Tags->addItems(tags);
-    ui->label_Title->setText(aZoneFile->GetFileStem());
+    ui->label_Title->setText(aZoneFile->GetStem());
 
     if (tags.isEmpty()) {
         ui->groupBox_Tags->hide();
@@ -49,7 +49,7 @@ void ZoneFileViewer::SetZoneFile(std::shared_ptr<ZoneFile> aZoneFile) {
         }
         recordCounts[record]++;
 
-        QString assetType = Utils::AssetTypeToString(record);
+        QString assetType = aZoneFile->AssetTypeToString(record);
         if (lastAsset.isEmpty()) {
             lastAsset = assetType;
         } else if (lastAsset == assetType) {
@@ -79,7 +79,8 @@ void ZoneFileViewer::SetZoneFile(std::shared_ptr<ZoneFile> aZoneFile) {
     int recordIndex = 0;
     for (const QString &record : recordCounts.keys()) {
         int recordCount = recordCounts[record];
-        QString assetType = Utils::AssetTypeToString(record);
+
+        QString assetType = aZoneFile->AssetTypeToString(record);
 
         ui->tableWidget_RecordCounts->setRowCount(recordIndex + 1);
 
