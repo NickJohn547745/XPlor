@@ -71,5 +71,7 @@
         <file>icons/Icon_Paste.png</file>
         <file>icons/Icon_Save.png</file>
         <file>icons/Icon_OpenFile.png</file>
+        <file>icons/Icon_COD2.png</file>
+        <file>icons/Icon_Material.png</file>
     </qresource>
 </RCC>
