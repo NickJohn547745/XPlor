@@ -44,6 +44,10 @@ void XTreeWidget::AddFastFile(std::shared_ptr<FastFile> aFastFile) {
         fastFileItem->setIcon(1, QIcon(":/icons/icons/Icon_PC.png"));
     } else if (aFastFile->GetPlatform() == "360") {
         fastFileItem->setIcon(1, QIcon(":/icons/icons/Icon_Xbox.png"));
+    } else if (aFastFile->GetPlatform() == "Wii") {
+        fastFileItem->setIcon(1, QIcon(":/icons/icons/Icon_Wii.png"));
+    } else if (aFastFile->GetPlatform() == "WiiU") {
+        fastFileItem->setIcon(1, QIcon(":/icons/icons/Icon_WiiU.png"));
     }
     if (aFastFile->GetGame() == "COD2") {
         fastFileItem->setIcon(2, QIcon(":/icons/icons/Icon_COD2.png"));
@@ -67,6 +71,7 @@ void XTreeWidget::AddFastFile(std::shared_ptr<FastFile> aFastFile) {
 
     resizeColumnToContents(1);
     setSortingEnabled(true);
+    sortByColumn(0, Qt::AscendingOrder);
 }
 
 void XTreeWidget::AddZoneFile(std::shared_ptr<ZoneFile> aZoneFile, XTreeWidgetItem *aParentItem) {
@@ -77,7 +82,7 @@ void XTreeWidget::AddZoneFile(std::shared_ptr<ZoneFile> aZoneFile, XTreeWidgetIt
         zoneItem = new XTreeWidgetItem(this);
     }
     zoneItem->setIcon(0, QIcon(":/icons/icons/Icon_ZoneFile.png"));
-    zoneItem->setText(0, aZoneFile->GetStem());
+    zoneItem->setText(0, aZoneFile->GetStem() + ".zone");
 
     auto assetMap = aZoneFile->GetAssetMap();
 
@@ -350,8 +355,9 @@ void XTreeWidget::PrepareContextMenu(const QPoint &pos) {
             iwiFile->SaveJPG();
         });
     } else if (activeText.contains(".ff")) {
-        QMenu *closeMultipleAction = new QMenu("Close Multiple Tabs");
+        const QString fileStem = activeText.replace(".zone", "");
 
+        QMenu *closeMultipleAction = new QMenu("Close Multiple Tabs");
 
         QAction *closeAllAction = new QAction("Close All");
         closeMultipleAction->addAction(closeAllAction);
@@ -452,10 +458,28 @@ void XTreeWidget::PrepareContextMenu(const QPoint &pos) {
         QMenu *exportSubmenu = new QMenu("Export...", this);
         contextMenu->addMenu(exportSubmenu);
 
-        QAction *exportDDSAction = new QAction("Export as Zone File");
-        exportSubmenu->addAction(exportDDSAction);
-        connect(exportDDSAction, &QAction::triggered, this, [](bool checked) {
+        std::shared_ptr<FastFile> fastFile = mFastFiles[fileStem];
+
+        QAction *exportFastFileAction = new QAction("Export Fast File");
+        exportSubmenu->addAction(exportFastFileAction);
+        connect(exportFastFileAction, &QAction::triggered, this, [fastFile](bool checked) {
             Q_UNUSED(checked);
+
+            const QString fastFilePath = QFileDialog::getSaveFileName(
+                nullptr, "Export Fast File...", QDir::currentPath(),
+                "Fast File (*.ff);;All Files(*.*)");
+
+            fastFile->ExportFastFile(fastFilePath);
+        });
+        QAction *exportZoneFileAction = new QAction("Export Zone File");
+        exportSubmenu->addAction(exportZoneFileAction);
+        connect(exportZoneFileAction, &QAction::triggered, this, [fastFile](bool checked) {
+            Q_UNUSED(checked);
+
+            const QString zoneFilePath = QFileDialog::getSaveFileName(
+                nullptr, "Export Zone File...", QDir::currentPath(),
+                "Zone File (*.zone);;All Files(*.*)");
+            fastFile->GetZoneFile()->SaveZoneFile(zoneFilePath);
         });
     } else if (activeText.contains(".zone")) {
         const QString fileStem = activeText.replace(".zone", "");
@@ -469,9 +493,14 @@ void XTreeWidget::PrepareContextMenu(const QPoint &pos) {
 
         std::shared_ptr<ZoneFile> zoneFile = mZoneFiles[fileStem];
 
-        QAction *exportDDSAction = new QAction("Export as Fast File");
-        exportSubmenu->addAction(exportDDSAction);
-        connect(exportDDSAction, &QAction::triggered, this, [zoneFile](bool checked) {
+        QAction *exportZoneFileAction = new QAction("Export Zone File");
+        exportSubmenu->addAction(exportZoneFileAction);
+        connect(exportZoneFileAction, &QAction::triggered, this, [](bool checked) {
+            Q_UNUSED(checked);
+        });
+        QAction *exportFastFileAction = new QAction("Export Fast File");
+        exportSubmenu->addAction(exportFastFileAction);
+        connect(exportFastFileAction, &QAction::triggered, this, [](bool checked) {
             Q_UNUSED(checked);
         });
     } else if (activeItem && activeText.contains(".wav")) {
