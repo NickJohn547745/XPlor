@@ -23,3 +23,24 @@ SOURCES += \
 # } else {
 #     SOURCES -= autotest_cod5.cpp
 # }
+
+app.depends += \
+    libs/core \
+    libs/compression \
+    libs/encryption
+
+LIBS += \
+    -L$$OUT_PWD/../libs/ -lcore -lencryption -lcompression
+
+INCLUDEPATH += \
+    $$PWD/../libs/core \
+    $$PWD/../libs/encryption \
+    $$PWD/../libs/compression
+
+DEPENDPATH += \
+    $$PWD/../libs/core \
+    $$PWD/../libs/encryption \
+    $$PWD/../libs/compression
+
+RESOURCES += \
+    data.qrc

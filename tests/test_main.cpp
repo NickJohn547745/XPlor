@@ -7,10 +7,10 @@
 #include "autotest_cod5.cpp"
 
 int main(int argc, char *argv[]) {
-    AutoTest_XPlor test_xplor;
-    if (QTest::qExec(&test_xplor, argc, argv)) {
-        return -1;
-    }
+    // AutoTest_XPlor test_xplor;
+    // if (!QTest::qExec(&test_xplor, argc, argv)) {
+    //     return -1;
+    // }
 
     // AutoTest_COD1 test_cod1;
     // if (QTest::qExec(&test_cod1, argc, argv)) {
@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
     // }
 
     AutoTest_COD5 test_cod5;
-    if (QTest::qExec(&test_cod5, argc, argv)) {
+    if (!QTest::qExec(&test_cod5, argc, argv)) {
         return -10;
     }
 

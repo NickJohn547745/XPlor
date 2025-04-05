@@ -24,7 +24,6 @@ public:
     QStringList GetRecords();
     AssetMap GetAssetMap();
 
-protected:
     void SetStem(const QString aStem);
     void SetSize(quint32 aSize);
     void SetTagCount(quint32 aTagCount);

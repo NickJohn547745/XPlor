@@ -71,20 +71,16 @@ app.depends += \
     libs/zonefile
 
 LIBS += \
-    -L$$PWD/../third_party/devil_sdk/lib/ -lDevIL \
-    -L$$PWD/../third_party/devil_sdk/lib/ -lILU \
-    -L$$PWD/../third_party/devil_sdk/lib/ -lILUT \
+    -L$$PWD/../third_party/devil_sdk/lib/ -lDevIL -lILU -lILUT \
     -L$$PWD/../third_party/zlib/lib/ -lzlib \
     -L$$OUT_PWD/../libs/ -lcore \
     -L$$OUT_PWD/../libs/ -lcompression \
-#   -L$$OUT_PWD/../libs/ -lencryption \
+    -L$$OUT_PWD/../libs/ -lencryption \
     -L$$OUT_PWD/../libs/ -lfastfile \
     -L$$OUT_PWD/../libs/ -lddsfile \
-#   -L$$OUT_PWD/../libs/ -lipakfile \
+    -L$$OUT_PWD/../libs/ -lipakfile \
     -L$$OUT_PWD/../libs/ -liwifile \
     -L$$OUT_PWD/../libs/ -lzonefile
-
-message($$OUT_PWD/../libs/core)
 
 INCLUDEPATH += \
     $$PWD/../third_party/devil_sdk/include/ \
@@ -100,7 +96,7 @@ INCLUDEPATH += \
 
 DEPENDPATH += \
     $$PWD/../third_party/devil_sdk/include/ \
-    $$PWD/../third_party/zlib_lib/include \
+    $$PWD/../third_party/zlib/include \
     $$PWD/../libs/core \
     $$PWD/../libs/compression \
     $$PWD/../libs/encryption \
@@ -109,3 +105,9 @@ DEPENDPATH += \
     $$PWD/../libs/ipakfile \
     $$PWD/../libs/iwifile \
     $$PWD/../libs/zonefile
+
+# Copy DLLs to Debug folder
+QMAKE_POST_LINK += xcopy /Y /E /I \"D:/Projects/Qt/XPlor/third_party/devil_sdk/lib\\*.dll\" \"$$OUT_PWD/debug/\" $$escape_expand(\\n\\t)
+
+# Copy DLLs to Release folder
+QMAKE_POST_LINK += xcopy /Y /E /I \"D:/Projects/Qt/XPlor/third_party/devil_sdk/lib\\*.dll\" \"$$OUT_PWD/release/\" $$escape_expand(\\n\\t)

@@ -467,6 +467,7 @@ bool MainWindow::OpenFastFile(const QString aFastFilePath) {
     }
 
     std::shared_ptr<FastFile> fastFile = FastFile::Open(aFastFilePath);
+    fastFile->SetStem(fastFileStem);
     mTreeWidget->AddFastFile(fastFile);
 
     // Open zone file after decompressing ff and writing

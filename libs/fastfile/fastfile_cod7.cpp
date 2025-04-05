@@ -89,7 +89,7 @@ bool FastFile_COD7::Load(const QByteArray aData) {
     fastFileStream.readRawData(fileName.data(), 32);
 
     // Build the IV table from the fileName.
-    QByteArray ivTable = Compressor::InitIVTable(fileName);
+    QByteArray ivTable = Encryption::InitIVTable(fileName);
 
     // Skip the RSA signature (256 bytes).
     QByteArray rsaSignature(256, Qt::Uninitialized);
@@ -111,16 +111,16 @@ bool FastFile_COD7::Load(const QByteArray aData) {
         fastFileStream.readRawData(sectionData.data(), sectionSize);
 
         // Compute the IV for this section.
-        QByteArray iv = Compressor::GetIV(ivTable, sectionIndex);
+        QByteArray iv = Encryption::GetIV(ivTable, sectionIndex);
 
         // Decrypt the section using Salsa20.
-        QByteArray decData = Compressor::salsa20DecryptSection(sectionData, key, iv);
+        QByteArray decData = Encryption::salsa20DecryptSection(sectionData, key, iv);
 
         // Compute SHA1 hash of the decrypted data.
         QByteArray sectionHash = QCryptographicHash::hash(decData, QCryptographicHash::Sha1);
 
         // Update the IV table based on the section hash.
-        Compressor::UpdateIVTable(ivTable, sectionIndex, sectionHash);
+        Encryption::UpdateIVTable(ivTable, sectionIndex, sectionHash);
 
         // Build a compressed data buffer by prepending the two-byte zlib header.
         QByteArray compressedData;

@@ -92,7 +92,7 @@ bool FastFile_COD9::Load(const QByteArray aData) {
     if (GetPlatform() == "360") {
         //decompressedData = Compressor::cod9_decryptFastFile(aData);
     } else if (GetPlatform() == "PC") {
-        decompressedData = Compressor::decryptFastFile(aData);
+        decompressedData = Encryption::decryptFastFile(aData);
     }
 
     // For COD9, write out the complete decompressed zone for testing.

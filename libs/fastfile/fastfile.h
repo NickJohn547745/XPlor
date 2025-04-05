@@ -3,6 +3,7 @@
 
 #include "enums.h"
 #include "zonefile.h"
+#include "encryption.h"
 
 #include <QString>
 #include <QCryptographicHash>

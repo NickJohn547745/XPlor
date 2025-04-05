@@ -66,11 +66,7 @@ bool FastFile_COD5::Load(const QByteArray aData) {
     // For COD5, simply decompress from offset 12.
     decompressedData = Compressor::DecompressZLIB(aData.mid(12));
 
-    QFile testFile("exports/" + GetStem() + ".zone");
-    if(testFile.open(QIODevice::WriteOnly)) {
-        testFile.write(decompressedData);
-        testFile.close();
-    }
+    Utils::ExportData(GetStem() + ".zone", decompressedData);
 
     FF_PLATFORM platform = FF_PLATFORM_NONE;
     if (platformStr == "PC") {
@@ -80,7 +76,8 @@ bool FastFile_COD5::Load(const QByteArray aData) {
     }
 
     ZoneFile_COD5 zoneFile;
-    zoneFile.Load(decompressedData, GetStem() + ".zone", platform);
+    zoneFile.SetStem(GetStem());
+    //zoneFile.Load(decompressedData, GetStem() + ".zone", platform);
     SetZoneFile(std::make_shared<ZoneFile_COD5>(zoneFile));
 
     return true;

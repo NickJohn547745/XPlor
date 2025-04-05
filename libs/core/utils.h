@@ -10,6 +10,18 @@
 
 class Utils {
 public:
+    static bool ExportData(const QString aFileName, const QByteArray aData) {
+        QDir workingDir = QDir::currentPath();
+        workingDir.mkdir("exports");
+
+        QFile testFile("exports/" + aFileName);
+        if(!testFile.open(QIODevice::WriteOnly)) {
+            return false;
+        }
+        testFile.write(aData);
+        testFile.close();
+        return true;
+    }
     static bool ReadUntilString(QDataStream* stream, const QString& targetString) {
         if (!stream || targetString.isEmpty()) {
             return false; // Invalid input
