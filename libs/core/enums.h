@@ -7,7 +7,9 @@ enum FF_PLATFORM {
     FF_PLATFORM_NONE = 0x00,    // No platform
     FF_PLATFORM_XBOX = 0x01,    // Xbox 360
     FF_PLATFORM_PS3 = 0x02,     // Playstation 3
-    FF_PLATFORM_PC = 0x03       // PC
+    FF_PLATFORM_PC = 0x03,      // PC
+    FF_PLATFORM_WII = 0x04,     // WII
+    FF_PLATFORM_WIIU = 0x05     // WII U
 };
 
 enum FF_GAME {

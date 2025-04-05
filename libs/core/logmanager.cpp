@@ -1,6 +1,8 @@
 #include "logmanager.h"
+#include "qdebug.h"
 
 void LogManager::addEntry(const QString &entry) {
+    qDebug() << entry;
     emit entryAdded(entry);
 }
 
