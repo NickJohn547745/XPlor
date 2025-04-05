@@ -4,7 +4,6 @@
 #include "fastfile_cod5.h"
 #include "fastfile_cod7.h"
 #include "fastfile_cod9.h"
-#include "compressor.h"
 #include "logmanager.h"
 
 #include <QFile>
@@ -40,6 +39,77 @@ FastFile::~FastFile() {
 
 }
 
+QString FastFile::GetStem() const {
+    return mStem;
+}
+
+FF_FILETYPE FastFile::GetType() const {
+    return mType;
+}
+
+FF_COMPANY FastFile::GetCompany() const {
+    return mCompany;
+}
+
+FF_SIGNAGE FastFile::GetSignage() const {
+    return mSignage;
+}
+
+QString FastFile::GetMagic() const {
+    return mMagic;
+}
+
+quint32 FastFile::GetVersion() const {
+    return mVersion;
+}
+
+std::shared_ptr<ZoneFile> FastFile::GetZoneFile() const {
+    return mZoneFile;
+}
+
+QString FastFile::GetGame() const {
+    return mGame;
+}
+
+QString FastFile::GetPlatform() const {
+    return mPlatform;
+}
+
+void FastFile::SetStem(const QString aStem) {
+    mStem = aStem;
+}
+
+void FastFile::SetType(const FF_FILETYPE aType) {
+    mType = aType;
+}
+
+void FastFile::SetCompany(const FF_COMPANY aCompany) {
+    mCompany = aCompany;
+}
+
+void FastFile::SetSignage(const FF_SIGNAGE aSignage) {
+    mSignage = aSignage;
+}
+
+void FastFile::SetMagic(const QString aMagic) {
+    mMagic = aMagic;
+}
+
+void FastFile::SetVersion(const quint32 aVersion) {
+    mVersion = aVersion;
+}
+
+void FastFile::SetZoneFile(const std::shared_ptr<ZoneFile> aZoneFile) {
+    mZoneFile = aZoneFile;
+}
+
+void FastFile::SetGame(const QString aGame) { mGame = aGame;
+}
+
+void FastFile::SetPlatform(const QString aPlatform) {
+    mPlatform = aPlatform;
+}
+
 FF_COMPANY FastFile::pParseFFCompany(QDataStream *afastFileStream, quint32 &aCompanyInt) {
     LogManager::instance().addEntry("Parsing company into reference...");
     // Check for null datastream ptr
@@ -50,20 +120,15 @@ FF_COMPANY FastFile::pParseFFCompany(QDataStream *afastFileStream, quint32 &aCom
     aCompanyInt = companyData.toUInt();
 
     if (companyData == "IW") {
-        LogManager::instance().addEntry("Company found: 'INFINITY_WARD'");
         return COMPANY_INFINITY_WARD;
     } else if (companyData == "TA") {
-        LogManager::instance().addEntry("Company found: 'TREYARCH'");
         return COMPANY_TREYARCH;
     } else if (companyData == "Sl") {
-        LogManager::instance().addEntry("Company found: 'SLEDGEHAMMER'");
         return COMPANY_SLEDGEHAMMER;
     } else if (companyData == "NX") {
-        LogManager::instance().addEntry("Company found: 'NEVERSOFT'");
         return COMPANY_NEVERSOFT;
-    } else {
-        LogManager::instance().addEntry(QString("Failed to find company, found '%1'!").arg(companyData));
     }
+    LogManager::instance().addEntry(QString("Failed to find company, found '%1'!").arg(companyData));
     return COMPANY_NONE;
 }
 
@@ -76,20 +141,14 @@ FF_COMPANY FastFile::pParseFFCompany(QDataStream *afastFileStream) {
     afastFileStream->readRawData(companyData.data(), 2);
 
     if (companyData == "IW") {
-        LogManager::instance().addEntry("Company found: 'INFINITY_WARD'");
         return COMPANY_INFINITY_WARD;
     } else if (companyData == "TA") {
-        LogManager::instance().addEntry("Company found: 'TREYARCH'");
         return COMPANY_TREYARCH;
     } else if (companyData == "Sl") {
-        LogManager::instance().addEntry("Company found: 'SLEDGEHAMMER'");
-        return COMPANY_SLEDGEHAMMER;
     } else if (companyData == "NX") {
-        LogManager::instance().addEntry("Company found: 'NEVERSOFT'");
         return COMPANY_NEVERSOFT;
-    } else {
-        LogManager::instance().addEntry(QString("Failed to find company, found '%1'!").arg(companyData));
     }
+    LogManager::instance().addEntry(QString("Failed to find company, found '%1'!").arg(companyData));
     return COMPANY_NONE;
 }
 
@@ -98,11 +157,9 @@ FF_FILETYPE FastFile::pParseFFFileType(QDataStream *afastFileStream) {
     QByteArray fileTypeData(2, Qt::Uninitialized);
     afastFileStream->readRawData(fileTypeData.data(), 2);
     if (fileTypeData == "ff") {
-        qDebug() << "File type found: 'FAST_FILE'";
         return FILETYPE_FAST_FILE;
-    } else {
-        qDebug() << "Failed to find file type!";
     }
+    LogManager::instance().addEntry("Failed to find file type!");
     return FILETYPE_NONE;
 }
 
@@ -111,14 +168,11 @@ FF_SIGNAGE FastFile::pParseFFSignage(QDataStream *afastFileStream) {
     QByteArray signedData(1, Qt::Uninitialized);
     afastFileStream->readRawData(signedData.data(), 1);
     if (signedData == "u") {
-        qDebug() << "Found valid signage: Unsigned";
         return SIGNAGE_UNSIGNED;
     } else if (signedData == "0" || signedData == "x") {
-        qDebug() << "Found valid signage: Signed";
         return SIGNAGE_SIGNED;
-    } else {
-        qDebug() << "Failed to determine signage of fastfile!";
     }
+    LogManager::instance().addEntry("Failed to determine signage of fastfile!");
     return SIGNAGE_NONE;
 }
 
@@ -127,11 +181,9 @@ QString FastFile::pParseFFMagic(QDataStream *afastFileStream) {
     QByteArray magicData(3, Qt::Uninitialized);
     afastFileStream->readRawData(magicData.data(), 3);
     if (magicData == "100") {
-        qDebug() << QString("Found valid magic: '%1'").arg(magicData);
         return magicData;
-    } else {
-        qDebug() << "Magic invalid!";
     }
+    LogManager::instance().addEntry("Magic invalid!");
     return "";
 }
 
@@ -144,21 +196,19 @@ quint32 FastFile::pParseFFVersion(QDataStream *afastFileStream) {
 }
 
 QString FastFile::pCalculateFFPlatform(quint32 aVersion) {
-    QString result = "NONE";
     switch (aVersion) {
     case 387:           // PC World at War
     case 473:           // PC Black Ops 1
     case 1:             // PC Modern Warfare 3
     case 147:           // PC Black Ops 2
-        result = "PC";
-        break;
+        return "PC";
     case 3640721408:    // Xbox 360 Black Ops 1
     case 2449473536:    // Xbox 360 Black Ops 2
-        result = "360";
-        break;
+        return "360";
+    case 3707830272:    // Wii Black Ops 1
+        return "Wii";
     }
-    qDebug() << QString("Found platform: '%1'").arg(result);
-    return result;
+    return "NONE";
 }
 
 QString FastFile::pCalculateFFGame(quint32 aVersion) {
@@ -170,6 +220,7 @@ QString FastFile::pCalculateFFGame(quint32 aVersion) {
     case 473:           // PC Black Ops 1
         break;
     case 3640721408:    // Xbox 360 Black Ops 1
+    case 3707830272:    // Wii Black Ops 1
         result = "COD7";
         break;
     case 1:             // PC Modern Warfare 3
@@ -214,6 +265,7 @@ std::shared_ptr<FastFile> FastFile::Open(const QString &aFilePath) {
 
     quint32 companyInt;
     FF_COMPANY company = pParseFFCompany(&fastFileStream, companyInt);
+    qDebug() << "Company: " << company;
     FF_FILETYPE fileType;
     FF_SIGNAGE signage;
     QString magic;
@@ -271,4 +323,16 @@ std::shared_ptr<FastFile> FastFile::Open(const QString &aFilePath) {
 
     // Open zone file after decompressing ff and writing
     return nullptr;
+}
+bool FastFile::ExportFastFile(const QString aFastFilePath) {
+    QFile fastFile(aFastFilePath);
+    if (!fastFile.open(QIODevice::WriteOnly)) {
+        LogManager::instance().addEntry("Failed to write fast file! " +
+                                        fastFile.errorString());
+        return false;
+    }
+    fastFile.write(GetBinaryData());
+    fastFile.close();
+
+    return true;
 }

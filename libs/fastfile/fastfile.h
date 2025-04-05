@@ -3,10 +3,10 @@
 
 #include "enums.h"
 #include "zonefile.h"
-#include "encryption.h"
 
 #include <QString>
 #include <QCryptographicHash>
+#include <QFileDialog>
 
 class FastFile
 {
@@ -18,25 +18,29 @@ public:
     virtual bool Load(const QString aFilePath) = 0;
     virtual bool Load(const QByteArray aData) = 0;
 
-    virtual QString GetStem() const { return mStem; }
-    virtual FF_FILETYPE GetType() const { return mType; }
-    virtual FF_COMPANY GetCompany() const { return mCompany; }
-    virtual FF_SIGNAGE GetSignage() const { return mSignage; }
-    virtual QString GetMagic() const { return mMagic; }
-    virtual quint32 GetVersion() const { return mVersion; }
-    virtual std::shared_ptr<ZoneFile> GetZoneFile() const { return mZoneFile; }
-    virtual QString GetGame() const { return mGame; }
-    virtual QString GetPlatform() const { return mPlatform; }
+    virtual bool ExportFastFile(const QString aFastFilePath);
 
-    virtual void SetStem(const QString aStem) { mStem = aStem; }
-    virtual void SetType(const FF_FILETYPE aType) { mType = aType; }
-    virtual void SetCompany(const FF_COMPANY aCompany) { mCompany = aCompany; }
-    virtual void SetSignage(const FF_SIGNAGE aSignage) { mSignage = aSignage; }
-    virtual void SetMagic(const QString aMagic) { mMagic = aMagic; }
-    virtual void SetVersion(const quint32 aVersion) { mVersion = aVersion; }
-    virtual void SetZoneFile(const std::shared_ptr<ZoneFile> aZoneFile) { mZoneFile = aZoneFile; }
-    virtual void SetGame(const QString aGame) { mGame = aGame; }
-    virtual void SetPlatform(const QString aPlatform) { mPlatform = aPlatform; }
+    virtual QByteArray GetBinaryData() = 0;
+
+    virtual QString GetStem() const;
+    virtual FF_FILETYPE GetType() const;
+    virtual FF_COMPANY GetCompany() const;
+    virtual FF_SIGNAGE GetSignage() const;
+    virtual QString GetMagic() const;
+    virtual quint32 GetVersion() const;
+    virtual std::shared_ptr<ZoneFile> GetZoneFile() const;
+    virtual QString GetGame() const;
+    virtual QString GetPlatform() const;
+
+    virtual void SetStem(const QString aStem);
+    virtual void SetType(const FF_FILETYPE aType);
+    virtual void SetCompany(const FF_COMPANY aCompany);
+    virtual void SetSignage(const FF_SIGNAGE aSignage);
+    virtual void SetMagic(const QString aMagic);
+    virtual void SetVersion(const quint32 aVersion);
+    virtual void SetZoneFile(const std::shared_ptr<ZoneFile> aZoneFile);
+    virtual void SetGame(const QString aGame);
+    virtual void SetPlatform(const QString aPlatform);
 
     static FF_COMPANY pParseFFCompany(QDataStream *afastFileStream, quint32 &aCompanyInt);
     static FF_COMPANY pParseFFCompany(QDataStream *afastFileStream);

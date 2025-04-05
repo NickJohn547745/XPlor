@@ -1,6 +1,6 @@
 QT += core widgets
 TEMPLATE = lib
-CONFIG += staticlib c++17 debug
+CONFIG += staticlib c++17
 
 SOURCES += \
     fastfile_cod2.cpp \
