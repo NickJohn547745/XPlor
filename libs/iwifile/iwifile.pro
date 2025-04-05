@@ -1,6 +1,6 @@
 QT += core
 TEMPLATE = lib
-CONFIG += staticlib c++17 debug
+CONFIG += staticlib c++17
 
 SOURCES += \
     iwifile.cpp
