@@ -107,7 +107,7 @@ DEPENDPATH += \
     $$PWD/../libs/zonefile
 
 # Copy DLLs to Debug folder
-QMAKE_POST_LINK += xcopy /Y /E /I \"D:/Projects/Qt/XPlor/third_party/devil_sdk/lib\\*.dll\" \"$$OUT_PWD/debug/\" $$escape_expand(\\n\\t)
+QMAKE_POST_LINK += xcopy /Y /E /I \"G:/Projects/Qt/XPlor/third_party/devil_sdk/lib\\*.dll\" \"$$OUT_PWD/debug/\" $$escape_expand(\\n\\t)
 
 # Copy DLLs to Release folder
-QMAKE_POST_LINK += xcopy /Y /E /I \"D:/Projects/Qt/XPlor/third_party/devil_sdk/lib\\*.dll\" \"$$OUT_PWD/release/\" $$escape_expand(\\n\\t)
+QMAKE_POST_LINK += xcopy /Y /E /I \"G:/Projects/Qt/XPlor/third_party/devil_sdk/lib\\*.dll\" \"$$OUT_PWD/release/\" $$escape_expand(\\n\\t)
