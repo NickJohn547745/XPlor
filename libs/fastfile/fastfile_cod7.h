@@ -9,6 +9,8 @@ public:
     FastFile_COD7();
     ~FastFile_COD7();
 
+    QByteArray GetBinaryData() override;
+
     bool Load(const QString aFilePath) override;
     bool Load(const QByteArray aData) override;
 };

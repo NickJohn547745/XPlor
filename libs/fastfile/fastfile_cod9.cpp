@@ -1,8 +1,6 @@
 #include "fastfile_cod9.h"
 #include "zonefile_cod9.h"
-
-#include "utils.h"
-#include "compressor.h"
+#include "encryption.h"
 
 #include <QFile>
 #include <QDebug>
@@ -13,6 +11,10 @@ FastFile_COD9::FastFile_COD9() {
 
 FastFile_COD9::~FastFile_COD9() {
 
+}
+
+QByteArray FastFile_COD9::GetBinaryData() {
+    return QByteArray();
 }
 
 bool FastFile_COD9::Load(const QString aFilePath) {
@@ -104,7 +106,8 @@ bool FastFile_COD9::Load(const QByteArray aData) {
 
     // Load the zone file with the decompressed data (using an Xbox platform flag).
     ZoneFile_COD9 zoneFile;
-    zoneFile.Load(decompressedData, GetStem() + ".zone", FF_PLATFORM_PC);
+    zoneFile.SetStem(GetStem());
+    zoneFile.Load(decompressedData, FF_PLATFORM_PC);
     SetZoneFile(std::make_shared<ZoneFile_COD9>(zoneFile));
 
     return true;

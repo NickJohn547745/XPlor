@@ -1,7 +1,7 @@
 #include "fastfile_cod2.h"
 
 #include "utils.h"
-#include "compressor.h"
+#include "compression.h"
 #include "zonefile_cod2.h"
 
 #include <QFile>
@@ -13,6 +13,10 @@ FastFile_COD2::FastFile_COD2() {
 
 FastFile_COD2::~FastFile_COD2() {
 
+}
+
+QByteArray FastFile_COD2::GetBinaryData() {
+    return QByteArray();
 }
 
 bool FastFile_COD2::Load(const QString aFilePath) {
@@ -58,7 +62,7 @@ bool FastFile_COD2::Load(const QByteArray aData) {
 
     Utils::ReadUntilHex(&fastFileStream, "78");
     QByteArray compressedData = aData.mid(fastFileStream.device()->pos());
-    QByteArray decompressedData = Compressor::DecompressZLIB(compressedData);
+    QByteArray decompressedData = Compression::DecompressZLIB(compressedData);
 
     QDir exportsDir(QDir::currentPath());
     exportsDir.mkdir("exports");
@@ -71,7 +75,8 @@ bool FastFile_COD2::Load(const QByteArray aData) {
 
     // Load the zone file with the decompressed data (using an Xbox platform flag).
     ZoneFile_COD2 zoneFile;
-    zoneFile.Load(decompressedData, GetStem() + ".zone", FF_PLATFORM_XBOX);
+    zoneFile.SetStem(GetStem());
+    zoneFile.Load(decompressedData, FF_PLATFORM_XBOX);
     SetZoneFile(std::make_shared<ZoneFile_COD2>(zoneFile));
 
     return true;

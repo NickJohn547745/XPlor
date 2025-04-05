@@ -2,7 +2,7 @@
 #include "zonefile_cod5.h"
 
 #include "utils.h"
-#include "compressor.h"
+#include "compression.h"
 #include "statusbarmanager.h"
 
 #include <QFile>
@@ -14,6 +14,10 @@ FastFile_COD5::FastFile_COD5() {
 
 FastFile_COD5::~FastFile_COD5() {
 
+}
+
+QByteArray FastFile_COD5::GetBinaryData() {
+    return QByteArray();
 }
 
 bool FastFile_COD5::Load(const QString aFilePath) {
@@ -64,7 +68,7 @@ bool FastFile_COD5::Load(const QByteArray aData) {
     SetGame("COD5");
 
     // For COD5, simply decompress from offset 12.
-    decompressedData = Compressor::DecompressZLIB(aData.mid(12));
+    decompressedData = Compression::DecompressZLIB(aData.mid(12));
 
     Utils::ExportData(GetStem() + ".zone", decompressedData);
 
@@ -77,7 +81,7 @@ bool FastFile_COD5::Load(const QByteArray aData) {
 
     ZoneFile_COD5 zoneFile;
     zoneFile.SetStem(GetStem());
-    //zoneFile.Load(decompressedData, GetStem() + ".zone", platform);
+    zoneFile.Load(decompressedData, platform);
     SetZoneFile(std::make_shared<ZoneFile_COD5>(zoneFile));
 
     return true;
