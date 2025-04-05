@@ -14,9 +14,7 @@ ZoneFile_COD2::~ZoneFile_COD2()
 
 }
 
-bool ZoneFile_COD2::Load(const QByteArray aFileData, const QString aStem, FF_PLATFORM aPlatform) {
-    SetStem(aStem);
-
+bool ZoneFile_COD2::Load(const QByteArray aFileData, FF_PLATFORM aPlatform) {
     // Open zone file as little endian stream
     QDataStream zoneFileStream(aFileData);
     if (aPlatform == FF_PLATFORM_PC) {
@@ -26,14 +24,14 @@ bool ZoneFile_COD2::Load(const QByteArray aFileData, const QString aStem, FF_PLA
     }
 
     // Parse data from zone file header
-    pParseZoneHeader(&zoneFileStream);
+    pParseZoneHeader(&zoneFileStream, aPlatform);
     SetRecords(pParseZoneIndex(&zoneFileStream, GetRecordCount()));
     SetAssetMap(pParseAssets(&zoneFileStream, GetRecords()));
 
     return true;
 }
 
-void ZoneFile_COD2::pParseZoneHeader(QDataStream *aZoneFileStream) {
+void ZoneFile_COD2::pParseZoneHeader(QDataStream *aZoneFileStream, FF_PLATFORM aPlatform) {
     SetTagCount(pParseZoneTagCount(aZoneFileStream));
     pParseZoneUnknownsB(aZoneFileStream);
     pParseZoneUnknownsC(aZoneFileStream);
@@ -1080,44 +1078,14 @@ StringTable ZoneFile_COD2::pParseAsset_StringTable(QDataStream *aZoneFileStream)
 
 QString ZoneFile_COD2::AssetTypeToString(const QString aAssetType) {
     const QString cleanedType = aAssetType.toUpper();
-    if (cleanedType == "00000012") {        // localized string       PARTIALLY VERIFIED
-        return "LOCAL STRING";
-    } else if (cleanedType == "00000010") { // raw_file               PARTIALLY VERIFIED
-        return "RAW FILE";
-    } else if (cleanedType == "0000000E") { // fx                     PARTIALLY VERIFIED
-        return "EFFECT";
-    } else if (cleanedType == "00000004") { // loaded_sound           PARTIALLY VERIFIED
-        return "SOUND";
-    } else if (cleanedType == "04000000") { // x_anim                 PARTIALLY VERIFIED
-        return "ANIMATION";
-    } else if (cleanedType == "0C000000") { // collision_map          PARTIALLY VERIFIED
-        return "COLLISION MAP";
-    } else if (cleanedType == "21000000") { // string_table           PARTIALLY VERIFIED
-        return "STRING TABLE";
-    } else if (cleanedType == "0000000B") { // menu_file              PARTIALLY VERIFIED
-        return "MENU";
-    } else if (cleanedType == "07000000") { // tech set               PARTIALLY VERIFIED
-        return "TECH SET";
-    } else if (cleanedType == "0000000D") { // weapon                 PARTIALLY VERIFIED
-        return "WEAPON";
-    } else if (cleanedType == "11000000") { // gfx map                PARTIALLY VERIFIED
-        return "GFX MAP";
-    } else if (cleanedType == "12000000") { // light_def              PARTIALLY VERIFIED
-        return "LIGHT DEF";
-    } else if (cleanedType == "00000009") { // font                   PARTIALLY VERIFIED
-        return "FONT";
-    } else if (cleanedType == "00000001") { // xmodel                 PARTIALLY VERIFIED
-        return "MODEL";
-    } else if (cleanedType == "0D000000") { // d3dbsp                 PARTIALLY VERIFIED
-        return "D3DBSP";
-    } else if (cleanedType == "00000002") { // material               PARTIALLY VERIFIED
-        return "MATERIAL";
-    } else if (cleanedType == "00000003") { // material               PARTIALLY VERIFIED
-        return "IMAGE";
-    } else if (cleanedType == "0E000000") { // game map sp            PARTIALLY VERIFIED
-        return "GAME MAP SP";
-    } else if (cleanedType == "0B000000") { // col map sp             PARTIALLY VERIFIED
-        return "COL MAP SP";
+    if (cleanedType == "") {        // localized string       PARTIALLY VERIFIED
+        return "";
     }
     return aAssetType;
+}
+
+QByteArray ZoneFile_COD2::GetBinaryData() {
+    QByteArray result;
+
+    return result;
 }

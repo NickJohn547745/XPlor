@@ -14,9 +14,7 @@ ZoneFile_COD9::~ZoneFile_COD9()
 
 }
 
-bool ZoneFile_COD9::Load(const QByteArray aFileData, const QString aStem, FF_PLATFORM aPlatform) {
-    SetStem(aStem);
-
+bool ZoneFile_COD9::Load(const QByteArray aFileData, FF_PLATFORM aPlatform) {
     // Open zone file as little endian stream
     QDataStream zoneFileStream(aFileData);
     if (aPlatform == FF_PLATFORM_PC) {
@@ -26,14 +24,14 @@ bool ZoneFile_COD9::Load(const QByteArray aFileData, const QString aStem, FF_PLA
     }
 
     // Parse data from zone file header
-    pParseZoneHeader(&zoneFileStream);
+    pParseZoneHeader(&zoneFileStream, aPlatform);
     SetRecords(pParseZoneIndex(&zoneFileStream, GetRecordCount()));
     SetAssetMap(pParseAssets(&zoneFileStream, GetRecords()));
 
     return true;
 }
 
-void ZoneFile_COD9::pParseZoneHeader(QDataStream *aZoneFileStream) {
+void ZoneFile_COD9::pParseZoneHeader(QDataStream *aZoneFileStream, FF_PLATFORM aPlatform) {
     SetSize(pParseZoneSize(aZoneFileStream));
     pParseZoneUnknownsA(aZoneFileStream);
 
@@ -1084,4 +1082,10 @@ QString ZoneFile_COD9::AssetTypeToString(const QString aAssetType) {
         return "COL MAP SP";
     }
     return aAssetType;
+}
+
+QByteArray ZoneFile_COD9::GetBinaryData() {
+    QByteArray result;
+
+    return result;
 }

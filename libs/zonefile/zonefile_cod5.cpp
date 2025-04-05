@@ -5,18 +5,15 @@
 #include <QDebug>
 
 ZoneFile_COD5::ZoneFile_COD5()
-{
+    : ZoneFile() {
 
 }
 
-ZoneFile_COD5::~ZoneFile_COD5()
-{
+ZoneFile_COD5::~ZoneFile_COD5() {
 
 }
 
-bool ZoneFile_COD5::Load(const QByteArray aFileData, const QString aStem, FF_PLATFORM aPlatform) {
-    SetStem(aStem);
-
+bool ZoneFile_COD5::Load(const QByteArray aFileData, FF_PLATFORM aPlatform) {
     // Open zone file as little endian stream
     QDataStream zoneFileStream(aFileData);
     if (aPlatform == FF_PLATFORM_PC) {
@@ -26,14 +23,14 @@ bool ZoneFile_COD5::Load(const QByteArray aFileData, const QString aStem, FF_PLA
     }
 
     // Parse data from zone file header
-    pParseZoneHeader(&zoneFileStream);
+    pParseZoneHeader(&zoneFileStream, aPlatform);
     SetRecords(pParseZoneIndex(&zoneFileStream, GetRecordCount()));
     SetAssetMap(pParseAssets(&zoneFileStream, GetRecords()));
 
     return true;
 }
 
-void ZoneFile_COD5::pParseZoneHeader(QDataStream *aZoneFileStream) {
+void ZoneFile_COD5::pParseZoneHeader(QDataStream *aZoneFileStream, FF_PLATFORM aPlatform) {
     SetSize(pParseZoneSize(aZoneFileStream));
     pParseZoneUnknownsA(aZoneFileStream);
 
@@ -1047,9 +1044,9 @@ StringTable ZoneFile_COD5::pParseAsset_StringTable(QDataStream *aZoneFileStream)
 QString ZoneFile_COD5::AssetTypeToString(const QString aAssetType) {
     const QString cleanedType = aAssetType.toUpper();
     if (cleanedType == "17000000") {        // localized string       PARTIALLY VERIFIED
-        return "LOCAL STRING";
-    } else if (cleanedType == "20000000") { // raw_file               PARTIALLY VERIFIED
         return "RAW FILE";
+    } else if (cleanedType == "20000000") { // raw_file               PARTIALLY VERIFIED
+        return "GSC FILE";
     } else if (cleanedType == "1A000000") { // fx                     PARTIALLY VERIFIED
         return "EFFECT";
     } else if (cleanedType == "09000000") { // loaded_sound           PARTIALLY VERIFIED
@@ -1082,6 +1079,16 @@ QString ZoneFile_COD5::AssetTypeToString(const QString aAssetType) {
         return "GAME MAP SP";
     } else if (cleanedType == "0B000000") { // col map sp             PARTIALLY VERIFIED
         return "COL MAP SP";
+    } else if (cleanedType == "01000000") { // physics preset         PARTIALLY VERIFIED
+        return "PHYS PRESET";
+    } else if (cleanedType == "03000000") { // destructible def       PARTIALLY VERIFIED
+        return "DESTRUCTIBLE";
     }
     return aAssetType;
+}
+
+QByteArray ZoneFile_COD5::GetBinaryData() {
+    QByteArray result;
+
+    return result;
 }

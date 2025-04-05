@@ -1,6 +1,8 @@
 #ifndef ZONEFILE_COD5_H
 #define ZONEFILE_COD5_H
 
+#include <QIcon>
+
 #include "zonefile.h"
 
 class ZoneFile_COD5 : public ZoneFile
@@ -9,11 +11,13 @@ public:
     ZoneFile_COD5();
     ~ZoneFile_COD5();
 
-    bool Load(const QByteArray aFileData, const QString aStem, FF_PLATFORM aPlatform) override;
-    QString AssetTypeToString(const QString aAssetType);
+    bool Load(const QByteArray aFileData, FF_PLATFORM aPlatform) override;
+    QString AssetTypeToString(const QString aAssetType) override;
+
+    QByteArray GetBinaryData() override;
 
 private:
-    void pParseZoneHeader(QDataStream *aZoneFileStream) override;
+    void pParseZoneHeader(QDataStream *aZoneFileStream, FF_PLATFORM aPlatform) override;
     quint32 pParseZoneSize(QDataStream *aZoneFileStream) override;
     void pParseZoneUnknownsA(QDataStream *aZoneFileStream) override;
     quint32 pParseZoneTagCount(QDataStream *aZoneFileStream) override;

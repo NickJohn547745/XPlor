@@ -14,9 +14,7 @@ ZoneFile_COD7::~ZoneFile_COD7()
 
 }
 
-bool ZoneFile_COD7::Load(const QByteArray aFileData, const QString aStem, FF_PLATFORM aPlatform) {
-    SetStem(aStem);
-
+bool ZoneFile_COD7::Load(const QByteArray aFileData, FF_PLATFORM aPlatform) {
     // Open zone file as little endian stream
     QDataStream zoneFileStream(aFileData);
     if (aPlatform == FF_PLATFORM_PC) {
@@ -26,23 +24,35 @@ bool ZoneFile_COD7::Load(const QByteArray aFileData, const QString aStem, FF_PLA
     }
 
     // Parse data from zone file header
-    pParseZoneHeader(&zoneFileStream);
+    pParseZoneHeader(&zoneFileStream, aPlatform);
+    zoneFileStream.device()->seek(zoneFileStream.device()->pos() - 1);
     SetRecords(pParseZoneIndex(&zoneFileStream, GetRecordCount()));
     SetAssetMap(pParseAssets(&zoneFileStream, GetRecords()));
 
     return true;
 }
 
-void ZoneFile_COD7::pParseZoneHeader(QDataStream *aZoneFileStream) {
-    SetSize(pParseZoneSize(aZoneFileStream));
-    pParseZoneUnknownsA(aZoneFileStream);
+void ZoneFile_COD7::pParseZoneHeader(QDataStream *aZoneFileStream, FF_PLATFORM aPlatform) {
+    quint32 size = pParseZoneSize(aZoneFileStream);
+    SetSize(size);
 
-    SetTagCount(pParseZoneTagCount(aZoneFileStream));
+    if (aPlatform == FF_PLATFORM_WII) {
+        aZoneFileStream->skipRawData(36);
+    } else {
+        pParseZoneUnknownsA(aZoneFileStream);
+    }
+
+    quint32 tagCount = pParseZoneTagCount(aZoneFileStream);
+    SetTagCount(tagCount);
+    if (aPlatform == FF_PLATFORM_WII) {
+        SetTagCount(GetTagCount() - 1);
+    }
+
     pParseZoneUnknownsB(aZoneFileStream);
 
-    SetRecordCount(pParseZoneRecordCount(aZoneFileStream));
+    quint32 recordCount = pParseZoneRecordCount(aZoneFileStream);
+    SetRecordCount(recordCount);
 
-    quint32 tagCount = GetTagCount();
     if (tagCount) {
         pParseZoneUnknownsC(aZoneFileStream);
         SetTags(pParseZoneTags(aZoneFileStream, tagCount));
@@ -1084,4 +1094,10 @@ QString ZoneFile_COD7::AssetTypeToString(const QString aAssetType) {
         return "COL MAP SP";
     }
     return aAssetType;
+}
+
+QByteArray ZoneFile_COD7::GetBinaryData() {
+    QByteArray result;
+
+    return result;
 }

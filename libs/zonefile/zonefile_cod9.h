@@ -9,11 +9,13 @@ public:
     ZoneFile_COD9();
     ~ZoneFile_COD9();
 
-    bool Load(const QByteArray aFileData, const QString aStem, FF_PLATFORM aPlatform) override;
+    bool Load(const QByteArray aFileData, FF_PLATFORM aPlatform) override;
     QString AssetTypeToString(const QString aAssetType);
 
+    QByteArray GetBinaryData() override;
+
 protected:
-    void pParseZoneHeader(QDataStream *aZoneFileStream) override;
+    void pParseZoneHeader(QDataStream *aZoneFileStream, FF_PLATFORM aPlatform) override;
     quint32 pParseZoneSize(QDataStream *aZoneFileStream) override;
     void pParseZoneUnknownsA(QDataStream *aZoneFileStream) override;
     quint32 pParseZoneTagCount(QDataStream *aZoneFileStream) override;
