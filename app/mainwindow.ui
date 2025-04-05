@@ -136,7 +136,7 @@
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionNew_File_2">
    <property name="icon">
-    <iconset resource="data/data.qrc">
+    <iconset resource="../data/data.qrc">
      <normaloff>:/icons/icons/Icon_NewFile.png</normaloff>:/icons/icons/Icon_NewFile.png</iconset>
    </property>
    <property name="text">
@@ -145,7 +145,7 @@
   </action>
   <action name="actionNew_Fast_File">
    <property name="icon">
-    <iconset resource="data/data.qrc">
+    <iconset resource="../data/data.qrc">
      <normaloff>:/icons/icons/Icon_NewFile.png</normaloff>:/icons/icons/Icon_NewFile.png</iconset>
    </property>
    <property name="text">
@@ -154,7 +154,7 @@
   </action>
   <action name="actionNew_Zone_File">
    <property name="icon">
-    <iconset resource="data/data.qrc">
+    <iconset resource="../data/data.qrc">
      <normaloff>:/icons/icons/Icon_NewFile.png</normaloff>:/icons/icons/Icon_NewFile.png</iconset>
    </property>
    <property name="text">
@@ -163,7 +163,7 @@
   </action>
   <action name="actionOpen_Fast_File">
    <property name="icon">
-    <iconset resource="data/data.qrc">
+    <iconset resource="../data/data.qrc">
      <normaloff>:/icons/icons/Icon_OpenFile.png</normaloff>:/icons/icons/Icon_OpenFile.png</iconset>
    </property>
    <property name="text">
@@ -172,7 +172,7 @@
   </action>
   <action name="actionOpen_Zone_File">
    <property name="icon">
-    <iconset resource="data/data.qrc">
+    <iconset resource="../data/data.qrc">
      <normaloff>:/icons/icons/Icon_OpenFile.png</normaloff>:/icons/icons/Icon_OpenFile.png</iconset>
    </property>
    <property name="text">
@@ -181,7 +181,7 @@
   </action>
   <action name="actionOpen_Folder">
    <property name="icon">
-    <iconset resource="data/data.qrc">
+    <iconset resource="../data/data.qrc">
      <normaloff>:/icons/icons/Icon_OpenFile.png</normaloff>:/icons/icons/Icon_OpenFile.png</iconset>
    </property>
    <property name="text">
@@ -190,7 +190,7 @@
   </action>
   <action name="actionSave">
    <property name="icon">
-    <iconset resource="data/data.qrc">
+    <iconset resource="../data/data.qrc">
      <normaloff>:/icons/icons/Icon_Save.png</normaloff>:/icons/icons/Icon_Save.png</iconset>
    </property>
    <property name="text">
@@ -259,7 +259,7 @@
   </action>
   <action name="actionCut">
    <property name="icon">
-    <iconset resource="data/data.qrc">
+    <iconset resource="../data/data.qrc">
      <normaloff>:/icons/icons/Icon_Cut.png</normaloff>:/icons/icons/Icon_Cut.png</iconset>
    </property>
    <property name="text">
@@ -268,7 +268,7 @@
   </action>
   <action name="actionCopy">
    <property name="icon">
-    <iconset resource="data/data.qrc">
+    <iconset resource="../data/data.qrc">
      <normaloff>:/icons/icons/Icon_Copy.png</normaloff>:/icons/icons/Icon_Copy.png</iconset>
    </property>
    <property name="text">
@@ -277,7 +277,7 @@
   </action>
   <action name="actionPaste">
    <property name="icon">
-    <iconset resource="data/data.qrc">
+    <iconset resource="../data/data.qrc">
      <normaloff>:/icons/icons/Icon_Paste.png</normaloff>:/icons/icons/Icon_Paste.png</iconset>
    </property>
    <property name="text">
@@ -341,7 +341,7 @@
   </action>
   <action name="actionFind_2">
    <property name="icon">
-    <iconset resource="data/data.qrc">
+    <iconset resource="../data/data.qrc">
      <normaloff>:/icons/icons/Icon_Find.png</normaloff>:/icons/icons/Icon_Find.png</iconset>
    </property>
    <property name="text">
@@ -355,7 +355,7 @@
   </action>
  </widget>
  <resources>
-  <include location="data/data.qrc"/>
+  <include location="../data/data.qrc"/>
  </resources>
  <connections/>
 </ui>

@@ -7,7 +7,7 @@
 #include "stringtableviewer.h"
 #include "techsetviewer.h"
 #include "ui_mainwindow.h"
-#include "compressor.h"
+#include "compression.h"
 #include "iwifile.h"
 #include "ddsfile.h"
 #include "statusbarmanager.h"
@@ -160,7 +160,10 @@ MainWindow::MainWindow(QWidget *parent)
             }
         }
 
-        ui->tabWidget->addTab(scriptEditor, fileStem);
+        QScrollArea *scrollArea = new QScrollArea(ui->tabWidget);
+        scrollArea->layout()->addWidget(scriptEditor);
+
+        ui->tabWidget->addTab(scrollArea, fileStem);
         ui->tabWidget->setTabIcon(ui->tabWidget->count() - 1, QIcon(":/icons/icons/Icon_GSCFile.png"));
         ui->tabWidget->setCurrentIndex(ui->tabWidget->count() - 1);
     });
@@ -290,7 +293,19 @@ MainWindow::MainWindow(QWidget *parent)
             }
         }
 
-        ui->tabWidget->addTab(zoneFileViewer, fileStem);
+        QWidget *containerWidget = new QWidget();
+        QVBoxLayout *layout = new QVBoxLayout(containerWidget);
+        layout->addWidget(zoneFileViewer);
+        containerWidget->setLayout(layout);
+
+        // Create a scroll area and set its properties
+        QScrollArea *scrollArea = new QScrollArea(ui->tabWidget);
+        scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+        scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+        scrollArea->setWidgetResizable(true); // Important to allow resizing
+        scrollArea->setWidget(containerWidget);
+
+        ui->tabWidget->addTab(scrollArea, fileStem);
         ui->tabWidget->setTabIcon(ui->tabWidget->count() - 1, QIcon(":/icons/icons/Icon_ZoneFile.png"));
         ui->tabWidget->setCurrentIndex(ui->tabWidget->count() - 1);
     });
@@ -740,7 +755,7 @@ int MainWindow::LoadFile_IPAK(const QString aFilePath) {
 
                 QString outputFilePath = outputFolder.filePath(QString("%1.iwi").arg(j));
                 if (command.compressed) {
-                    data = Compressor::DecompressLZO(data);
+                    data = Compression::DecompressLZO(data);
                 }
                 QFile outputFile(outputFilePath);
                 if (!outputFile.open(QIODevice::WriteOnly)) {
@@ -834,9 +849,9 @@ void MainWindow::dropEvent(QDropEvent *event) {
         foreach (const QUrl url, mimeData->urls()) {
             const QString urlStr = url.toLocalFile();
             if (urlStr.contains(".zone")) {
-                OpenZoneFile(urlStr);
+                qDebug() << "OpenZoneFile Returned: " << OpenZoneFile(urlStr);
             } else if (urlStr.contains(".ff")) {
-                OpenFastFile(urlStr);
+                qDebug() << "OpenFastFile Returned: " << OpenFastFile(urlStr);
             } else if (urlStr.contains(".ipak")) {
                 qDebug() << "LoadFile_IPAK Returned: " << LoadFile_IPAK(urlStr);
             } else if (urlStr.contains(".xsub")) {
@@ -857,11 +872,11 @@ void MainWindow::dropEvent(QDropEvent *event) {
                     qDebug() << "LZO: Failed to read file!";
                     continue;
                 }
-                QByteArray data = Compressor::DecompressLZO(lzoFile.readAll());
+                QByteArray data = Compression::DecompressLZO(lzoFile.readAll());
                 lzoFile.close();
 
                 if (data.isEmpty()) {
-                    qDebug() << "LZO: Decompressor gave empty result!";
+                    qDebug() << "LZO: Decompression gave empty result!";
                     continue;
                 }
 
