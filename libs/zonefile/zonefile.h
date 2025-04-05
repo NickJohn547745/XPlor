@@ -2,6 +2,7 @@
 #define ZONEFILE_H
 
 #include "asset_structs.h"
+#include "qicon.h"
 
 #include <QStringList>
 
@@ -13,8 +14,13 @@ public:
     ZoneFile(const ZoneFile &aZoneFile);
     ZoneFile &operator=(const ZoneFile &other);
 
-    virtual bool Load(const QByteArray aFileData, const QString aFileStem, FF_PLATFORM platform = FF_PLATFORM_NONE) = 0;
+    virtual bool Load(const QByteArray aFileData, FF_PLATFORM platform = FF_PLATFORM_NONE) = 0;
     virtual QString AssetTypeToString(const QString aAssetType) = 0;
+
+    QIcon AssetStrToIcon(const QString aAssetStr);
+
+    virtual QByteArray GetBinaryData() = 0;
+    virtual bool SaveZoneFile(const QString aZoneFilePath);
 
     QString GetStem();
     quint32 GetSize();
@@ -33,7 +39,7 @@ public:
     void SetAssetMap(const AssetMap aAssetMap);
 
 private slots:
-    virtual void pParseZoneHeader(QDataStream *aZoneFileStream) = 0;
+    virtual void pParseZoneHeader(QDataStream *aZoneFileStream, FF_PLATFORM aPlatform) = 0;
     virtual quint32 pParseZoneSize(QDataStream *aZoneFileStream) = 0;
     virtual void pParseZoneUnknownsA(QDataStream *aZoneFileStream) = 0;
     virtual quint32 pParseZoneTagCount(QDataStream *aZoneFileStream) = 0;
