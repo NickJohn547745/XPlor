@@ -2,6 +2,7 @@
 /* this file is in the public domain */
 
 #include "config_win32.h"
+#include <QtTypes>
 
 #ifndef __SHA1_H
 #define __SHA1_H
@@ -13,7 +14,7 @@ extern "C" {
 typedef struct {
     uint32_t state[5];
     uint32_t count[2];
-    uint8_t  buffer[64];
+    uint8_t buffer[64];
 } SHA1_CTX;
 
 #define SHA1_DIGEST_SIZE 20
