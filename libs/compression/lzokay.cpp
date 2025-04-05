@@ -1,4 +1,4 @@
-#include "lzokay.hpp"
+#include "lzokay.h"
 #include <cstring>
 #include <algorithm>
 #include <iterator>

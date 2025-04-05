@@ -1,4 +1,6 @@
-#pragma once
+#ifndef LZOKAY_H
+#define LZOKAY_H
+
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -77,3 +79,5 @@ constexpr std::size_t compress_worst_size(std::size_t s) {
 }
 
 }
+
+#endif // LZOKAY_H

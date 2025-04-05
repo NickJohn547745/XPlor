@@ -1,14 +1,14 @@
 QT += core
 TEMPLATE = lib
-CONFIG += staticlib c++17 debug
+CONFIG += staticlib c++17
 
 SOURCES += \
+    compression.cpp \
     lzokay.cpp \
 
 HEADERS += \
-    lzx.h \
-    lzokay.hpp \
-    compressor.h
+    compression.h \
+    lzokay.h
 
 LIBS += \
     -L$$OUT_PWD/../libs/core -lcore \
