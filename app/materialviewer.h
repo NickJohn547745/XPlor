@@ -2,7 +2,9 @@
 #define MATERIALVIEWER_H
 
 #include "asset_structs.h"
+
 #include <QWidget>
+#include <QScrollArea>
 
 namespace Ui {
 class MaterialViewer;

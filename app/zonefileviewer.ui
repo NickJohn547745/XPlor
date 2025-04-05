@@ -6,15 +6,9 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>942</width>
-    <height>445</height>
+    <width>556</width>
+    <height>428</height>
    </rect>
-  </property>
-  <property name="minimumSize">
-   <size>
-    <width>942</width>
-    <height>445</height>
-   </size>
   </property>
   <property name="windowTitle">
    <string>Form</string>
@@ -35,101 +29,66 @@
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_4">
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_2">
-       <item>
-        <widget class="QGroupBox" name="groupBox_Tags">
-         <property name="minimumSize">
-          <size>
-           <width>225</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="font">
-          <font>
-           <family>Roboto</family>
-           <pointsize>9</pointsize>
-          </font>
-         </property>
-         <property name="title">
-          <string>Tags</string>
-         </property>
-         <layout class="QVBoxLayout" name="verticalLayout">
+      <widget class="QGroupBox" name="groupBox_Tags">
+       <property name="font">
+        <font>
+         <family>Roboto</family>
+         <pointsize>9</pointsize>
+        </font>
+       </property>
+       <property name="title">
+        <string>Tags</string>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout">
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout">
-            <item>
-             <widget class="QLabel" name="label_3">
-              <property name="text">
-               <string>Search:</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLineEdit" name="lineEdit_TagSearch">
-              <property name="placeholderText">
-               <string>Search tags...</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
+           <widget class="QLabel" name="label_3">
+            <property name="text">
+             <string>Search:</string>
+            </property>
+           </widget>
           </item>
           <item>
-           <widget class="QListWidget" name="listWidget_Tags"/>
+           <widget class="QLineEdit" name="lineEdit_TagSearch">
+            <property name="placeholderText">
+             <string>Search tags...</string>
+            </property>
+           </widget>
           </item>
          </layout>
-        </widget>
-       </item>
-       <item>
-        <widget class="QGroupBox" name="groupBox_RecordCounts">
-         <property name="minimumSize">
-          <size>
-           <width>179</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="title">
-          <string>Record Counts</string>
-         </property>
-         <layout class="QVBoxLayout" name="verticalLayout_4">
-          <item>
-           <widget class="QTableWidget" name="tableWidget_RecordCounts"/>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
-        <widget class="QGroupBox" name="groupBox_RecordOrder">
-         <property name="minimumSize">
-          <size>
-           <width>179</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="title">
-          <string>Record Order</string>
-         </property>
-         <layout class="QVBoxLayout" name="verticalLayout_3">
-          <item>
-           <widget class="QTableWidget" name="tableWidget_RecordOrder"/>
-          </item>
-         </layout>
-        </widget>
-       </item>
-      </layout>
+        </item>
+        <item>
+         <widget class="QListWidget" name="listWidget_Tags"/>
+        </item>
+       </layout>
+      </widget>
      </item>
      <item>
-      <spacer name="horizontalSpacer">
-       <property name="orientation">
-        <enum>Qt::Orientation::Horizontal</enum>
+      <widget class="QGroupBox" name="groupBox_RecordCounts">
+       <property name="title">
+        <string>Record Counts</string>
        </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
+       <layout class="QVBoxLayout" name="verticalLayout_4">
+        <item>
+         <widget class="QTableWidget" name="tableWidget_RecordCounts"/>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="groupBox_RecordOrder">
+       <property name="title">
+        <string>Record Order</string>
        </property>
-      </spacer>
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <widget class="QTableWidget" name="tableWidget_RecordOrder"/>
+        </item>
+       </layout>
+      </widget>
      </item>
     </layout>
    </item>
