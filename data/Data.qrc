@@ -73,5 +73,19 @@
         <file>icons/Icon_OpenFile.png</file>
         <file>icons/Icon_COD2.png</file>
         <file>icons/Icon_Material.png</file>
+        <file>icons/Icon_Animation.png</file>
+        <file>icons/Icon_BSP.png</file>
+        <file>icons/Icon_ColMapSp.png</file>
+        <file>icons/Icon_Effect.png</file>
+        <file>icons/Icon_GameMapSp.png</file>
+        <file>icons/Icon_Font.png</file>
+        <file>icons/Icon_FXMap.png</file>
+        <file>icons/Icon_LightDef.png</file>
+        <file>icons/Icon_Weapon.png</file>
+        <file>icons/Icon_RawFile.png</file>
+        <file>icons/Icon_Destructible.png</file>
+        <file>icons/Icon_PhysPreset.png</file>
+        <file>icons/Icon_Wii.png</file>
+        <file>icons/Icon_WiiU.png</file>
     </qresource>
 </RCC>
