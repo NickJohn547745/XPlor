@@ -97,7 +97,7 @@ void AutoTest_COD5_PC::testCompression() {
 
     QByteArray header = originalFFData.left(12);
 
-    QByteArray newCompressedData = Compression::CompressZLIB(decompressedData);
+    QByteArray newCompressedData = Compression::CompressZLIBWithSettings(decompressedData, Z_BEST_SPEED);
 
     int remainder = (newCompressedData.size() + 12) % 32;
     if (remainder != 0) {

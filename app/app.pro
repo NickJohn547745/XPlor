@@ -73,6 +73,7 @@ app.depends += \
 LIBS += \
     -L$$PWD/../third_party/devil_sdk/lib/ -lDevIL -lILU -lILUT \
     -L$$PWD/../third_party/zlib/lib/ -lzlib \
+    -L$$PWD/../third_party/xbox_sdk/lib -lxcompress64 \
     -L$$OUT_PWD/../libs/ -lcore \
     -L$$OUT_PWD/../libs/ -lcompression \
     -L$$OUT_PWD/../libs/ -lencryption \
@@ -85,6 +86,7 @@ LIBS += \
 INCLUDEPATH += \
     $$PWD/../third_party/devil_sdk/include/ \
     $$PWD/../third_party/zlib/include \
+    $$PWD/../third_party/xbox_sdk/include \
     $$PWD/../libs/core \
     $$PWD/../libs/compression \
     $$PWD/../libs/encryption \
@@ -97,6 +99,7 @@ INCLUDEPATH += \
 DEPENDPATH += \
     $$PWD/../third_party/devil_sdk/include/ \
     $$PWD/../third_party/zlib/include \
+    $$PWD/../third_party/xbox_sdk/include \
     $$PWD/../libs/core \
     $$PWD/../libs/compression \
     $$PWD/../libs/encryption \
@@ -108,6 +111,12 @@ DEPENDPATH += \
 
 # Copy DLLs to Debug folder
 QMAKE_POST_LINK += xcopy /Y /E /I \"G:/Projects/Qt/XPlor/third_party/devil_sdk/lib\\*.dll\" \"$$OUT_PWD/debug/\" $$escape_expand(\\n\\t)
+QMAKE_POST_LINK += xcopy /Y /E /I \"G:/Projects/Qt/XPlor/third_party/zlib/lib\\*.dll\" \"$$OUT_PWD/debug/\" $$escape_expand(\\n\\t)
+QMAKE_POST_LINK += xcopy /Y /E /I \"G:/Projects/Qt/XPlor/third_party/xna/lib\\*.dll\" \"$$OUT_PWD/debug/\" $$escape_expand(\\n\\t)
+QMAKE_POST_LINK += xcopy /Y /E /I \"$$PWD/../third_party/xbox_sdk/lib\\*.dll\" \"$$OUT_PWD/debug/\" $$escape_expand(\\n\\t)
 
 # Copy DLLs to Release folder
 QMAKE_POST_LINK += xcopy /Y /E /I \"G:/Projects/Qt/XPlor/third_party/devil_sdk/lib\\*.dll\" \"$$OUT_PWD/release/\" $$escape_expand(\\n\\t)
+QMAKE_POST_LINK += xcopy /Y /E /I \"G:/Projects/Qt/XPlor/third_party/zlib/lib\\*.dll\" \"$$OUT_PWD/release/\" $$escape_expand(\\n\\t)
+QMAKE_POST_LINK += xcopy /Y /E /I \"G:/Projects/Qt/XPlor/third_party/xna/lib\\*.dll\" \"$$OUT_PWD/release/\" $$escape_expand(\\n\\t)
+QMAKE_POST_LINK += xcopy /Y /E /I \"$$PWD/../third_party/xbox_sdk/lib\\*.dll\" \"$$OUT_PWD/release/\" $$escape_expand(\\n\\t)

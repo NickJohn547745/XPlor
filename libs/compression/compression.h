@@ -3,13 +3,12 @@
 
 #include "QtZlib/zlib.h"
 
+#include <windows.h>
+#include <QtGlobal>
 #include <stddef.h>
 #include <QByteArray>
-#include <QDebug>
-#include <QDataStream>
 #include <QVector>
 #include <QCryptographicHash>
-#include <QFile>
 
 enum OodleFormat {
     LZH = 0,
@@ -46,6 +45,7 @@ typedef int (*OodleLZ_DecompressFunc)(std::byte* Buffer, long BufferSize, std::b
 
 class Compression {
 public:
+    static quint32 CalculateAdler32Checksum(const QByteArray &data);
     static QByteArray DecompressZLIB(const QByteArray &aCompressedData);
     static QByteArray CompressZLIB(const QByteArray &aData);
     static QByteArray CompressZLIBWithSettings(const QByteArray &aData,
@@ -58,19 +58,18 @@ public:
     static QByteArray DecompressDeflate(const QByteArray &aCompressedData);
     static QByteArray CompressDeflate(const QByteArray &aData);
     static QByteArray CompressDeflateWithSettings(const QByteArray &aData,
-                                               int aCompressionLevel = Z_BEST_COMPRESSION,
-                                               int aWindowBits = MAX_WBITS,
-                                               int aMemLevel = 8,
-                                               int aStrategy = Z_DEFAULT_STRATEGY,
-                                               const QByteArray &aDictionary = {});
+                                                  int aCompressionLevel = Z_BEST_COMPRESSION,
+                                                  int aWindowBits = MAX_WBITS,
+                                                  int aMemLevel = 8,
+                                                  int aStrategy = Z_DEFAULT_STRATEGY,
+                                                  const QByteArray &aDictionary = {});
 
     static QByteArray DecompressOodle(const QByteArray &aCompressedData, quint32 aDecompressedSize);
     static QByteArray CompressOodle(const QByteArray &aData);
 
-    static QByteArray DecompressLZO(const QByteArray& aCompressedData);
-    static QByteArray CompressLZO(const QByteArray& aData);
 
-    static QByteArray DecompressLZX(const QByteArray &compressedData, uint32_t windowBits = 15);
+    static QByteArray CompressXMem(const QByteArray &data);
+    static QByteArray DecompressXMem(const QByteArray &data);
 
 private:
     static quint32 pGetOodleCompressedBounds(quint32 aBufferSize);

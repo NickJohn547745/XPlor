@@ -1,0 +1,1547 @@
+// XKDebug.idl : IDL source for XKDebug
+//
+
+// This file will be processed by the MIDL tool to
+// produce the type library (XKDebug.tlb) and marshalling code.
+
+import "oaidl.idl";
+import "ocidl.idl";
+
+interface IXboxManager;
+interface IXboxExecutableDatabase;
+interface IXboxConsole;
+interface IXboxConsoles;
+interface IXboxUser;
+interface IXboxUsers;
+interface IXboxFile;
+interface IXboxFiles;
+
+interface IXboxDebugTarget;
+interface IXboxModule;
+interface IXboxModules;
+interface IXboxSection;
+interface IXboxSections;
+interface IXboxThread;
+interface IXboxThreads;
+interface IXboxMemoryRegions;
+interface IXboxMemoryRegion;
+interface IXboxStackFrame;
+interface IXboxEvents;
+interface IXboxExecutable;
+
+interface IXboxAutomation;
+
+
+//
+// Macros for generating HRESULTS.  These should match those in xbdm.h
+//
+
+cpp_quote("#define FACILITY_XDEVKIT 0x2da")
+cpp_quote("#ifndef MAKE_HRESULT")
+cpp_quote("#define MAKE_HRESULT(sev,fac,code) ((HRESULT)(((unsigned long)sev<<31)|((unsigned long)fac<<16)|((unsigned long)code)))")
+cpp_quote("#endif")
+cpp_quote("#define MAKE_E_XDEVKIT(code) MAKE_HRESULT(1, FACILITY_XDEVKIT, code)")
+cpp_quote("#define MAKE_S_XDEVKIT(code) MAKE_HRESULT(0, FACILITY_XDEVKIT, code)")
+
+//
+//  Success codes
+//
+
+cpp_quote("#define S_XDEVKIT_NOERR                              MAKE_S_XDEVKIT(0)")
+cpp_quote("#define S_XDEVKIT_CONNECTED                          MAKE_S_XDEVKIT(1)")
+cpp_quote("#define S_XDEVKIT_MULTIRESPONSE                      MAKE_S_XDEVKIT(2)")
+cpp_quote("#define S_XDEVKIT_BINRESPONSE                        MAKE_S_XDEVKIT(3)")
+cpp_quote("#define S_XDEVKIT_READYFORBIN                        MAKE_S_XDEVKIT(4)")
+cpp_quote("#define S_XDEVKIT_DEDICATED                          MAKE_S_XDEVKIT(5)")
+cpp_quote("#define S_XDEVKIT_PROFILERESTARTED                   MAKE_S_XDEVKIT(6)")
+cpp_quote("#define S_XDEVKIT_FASTCAPENABLED                     MAKE_S_XDEVKIT(7)")
+cpp_quote("#define S_XDEVKIT_CALLCAPENABLED                     MAKE_S_XDEVKIT(8)")
+
+//
+//  Errors (non-wire)
+//
+
+cpp_quote("#define E_XDEVKIT_UNDEFINED                          MAKE_E_XDEVKIT(0)")
+cpp_quote("#define E_XDEVKIT_MAXCONNECT                         MAKE_E_XDEVKIT(1)")
+cpp_quote("#define E_XDEVKIT_NOSUCHFILE                         MAKE_E_XDEVKIT(2)")
+cpp_quote("#define E_XDEVKIT_NOMODULE                           MAKE_E_XDEVKIT(3)")
+cpp_quote("#define E_XDEVKIT_MEMUNMAPPED                        MAKE_E_XDEVKIT(4)")
+cpp_quote("#define E_XDEVKIT_NOTHREAD                           MAKE_E_XDEVKIT(5)")
+cpp_quote("#define E_XDEVKIT_CLOCKNOTSET                        MAKE_E_XDEVKIT(6)")
+cpp_quote("#define E_XDEVKIT_INVALIDCMD                         MAKE_E_XDEVKIT(7)")
+cpp_quote("#define E_XDEVKIT_NOTSTOPPED                         MAKE_E_XDEVKIT(8)")
+cpp_quote("#define E_XDEVKIT_MUSTCOPY                           MAKE_E_XDEVKIT(9)")
+cpp_quote("#define E_XDEVKIT_ALREADYEXISTS                      MAKE_E_XDEVKIT(10)")
+cpp_quote("#define E_XDEVKIT_DIRNOTEMPTY                        MAKE_E_XDEVKIT(11)")
+cpp_quote("#define E_XDEVKIT_BADFILENAME                        MAKE_E_XDEVKIT(12)")
+cpp_quote("#define E_XDEVKIT_CANNOTCREATE                       MAKE_E_XDEVKIT(13)")
+cpp_quote("#define E_XDEVKIT_CANNOTACCESS                       MAKE_E_XDEVKIT(14)")
+cpp_quote("#define E_XDEVKIT_DEVICEFULL                         MAKE_E_XDEVKIT(15)")
+cpp_quote("#define E_XDEVKIT_NOTDEBUGGABLE                      MAKE_E_XDEVKIT(16)")
+cpp_quote("#define E_XDEVKIT_BADCOUNTTYPE                       MAKE_E_XDEVKIT(17)")
+cpp_quote("#define E_XDEVKIT_COUNTUNAVAILABLE                   MAKE_E_XDEVKIT(18)")
+cpp_quote("#define E_XDEVKIT_NOTLOCKED                          MAKE_E_XDEVKIT(20)")
+cpp_quote("#define E_XDEVKIT_KEYXCHG                            MAKE_E_XDEVKIT(21)")
+cpp_quote("#define E_XDEVKIT_MUSTBEDEDICATED                    MAKE_E_XDEVKIT(22)")
+cpp_quote("#define E_XDEVKIT_INVALIDARG                         MAKE_E_XDEVKIT(23)")
+cpp_quote("#define E_XDEVKIT_PROFILENOTSTARTED                  MAKE_E_XDEVKIT(24)")
+cpp_quote("#define E_XDEVKIT_PROFILEALREADYSTARTED              MAKE_E_XDEVKIT(25)")
+cpp_quote("#define E_XDEVKIT_ALREADYSTOPPED                     MAKE_E_XDEVKIT(26)")
+cpp_quote("#define E_XDEVKIT_FASTCAPNOTENABLED                  MAKE_E_XDEVKIT(27)")
+cpp_quote("#define E_XDEVKIT_NOMEMORY                           MAKE_E_XDEVKIT(28)")
+cpp_quote("#define E_XDEVKIT_TIMEOUT                            MAKE_E_XDEVKIT(29)")
+cpp_quote("#define E_XDEVKIT_NOSUCHPATH                         MAKE_E_XDEVKIT(30)")
+cpp_quote("#define E_XDEVKIT_INVALID_SCREEN_INPUT_FORMAT        MAKE_E_XDEVKIT(31)")
+cpp_quote("#define E_XDEVKIT_INVALID_SCREEN_OUTPUT_FORMAT       MAKE_E_XDEVKIT(32)")
+cpp_quote("#define E_XDEVKIT_CALLCAPNOTENABLED                  MAKE_E_XDEVKIT(33)")
+cpp_quote("#define E_XDEVKIT_INVALIDCAPCFG                      MAKE_E_XDEVKIT(34)")
+cpp_quote("#define E_XDEVKIT_CAPNOTENABLED                      MAKE_E_XDEVKIT(35)")
+cpp_quote("#define E_XDEVKIT_TOOBIGJUMP                         MAKE_E_XDEVKIT(36)")
+cpp_quote("#define E_XDEVKIT_OUTPUTBUFFERTOOSMALL               MAKE_E_XDEVKIT(38)")
+cpp_quote("#define E_XDEVKIT_PROFILEREBOOT                      MAKE_E_XDEVKIT(39)")
+cpp_quote("#define E_XDEVKIT_MAXDURATIONEXCEEDED                MAKE_E_XDEVKIT(41)")
+cpp_quote("#define E_XDEVKIT_INVALIDSTATE                       MAKE_E_XDEVKIT(42)")
+cpp_quote("#define E_XDEVKIT_MAXEXTENSIONS                      MAKE_E_XDEVKIT(43)")
+cpp_quote("#define E_XDEVKIT_PMCSESSIONALREADYACTIVE            MAKE_E_XDEVKIT(44)")
+cpp_quote("#define E_XDEVKIT_PMCSESSIONNOTACTIVE                MAKE_E_XDEVKIT(45)")
+cpp_quote("#define E_XDEVKIT_LINE_TOO_LONG                      MAKE_E_XDEVKIT(46)")
+cpp_quote("#define E_XDEVKIT_D3D_DEBUG_COMMAND_NOT_IMPLEMENTED  MAKE_E_XDEVKIT(0x50)")
+cpp_quote("#define E_XDEVKIT_D3D_INVALID_SURFACE                MAKE_E_XDEVKIT(0x51)")
+
+//
+//  Errors (wire)
+//
+
+cpp_quote("#define E_XDEVKIT_CANNOTCONNECT                      MAKE_E_XDEVKIT(0x100)")
+cpp_quote("#define E_XDEVKIT_CONNECTIONLOST                     MAKE_E_XDEVKIT(0x101)")
+cpp_quote("#define E_XDEVKIT_FILEERROR                          MAKE_E_XDEVKIT(0x103)")
+cpp_quote("#define E_XDEVKIT_ENDOFLIST                          MAKE_E_XDEVKIT(0x104)")
+cpp_quote("#define E_XDEVKIT_BUFFER_TOO_SMALL                   MAKE_E_XDEVKIT(0x105)")
+cpp_quote("#define E_XDEVKIT_NOTXBEFILE                         MAKE_E_XDEVKIT(0x106)")
+cpp_quote("#define E_XDEVKIT_MEMSETINCOMPLETE                   MAKE_E_XDEVKIT(0x107)")
+cpp_quote("#define E_XDEVKIT_NOXBOXNAME                         MAKE_E_XDEVKIT(0x108)")
+cpp_quote("#define E_XDEVKIT_NOERRORSTRING                      MAKE_E_XDEVKIT(0x109)")
+cpp_quote("#define E_XDEVKIT_INVALIDSTATUS                      MAKE_E_XDEVKIT(0x10A)")
+cpp_quote("#define E_XDEVKIT_TASK_PENDING                       MAKE_E_XDEVKIT(0x150)")
+
+//
+//  Errors (PC tools)
+//
+
+cpp_quote("#define FACILITY_XEXECDB 0x2da")
+cpp_quote("#define MAKE_E_XEXECDB(code) MAKE_HRESULT(1, FACILITY_XEXECDB, code)")
+cpp_quote("#define MAKE_S_XEXECDB(code) MAKE_HRESULT(0, FACILITY_XEXECDB, code)")
+
+cpp_quote("#define E_XEXECDB_UNRECOGNIZED_FILE                  MAKE_E_XEXECDB(0x400)")
+cpp_quote("#define E_XEXECDB_WRONG_VERSION                      MAKE_E_XEXECDB(0x401)")
+
+typedef struct XBOX_PROCESS_INFO
+{
+    DWORD ProcessId;
+    BSTR  ProgramName;
+} XBOX_PROCESS_INFO, *PXBOX_PROCESS_INFO;
+
+cpp_quote("namespace eXboxAccessFlags {")
+[v1_enum] enum XboxAccessFlags
+{
+    Read      = 1,
+    Write     = 2,
+    Control   = 4,
+    Configure = 8,
+    Manage    = 16
+};
+cpp_quote("}")
+cpp_quote("/*")
+typedef enum XboxAccessFlags _XboxAccessFlags;
+cpp_quote("*/ typedef int _XboxAccessFlags;")
+
+typedef struct XBOX_USER {
+    BSTR  UserName;
+    _XboxAccessFlags Access;
+} XBOX_USER, *PXBOX_USER;
+
+cpp_quote("namespace eXboxModuleInfoFlags {")
+[v1_enum] enum XboxModuleInfoFlags
+{
+    Main      = 1,
+    Tls       = 2,
+    Dll       = 4
+};
+cpp_quote("}")
+cpp_quote("/*")
+typedef enum XboxModuleInfoFlags _XboxModuleInfoFlags;
+cpp_quote("*/ typedef int _XboxModuleInfoFlags;")
+
+
+typedef struct XBOX_MODULE_INFO
+{
+	BSTR  Name;
+    BSTR  FullName;
+    DWORD BaseAddress;
+    DWORD Size;
+    DWORD TimeStamp;
+    DWORD CheckSum;
+    _XboxModuleInfoFlags Flags;
+} XBOX_MODULE_INFO, *PXBOX_MODULE_INFO;
+
+cpp_quote("namespace eXboxSectionInfoFlags {")
+[v1_enum] enum XboxSectionInfoFlags
+{
+    Loaded        = 1,
+    Readable      = 2,
+    Writeable     = 4,
+    Executable    = 8,
+    Uninitialized = 16
+};
+cpp_quote("}")
+cpp_quote("/*")
+typedef enum XboxSectionInfoFlags _XboxSectionInfoFlags;
+cpp_quote("*/ typedef int _XboxSectionInfoFlags;")
+
+typedef struct XBOX_SECTION_INFO
+{
+	BSTR  Name;
+    DWORD BaseAddress;
+    DWORD Size;
+    DWORD Index;
+    _XboxSectionInfoFlags Flags;
+} XBOX_SECTION_INFO, *PXBOX_SECTION_INFO;
+
+typedef struct XBOX_THREAD_INFO
+{
+    DWORD    ThreadId;
+    DWORD    SuspendCount;
+    DWORD    Priority;
+    DWORD    TlsBase;
+    DWORD    StartAddress;
+    DWORD    StackBase;
+    DWORD    StackLimit;
+    DWORD    StackSlackSpace;
+    VARIANT  CreateTime;
+	BSTR	 Name;
+} XBOX_THREAD_INFO, *PXBOX_THREAD_INFO;
+
+cpp_quote("namespace eXboxFunctionType {")
+[v1_enum] enum XboxFunctionType
+{
+    NoPData          = 0xFFFFFFFF,
+    SaveMillicode    = 0,
+    NoHandler        = 1,
+    RestoreMillicode = 2,
+    Handler          = 3
+};
+cpp_quote("}")
+cpp_quote("/*")
+typedef enum XboxFunctionType _XboxFunctionType;
+cpp_quote("*/ typedef eXboxFunctionType::XboxFunctionType _XboxFunctionType;")
+
+typedef struct XBOX_FUNCTION_INFO
+{
+    _XboxFunctionType FunctionType;
+    DWORD             BeginAddress;
+    DWORD             PrologEndAddress;
+    DWORD             FunctionEndAddress;
+} XBOX_FUNCTION_INFO, *PXBOX_FUNCTION_INFO;
+
+
+cpp_quote("namespace eXboxDebugEventType {")
+[v1_enum] enum XboxDebugEventType
+{
+    NoEvent,
+    ExecutionBreak,
+    DebugString,
+    ExecStateChange,
+    SingleStep,
+    ModuleLoad,
+    ModuleUnload,
+    ThreadCreate,
+    ThreadDestroy,
+    Exception,
+    AssertionFailed,
+    AssertionFailedEx,
+    DataBreak,
+    RIP,
+    SectionLoad,
+    SectionUnload,
+    StackTrace,
+    FiberCreate,
+    FiberDestroy,
+    BugCheck,
+    PgoModuleStartup
+};
+cpp_quote("}")
+cpp_quote("/*")
+typedef enum XboxDebugEventType _XboxDebugEventType;
+cpp_quote("*/ typedef eXboxDebugEventType::XboxDebugEventType _XboxDebugEventType;")
+
+cpp_quote("namespace eXboxExecutionState {")
+[v1_enum] enum XboxExecutionState
+{
+    Stopped,
+    Running,
+    Rebooting,
+    Pending,
+    RebootingTitle,
+    PendingTitle
+};
+cpp_quote("}")
+cpp_quote("/*")
+typedef enum XboxExecutionState _XboxExecutionState;
+cpp_quote("*/ typedef eXboxExecutionState::XboxExecutionState _XboxExecutionState;")
+
+cpp_quote("// Must match DMSTOP_ constants")
+cpp_quote("namespace eXboxStopOnFlags {")
+[v1_enum] enum XboxStopOnFlags
+{   
+    OnThreadCreate         = 0x01,
+    OnFirstChanceException = 0x02,
+    OnDebugString          = 0x04,
+    OnStackTrace           = 0x08,
+    OnModuleLoad           = 0x10,
+    OnTitleLaunch          = 0x20,
+    OnPgoModuleStartup    = 0x40
+};
+cpp_quote("}")
+cpp_quote("/*")
+typedef enum XboxStopOnFlags _XboxStopOnFlags;
+cpp_quote("*/ typedef int _XboxStopOnFlags;")
+
+cpp_quote("namespace eXboxRebootFlags {")
+[v1_enum] enum XboxRebootFlags
+{
+    Title   = 0,
+    Wait    = 1,
+    Cold    = 2,
+    [helpstring("Deprecated, use Cold")] Warm    = 4,
+    Stop    = 8
+};
+cpp_quote("#pragma deprecated(Warm)")
+cpp_quote("}")
+cpp_quote("/*")
+typedef enum XboxRebootFlags _XboxRebootFlags;
+cpp_quote("*/ typedef int _XboxRebootFlags;")
+
+
+cpp_quote("namespace eXboxExceptionFlags {")
+[v1_enum] enum XboxExceptionFlags
+{
+    Noncontinuable = 1,
+    FirstChance    = 2
+};
+cpp_quote("}")
+cpp_quote("/*")
+typedef enum XboxExceptionFlags _XboxExceptionFlags;
+cpp_quote("*/ typedef int _XboxExceptionFlags;")
+
+typedef struct XBOX_EVENT_INFO
+{
+    _XboxDebugEventType Event;
+    VARIANT_BOOL        IsThreadStopped;
+    IXboxThread         *Thread;
+    IXboxModule         *Module;
+    IXboxSection        *Section;
+    _XboxExecutionState ExecState;
+    BSTR                Message;
+    DWORD               Code;
+    DWORD               Address;
+    _XboxExceptionFlags Flags;
+    DWORD               ParameterCount;
+    DWORD               Parameters[15];
+} XBOX_EVENT_INFO, *PXBOX_EVENT_INFO;
+
+cpp_quote("namespace eXboxBreakpointType {")
+[v1_enum] enum XboxBreakpointType
+{
+    NoBreakpoint = 0,
+    OnWrite,
+    OnRead,
+    OnExecuteHW,
+    OnExecute
+};
+cpp_quote("}")
+cpp_quote("/*")
+typedef enum XboxBreakpointType _XboxBreakpointType;
+cpp_quote("*/ typedef eXboxBreakpointType::XboxBreakpointType _XboxBreakpointType;")
+
+cpp_quote("namespace eXboxSelectConsoleFlags {")
+[v1_enum] enum XboxSelectConsoleFlags
+{
+    NoPromptIfDefaultExists,
+    NoPromptIfOnlyOne,
+    FilterByAccess
+};
+cpp_quote("}")
+cpp_quote("/*")
+typedef enum XboxSelectConsoleFlags _XboxSelectConsoleFlags;
+cpp_quote("*/ typedef int _XboxSelectConsoleFlags;")
+
+cpp_quote("namespace eXboxDebugConnectFlags{")
+[v1_enum] enum XboxDebugConnectFlags
+{
+    Force       = 0x0001,
+    MonitorOnly = 0x0002
+};
+cpp_quote("}")
+cpp_quote("/*")
+typedef enum XboxDebugConnectFlags _XboxDebugConnectFlags;
+cpp_quote("*/ typedef int _XboxDebugConnectFlags;")
+
+cpp_quote("namespace eXboxDumpFlags{")
+[v1_enum] enum XboxDumpFlags
+{
+    Normal                         = 0x0000,
+    WithDataSegs                   = 0x0001,
+    WithFullMemory                 = 0x0002,
+    WithHandleData                 = 0x0004,
+    FilterMemory                   = 0x0008,
+    ScanMemory                     = 0x0010,
+    WithUnloadedModules            = 0x0020,
+    WithIndirectlyReferencedMemory = 0x0040,
+    FilterModulePaths              = 0x0080,
+    WithProcessThreadData          = 0x0100,
+    WithPrivateReadWriteMemory     = 0x0200,
+};
+cpp_quote("}")
+cpp_quote("/*")
+typedef enum XboxDumpFlags _XboxDumpFlags;
+cpp_quote("*/ typedef int _XboxDumpFlags;")
+
+cpp_quote("namespace eXboxDumpMode{")
+[v1_enum] enum XboxDumpMode
+{
+    Smart    = 0x0000,
+    Enabled  = 0x0001,
+    Disabled = 0x0002
+};
+cpp_quote("}")
+cpp_quote("/*")
+typedef enum XboxDumpMode _XboxDumpMode;
+cpp_quote("*/ typedef eXboxDumpMode::XboxDumpMode _XboxDumpMode;")
+
+cpp_quote("namespace eXboxEventDeferFlags {")
+[v1_enum] enum XboxEventDeferFlags
+{
+    CanDeferExecutionBreak      =0x0001,
+    CanDeferDebugString         =0x0002,
+    CanDeferSingleStep          =0x0004,
+    CanDeferAssertionFailed     =0x0008,
+    CanDeferAssertionFailedEx   =0x0010,
+    CanDeferDataBreak           =0x0020,
+    CanDeferRIP                 =0x0040
+};
+cpp_quote("}")
+cpp_quote("/*")
+typedef enum XboxEventDeferFlags _XboxEventDeferFlags;
+cpp_quote("*/ typedef int _XboxEventDeferFlags;")
+
+cpp_quote("namespace eXboxDumpReportFlags {")
+[v1_enum] enum XboxDumpReportFlags
+{
+    PromptToReport    = 0,
+    AlwaysReport      = 0x0001,
+    NeverReport       = 0x0002,
+    ReportGroup       = 0x000F,
+    LocalDestination  = 0x0000,
+    RemoteDestination = 0x0010,
+    DestinationGroup  = 0x000F,
+    FormatFullHeap    = 0x0000,
+    FormatPartialHeap = 0x0100,
+    FormatNoHeap      = 0x0200,
+    FormatRetail      = 0x0400,
+    FormatGroup       = 0x0F00
+};
+cpp_quote("}")
+cpp_quote("/*")
+typedef enum XboxDumpReportFlags _XboxDumpReportFlags;
+cpp_quote("*/ typedef int _XboxDumpReportFlags;")
+
+cpp_quote("namespace eXboxConsoleType {")
+[v1_enum] enum XboxConsoleType
+{
+    DevelopmentKit    = 0,
+    TestKit           = 1,
+    ReviewerKit       = 2
+};
+cpp_quote("}")
+cpp_quote("/*")
+typedef enum XboxConsoleType _XboxConsoleType;
+cpp_quote("*/ typedef eXboxConsoleType::XboxConsoleType _XboxConsoleType;")
+
+cpp_quote("namespace eXboxConsoleFeatures {")
+[v1_enum] enum XboxConsoleFeatures
+{
+    Debugging    = 1, //DMCF_DEBUGGING
+    SecondaryNIC = 2, //DMCF_SECONDARY_NIC
+    GB_RAM       = 4  //DMCF_1GB_RAM
+};
+cpp_quote("}")
+cpp_quote("/*")
+typedef enum XboxConsoleFeatures _XboxConsoleFeatures;
+cpp_quote("*/ typedef int _XboxConsoleFeatures;")
+
+typedef struct XBOX_DUMP_SETTINGS
+{
+	_XboxDumpReportFlags Flags;
+    BSTR NetworkPath;
+} XBOX_DUMP_SETTINGS, *PXBOX_DUMP_SETTINGS;
+
+[
+	object,
+	uuid(c4c077e9-bf83-4657-ad8b-1e5abb9bb9a8),
+    dual,
+    oleautomation,
+    nonextensible,
+    helpstring("Add, remove, enumerate, open Xbox consoles and dump files")
+]
+interface IXboxManager: IDispatch
+{
+    
+    [propget, id(1)]HRESULT DefaultConsole( [out, retval] BSTR *DefaultXbox);
+    [propput, id(1)]HRESULT DefaultConsole( [in] BSTR DefaultXbox);
+
+    [propget, id(2)]HRESULT Consoles( [out, retval] IXboxConsoles **Consoles);
+    [id(3)]HRESULT AddConsole( [in] BSTR Xbox);
+    [id(4)]HRESULT RemoveConsole( [in] BSTR Xbox);
+    
+    
+    [id(6)]HRESULT OpenConsole( [in] BSTR XboxName, [out, retval] IXboxConsole **Console);
+    [id(7)]HRESULT OpenDumpFile( [in] BSTR FileName, [in] BSTR ImageSearchPath, [out, retval] IXboxDebugTarget **DebugTarget);
+
+    [id(8)]  HRESULT SelectConsole( [in] LONG ParentWindow, [out] BSTR *SelectedXbox, [in] _XboxAccessFlags DesiredAccess,  [in] _XboxSelectConsoleFlags Flags);
+    [id(9)]  HRESULT RunAddConsoleWizard( [in] LONG ParentWindow, [in] VARIANT_BOOL Modal);
+    [id(10)] HRESULT OpenWindowsExplorer( [in] BSTR XboxName, [in] BSTR Path);
+
+    [id(20)] HRESULT TranslateError( [in] HRESULT hr, [out, retval] BSTR *ErrorString);
+    [propget,id(21)] HRESULT SystemSymbolServerPath([out, retval] BSTR *SymbolServerPath);
+
+    [id(22)]  HRESULT SelectConsoleEx( [in] LONGLONG ParentWindow, [out] BSTR *SelectedXbox, [in] _XboxAccessFlags DesiredAccess,  [in] _XboxSelectConsoleFlags Flags);
+    [id(23)]  HRESULT RunAddConsoleWizardEx( [in] LONGLONG ParentWindow, [in] VARIANT_BOOL Modal);
+    
+};
+
+cpp_quote("namespace eXboxShareMode {")
+[v1_enum] enum XboxShareMode
+{
+    ShareNone    = 0,        
+    ShareRead    = 0x0001,   // Same as WIN32 SHARE_READ
+    ShareWrite   = 0x0002,   // Same as WIN32 SHARE_WRITE
+    ShareDelete  = 0x0004    // Same as WIN32 SHARE_DELETE
+};
+cpp_quote("}")
+cpp_quote("/*")
+typedef enum XboxShareMode _XboxShareMode;
+cpp_quote("*/ typedef int _XboxShareMode;")
+
+cpp_quote("namespace eXboxCreateDisposition {")
+[v1_enum] enum XboxCreateDisposition
+{
+    CreateNew    = 1, // Same as WIN32 CREATE_NEW
+    CreateAlways = 2, // Same as WIN32 CREATE_ALWAYS
+    OpenExisting = 3, // Same as WIN32 OPEN_EXISTING
+    OpenAlways   = 4  // Same as WIN32 OPEN_ALWAYS
+};
+cpp_quote("}")
+cpp_quote("/*")
+typedef enum XboxCreateDisposition _XboxCreateDisposition;
+cpp_quote("*/ typedef eXboxCreateDisposition::XboxCreateDisposition _XboxCreateDisposition;")
+
+[
+	object,
+	uuid(978B90D1-1F44-4adc-B992-12AF5DBE16E2),
+    dual,
+    oleautomation,
+    nonextensible,
+    helpstring("Information about an executable in an executable database.")
+]
+interface IXboxExecutableInfo : IDispatch
+{
+    // Persisted properties
+    [propget, id(1)] HRESULT SymbolGuid([out,retval] BSTR *Guid);
+    [propget, id(2)] HRESULT XboxExecutablePath([out,retval] BSTR *Path);
+    [propget, id(3)] HRESULT PortableExecutablePath([out,retval] BSTR *Path);
+    [propget, id(4)] HRESULT SymbolPath([out,retval] BSTR *Path);
+    [propget, id(5)] HRESULT PublicSymbolPath([out,retval] BSTR *Path);
+    [propget, id(6)] HRESULT ModuleName([out,retval] BSTR *Name);
+    [propget, id(7)] HRESULT TimeDateStamp([out,retval] DWORD *Time);
+    [propget, id(8)] HRESULT SizeOfImage([out,retval] DWORD *Size);
+    [propget, id(9)] HRESULT StoreRelativePath([out,retval] VARIANT_BOOL *RelativePath);
+    
+    // Runtime Properties
+    [propget, id(10)] HRESULT BasePath([out,retval] BSTR *Path);
+    [propput, id(10)] HRESULT BasePath([in] BSTR Path);
+    [propget, id(11)] HRESULT PropGetRelativePath([out,retval] VARIANT_BOOL *Relative);
+    [propput, id(11)] HRESULT PropGetRelativePath([in] VARIANT_BOOL Relative);
+};
+
+[
+	object,
+	uuid(CB8E47BA-2673-48af-B0C5-FD5738FFCC6B),
+    dual,
+    oleautomation,
+    nonextensible,
+    helpstring("Search, edit executable database file.")
+]
+interface IXboxExecutableDatabase : IDispatch
+{
+    [propget, id(1)] HRESULT IsDirty([out,retval]  VARIANT_BOOL *DirtyFlag);
+    [propget, id(2)] HRESULT CurrentFileName([out,retval] BSTR *Path);
+    
+    [id(100)] HRESULT  LoadDatabase(
+                        [in] BSTR DatabaseFile,
+                        [in] VARIANT_BOOL ReadOnly,
+                        [in] _XboxCreateDisposition CreateDisposition,
+                        [in] _XboxShareMode ShareMode
+                        );
+    
+    [id(101)] HRESULT SaveDatabase(
+                        [in] BSTR DatabaseFile,
+                        [in] VARIANT_BOOL Remember
+                        );
+    
+    [id(102)] HRESULT CloseDatabase();
+
+    [id(103)] HRESULT ResetDatabase();
+
+    [id(120)] HRESULT AddExecutable(
+                    [in]  BSTR          XboxExecutablePath,
+                    [in]  BSTR          PortableExecutablePath,
+                    [in]  BSTR          SymbolPath,
+                    [in]  BSTR          PublicSymbolPath,
+                    [in]  VARIANT_BOOL  ExplictFilesOnly,
+                    [in]  VARIANT_BOOL  StoreRelativePath
+                    );
+
+    [id(121)] HRESULT RemoveExecutable([in]  BSTR Guid);
+
+    [id(122)] HRESULT FindExecutableByGuid(
+                    [in]   BSTR                 Guid,
+                    [out]  IXboxExecutableInfo **Info,
+                    [out,retval]  VARIANT_BOOL *Found
+                    );
+    
+    [id(123)] HRESULT FindExecutableForSymServ(
+                [in]   BSTR    ModuleName,
+                [in]   DWORD   TimeDateStamp,
+                [in]   DWORD   SizeOfImage,
+                [out]  IXboxExecutableInfo **Info,
+                [out,retval]  VARIANT_BOOL *Found
+                );
+
+};
+
+[
+	object,
+	uuid(75dd80a9-5a33-42d4-8a39-ab07c9b17cc3),
+    dual,
+    oleautomation,
+    nonextensible,
+    helpstring("Xbox Console")
+]
+interface IXboxConsole: IDispatch
+{
+    //
+    //  Console Properties
+    //
+
+    [propget, id(DISPID_VALUE)] HRESULT Name( [out,retval] BSTR *XboxName);
+    [propput, id(DISPID_VALUE)] HRESULT Name( [in] BSTR XboxName);
+    [propget, id(1)] HRESULT IPAddress( [out,retval] DWORD *IPAddress);
+    [propget, id(2)] HRESULT IPAddressTitle( [out,retval] DWORD *IPAddress);
+    [propget, id(3)] HRESULT SystemTime( [out,retval] VARIANT *Date);
+    [propput, id(3)] HRESULT SystemTime( [in] VARIANT Date);
+
+    //
+    //  Connection Properties
+    //
+
+    [propget, id(20)] HRESULT Shared( [out,retval] VARIANT_BOOL *Shared);
+    [propput, id(20)] HRESULT Shared( [in] VARIANT_BOOL Shared);
+    [propget, id(21)] HRESULT ConnectTimeout( [out,retval] DWORD *Timeout);
+    [propput, id(21)] HRESULT ConnectTimeout( [in] DWORD Timeout);
+    [propget, id(22)] HRESULT ConversationTimeout( [out,retval] DWORD *Timeout);
+    [propput, id(22)] HRESULT ConversationTimeout( [in] DWORD Timeout);
+    [id(30)] HRESULT FindConsole( [in] DWORD Retries, [in] DWORD RetryDelay);
+
+    //
+    //  Get other interfaces. 
+    //
+    [propget, id(50)] HRESULT XboxManager([out, retval] IXboxManager **XboxManager);
+    [propget, id(51)] HRESULT DebugTarget([out, retval] IXboxDebugTarget **DebugTarget);
+
+    //
+    //  Manipulate running process
+    //
+    
+    [id(100)] HRESULT Reboot([in] BSTR Name, [in] BSTR MediaDirectory, [in] BSTR CmdLine, [in] _XboxRebootFlags Flags);
+    [id(101)] HRESULT SetDefaultTitle([in] BSTR TitleName, [in] BSTR MediaDirectory, [in] DWORD Flags);
+    [propget, id(102)] HRESULT RunningProcessInfo( [out, retval] PXBOX_PROCESS_INFO ProcessInfo);
+
+    //
+    //  Support for Custom Command Handlers
+    //
+
+    [id(110)] HRESULT OpenConnection( [in] BSTR Handler, [out,retval] DWORD *Connection);
+    [id(111)] HRESULT CloseConnection([in] DWORD Connection);
+    [id(112)] HRESULT SendTextCommand([in] DWORD Connection, [in] BSTR Command, [out] BSTR *Response);
+    
+    // For binary data in commands
+
+    [id(113)] HRESULT ReceiveSocketLine([in] DWORD Connection, [out] BSTR *Line);
+    [id(114)] HRESULT ReceiveStatusResponse([in] DWORD Connection, [out] BSTR *Line, [out,retval] HRESULT* status);
+    [id(115)] HRESULT SendBinary([in] DWORD Connection, [in] SAFEARRAY(BYTE) Data, [in] DWORD Count);
+    [id(116)] HRESULT ReceiveBinary([in] DWORD Connection, [in,out] SAFEARRAY(BYTE) Data, [in] DWORD Count, [out] DWORD *BytesReceived);
+    [id(117),hidden] HRESULT SendBinary_cpp([in] DWORD Connection, [in, size_is(Count)] BYTE *Data, [in] DWORD Count);
+    [id(118),hidden] HRESULT ReceiveBinary_cpp([in] DWORD Connection, [in, size_is(Count)] BYTE *Data, [in] DWORD Count, [out] DWORD *BytesReceived);
+    
+    //
+    //  Drive information
+    //
+
+    [propget, id(120)] HRESULT Drives( [out, retval] BSTR *Drives);
+    [id(121)] HRESULT GetDiskFreeSpace( 
+                        [in]  WCHAR Drive,
+                        [out] ULONGLONG *FreeBytesAvailableToCaller,
+                        [out] ULONGLONG *TotalNumberOfBytes,
+                        [out] ULONGLONG *TotalNumberOfFreeBytes
+                        );
+
+    //
+    //  Directory Access
+    //
+    
+    [id(125)] HRESULT MakeDirectory( [in] BSTR Directory);
+    [id(126)] HRESULT RemoveDirectory( [in] BSTR Directory);
+    [id(127)] HRESULT DirectoryFiles( [in] BSTR Directory, [out,retval] IXboxFiles **Files);
+    
+
+    //
+    //  File data access
+    //
+
+    [id(130)] HRESULT SendFile( [in] BSTR LocalName, [in] BSTR RemoteName);
+    [id(131)] HRESULT ReceiveFile( [in] BSTR LocalName, [in] BSTR RemoteName);
+    [id(132)] HRESULT ReadFileBytes( 
+                        [in] BSTR FileName,
+                        [in] DWORD FileOffset,
+                        [in] DWORD Count,
+                        [in, out] SAFEARRAY(BYTE) Data,
+                        [out] DWORD *BytesRead
+                        );
+
+	[id(133)] HRESULT WriteFileBytes( 
+                        [in] BSTR FileName,
+                        [in] DWORD FileOffset,
+                        [in] DWORD Count,
+                        [in] SAFEARRAY(BYTE) Data,
+                        [out] DWORD *BytesWritten
+                        );
+
+    [id(134),hidden] HRESULT ReadFileBytes_cpp( 
+                        [in] BSTR FileName,
+                        [in] DWORD FileOffset,
+                        [in] DWORD Count,
+                        [out, size_is(Count), length_is(*BytesRead)] BYTE *Data,
+                        [out] DWORD *BytesRead
+                        );
+
+	[id(135),hidden] HRESULT WriteFileBytes_cpp( 
+                        [in] BSTR FileName,
+                        [in] DWORD FileOffset,
+                        [in] DWORD Count,
+                        [in, size_is(Count)] BYTE *Data,
+                        [out] DWORD *BytesWritten
+                        );
+
+    [id(136)] HRESULT SetFileSize( 
+                        [in] BSTR FileName,
+                        [in] DWORD FileOffset,
+                        [in] _XboxCreateDisposition CreateDisposition
+                        );
+
+    //
+    //  File Attributes
+    //
+
+    [id(140)] HRESULT GetFileObject([in] BSTR FileName, [out, retval] IXboxFile **FileObject);
+    [id(141)] HRESULT RenameFile( [in] BSTR OldName, [in] BSTR NewName);
+    [id(142)] HRESULT DeleteFile( [in] BSTR FileName);
+
+    //
+    //  D3D Info 
+    //
+
+    [id(150)] HRESULT ScreenShot(BSTR FileName);
+    
+    //
+    //  Debug Settings
+    //
+
+    [propget, id(160)] HRESULT DumpMode( [out, retval] _XboxDumpMode* DumpMode);
+    [propput, id(160)] HRESULT DumpMode( [in] _XboxDumpMode DumpMode);
+    [id(161)] HRESULT GetDumpSettings( [out] PXBOX_DUMP_SETTINGS DumpMode);
+    [id(162)] HRESULT SetDumpSettings( [in] PXBOX_DUMP_SETTINGS DumpMode);
+    [propget, id(163)] HRESULT EventDeferFlags( [out,retval] _XboxEventDeferFlags *EventDeferFlags);
+    [propput, id(163)] HRESULT EventDeferFlags( [in] _XboxEventDeferFlags EventDeferFlags);
+
+    //
+    //  Console type
+    //
+
+    [propget, id(170)] HRESULT ConsoleType( [out,retval] _XboxConsoleType *ConsoleType);
+    
+
+    // NYI
+    // HRESULT GetSurface(TBD);
+    // HRESULT GetGammaTable(TBD);
+    // HRESULT GetPalette(TBD);
+    // HRESULT GetD3DState(TBD);
+
+    //
+    //  Security Methods
+    //
+    // [id(160)] HRESULT RunSecurityDialog( [in] LONG ParentWindow );
+    // [propget, id(161)] HRESULT SecurityEnabled( [out, retval] VARIANT_BOOL *Enabled);
+    // [propput, id(162)] HRESULT SecurityEnabled( [in] VARIANT_BOOL Enabled);
+    // [id(163)] HRESULT StartAdminMode( [in] BSTR Password );
+    // [id(164)] HRESULT StopAdminMode();
+    // [propput, id(159)] HRESULT AdminPassword( [in] BSTR Password);
+    // [id(165)] HRESULT SetUserAccess( [in] BSTR UserName, [in] _XboxAccessFlags Access);
+    // [id(166)] HRESULT GetUserAccess( [in] BSTR UserName, [in] _XboxAccessFlags *Access);
+    // [id(167)] HRESULT AddUser( [in] BSTR UserName, [in] _XboxAccessFlags Access);
+    // [id(168)] HRESULT RemoveUser( [in] BSTR UserName);
+    // [propget, id(169)] HRESULT Users( [out, retval] IXboxUsers **Users);
+
+    //
+    //  Configuration Values [REVIEW] do we want some enums defined, or rather specific methods.
+    //
+        
+    // [id(180)] HRESULT GetConfigurationValue( 
+    //            [in] DWORD Index,
+    //            [in] DWORD Type,
+    //            [out, size_is(ValueLength),length_is(ValueLength)] BYTE *Value,
+    //            [in] DWORD ValueLength
+    //            );
+    
+    // [id(181)] HRESULT SetConfigurationValue( 
+    //            [in] DWORD Index,
+    //            [in] DWORD Type,
+    //            [in, size_is(ValueLength)] BYTE *Value,
+    //            [in] DWORD ValueLength
+    //            );
+
+    //
+    //  File-event Methods
+    //
+    [id(182)] HRESULT StartFileEventCapture();
+    [id(183)] HRESULT StopFileEventCapture();
+    
+    //
+    //  Get IXboxAutomation interface
+    //
+
+    [propget, id(184)] HRESULT XboxAutomation([out, retval] IXboxAutomation **Automation);
+
+    //
+    //  Debugger Extensions
+    //
+
+    [id(185)] HRESULT LoadDebuggerExtension( [in] BSTR ExtensionName, [out,retval] DWORD* ModuleHandle);
+    [id(186)] HRESULT UnloadDebuggerExtension( [in] DWORD ModuleHandle);
+
+
+    //
+    //  Console Extensions
+    //
+
+    [propget, id(190)] HRESULT ConsoleFeatures ( [out,retval] _XboxConsoleFeatures *ConsoleFeatures);
+
+};
+
+
+[
+	object,
+	uuid(110980e4-f8d4-45f1-8a86-90d86fd4a879),
+    dual,
+    oleautomation,
+    nonextensible,
+	pointer_default(unique),
+    helpstring("Console in Xenon Neighborhood")
+]
+interface IXboxConsoles : IDispatch
+{
+    [id(DISPID_VALUE), propget]   HRESULT Item( [in] LONG Index, [out, retval] BSTR *ConsoleName);
+	[id(1), propget]              HRESULT Count([out, retval]LONG *Count);
+    [id(DISPID_NEWENUM), propget] HRESULT _NewEnum( [out, retval] IEnumVARIANT **Enumerator);
+};
+
+[
+	object,
+	uuid(b9dbc76d-8a06-4eeb-84bd-1ad42f0afe28),
+    dual,
+    oleautomation,
+    nonextensible,
+	pointer_default(unique),
+    helpstring("File")
+]
+interface IXboxFile : IDispatch
+{
+	[propget, id(DISPID_VALUE)] HRESULT Name([out, retval]BSTR *Name);
+	[propput, id(DISPID_VALUE)] HRESULT Name([in] BSTR Name);
+	[propget, id(1)] HRESULT CreationTime([out, retval]VARIANT *CreationTime);
+	[propput, id(1)] HRESULT CreationTime([in]VARIANT CreationTime);
+	[propget, id(2)] HRESULT ChangeTime([out, retval]VARIANT *ChangeTime);
+	[propput, id(2)] HRESULT ChangeTime([in]VARIANT ChangeTime);
+	[propget, id(3)] HRESULT Size([out, retval]ULONGLONG *Size);
+	[propput, id(3)] HRESULT Size([in]ULONGLONG Size);
+	[propget, id(4)] HRESULT IsReadOnly([out, retval]VARIANT_BOOL *ReadOnly);
+	[propput, id(4)] HRESULT IsReadOnly([in]VARIANT_BOOL ReadOnly);
+	[propget, id(5)] HRESULT IsDirectory([out, retval]VARIANT_BOOL *Directory);
+};
+
+[
+	object,
+	uuid(dfcf3f84-5394-448d-bcac-e30af6c840e1),
+    dual,
+    oleautomation,
+    nonextensible,
+	pointer_default(unique),
+    helpstring("Files in a Directory")
+]
+interface IXboxFiles : IDispatch
+{
+    [id(DISPID_VALUE), propget]   HRESULT Item( [in] LONG Index, [out, retval] IXboxFile **File);
+	[id(1), propget]              HRESULT Count([out, retval]LONG *Count);
+    [id(DISPID_NEWENUM), propget] HRESULT _NewEnum( [out, retval] IEnumVARIANT **Enumerator);
+    
+};
+
+[
+	object,
+	uuid(6bb90673-5c3c-4b63-8d3c-479a5ede82c3),
+	dual,
+    oleautomation,
+    nonextensible,
+    pointer_default(unique),
+	helpstring("Information about User's Access")
+]
+interface IXboxUser : IDispatch
+{
+	[propget, id(DISPID_VALUE)] HRESULT Name([out, retval]BSTR *UserName);
+	[propput, id(DISPID_VALUE)] HRESULT Name([in]BSTR UserName);
+	[propget, id(1)] HRESULT HasReadAccess( [out, retval] VARIANT_BOOL *ReadAccess);
+	[propput, id(1)] HRESULT HasReadAccess( [in] VARIANT_BOOL ReadAccess);
+	[propget, id(2)] HRESULT HasWriteAccess( [out, retval] VARIANT_BOOL *WriteAccess);
+	[propput, id(2)] HRESULT HasWriteAccess( [in] VARIANT_BOOL WriteAccess);
+	[propget, id(3)] HRESULT HasControlAccess( [out, retval] VARIANT_BOOL *ControlAccess);
+	[propput, id(3)] HRESULT HasControlAccess( [in] VARIANT_BOOL ControlAccess);
+	[propget, id(4)] HRESULT HasConfigureAccess( [out, retval] VARIANT_BOOL *ConfigureAccess);
+	[propput, id(4)] HRESULT HasConfigureAccess( [in] VARIANT_BOOL ConfigureAccess);
+	[propget, id(5)] HRESULT HasManageAccess( [out, retval] VARIANT_BOOL *ManageAccess);
+	[propput, id(5)] HRESULT HasManageAccess( [in] VARIANT_BOOL ManageAccess);
+};
+
+[
+	object,
+	uuid(d5ee3179-7955-41b4-a507-bd78efc462c9),
+	dual,    
+    oleautomation,
+    nonextensible,
+    pointer_default(unique),
+	helpstring("Users with Access")
+]
+interface IXboxUsers : IDispatch
+{
+    [id(DISPID_VALUE), propget]   HRESULT Item( [in] LONG Index, [out, retval] IXboxUser **User);
+	[id(1), propget]              HRESULT Count([out, retval]LONG *Count);
+    [id(DISPID_NEWENUM), propget] HRESULT _NewEnum( [out, retval] IEnumVARIANT **Enumerator);
+};
+
+[
+	object,
+	uuid(43ccafd7-4636-43aa-b468-b7f6edca6651),
+    dual,
+    oleautomation,
+    nonextensible,
+    helpstring("Information about a debug target")
+]
+interface IXboxDebugTarget: IDispatch
+{
+	[propget, id(DISPID_VALUE)] HRESULT Name( [out,retval] BSTR *Name);
+    [propget, id(1)] HRESULT IsDump( [out,retval] VARIANT_BOOL *IsDump);
+
+    [propget, id(20)] HRESULT XboxManager([out,retval] IXboxManager **XboxManager);
+    [propget, id(21)] HRESULT Console([out,retval] IXboxConsole **Console);
+
+    [id(50)]  HRESULT ConnectAsDebugger( [in] BSTR DebuggerName, [in] _XboxDebugConnectFlags Flags);
+    [id(51)]  HRESULT DisconnectAsDebugger();
+    [id(52)]  HRESULT IsDebuggerConnected([out] BSTR *DebuggerName, [out] BSTR *UserName, [out,retval]VARIANT_BOOL *Connected);
+    
+    [propget, id(100)] HRESULT Modules([out,retval] IXboxModules** Modules);
+    [propget,id(101)] HRESULT Threads([out,retval] IXboxThreads** Threads);
+    
+    [id(103)] HRESULT GetMemory( 
+                        [in]  DWORD Address,
+                        [in]  DWORD BytesToRead,
+                        [in,out] SAFEARRAY(BYTE) Data,
+                        [out] DWORD *BytesRead
+                        );
+    
+    [id(104)] HRESULT SetMemory( 
+                        [in]  DWORD Address,
+                        [in]  DWORD BytesToWrite,
+                        [in]  SAFEARRAY(BYTE) Data,
+                        [out] DWORD *BytesWritten
+                        );
+
+    [id(105), hidden] HRESULT GetMemory_cpp( 
+                        [in] DWORD Address,
+                        [in] DWORD BytesToRead,
+                        [out,size_is(BytesToRead),length_is(*BytesRead)] BYTE *Data,
+                        [out] DWORD *BytesRead
+                        );
+    
+    [id(106), hidden] HRESULT SetMemory_cpp( 
+                        [in] DWORD Address,
+                        [in] DWORD BytesToWrite,
+                        [in, size_is(BytesToWrite)] BYTE *Data,
+                        [out] DWORD *BytesWritten
+                        );
+
+    [id(107)] HRESULT InvalidateMemoryCache( [in] VARIANT_BOOL ExecutablePages, [in]DWORD Address, [in] DWORD Size);
+    [propget, id(108)] HRESULT MemoryCacheEnabled( [out, retval] VARIANT_BOOL *Enabled);
+    [propput, id(108)] HRESULT MemoryCacheEnabled( [in] VARIANT_BOOL Enabled);
+    [propget, id(109)] HRESULT MemoryRegions([out, retval] IXboxMemoryRegions **MemoryRegions);
+
+    [propget, id(110)] HRESULT RunningProcessInfo( [out,retval] PXBOX_PROCESS_INFO ProcessInfo);
+    
+    [id(115)] HRESULT StopOn( [in] _XboxStopOnFlags StopOn, [in] VARIANT_BOOL Stop);
+    [id(116)] HRESULT Stop( [out] VARIANT_BOOL* AlreadyStopped );
+    [id(117)] HRESULT Go( [out] VARIANT_BOOL* NotStopped );
+    
+    [id(130)] HRESULT SetBreakpoint([in] DWORD Address);
+    [id(131)] HRESULT RemoveBreakpoint([in] DWORD Address);
+    [id(132)] HRESULT RemoveAllBreakpoints();
+    [id(133)] HRESULT SetInitialBreakpoint();
+    [id(134)] HRESULT SetDataBreakpoint([in] DWORD Address, [in] _XboxBreakpointType Type, [in] DWORD Size);
+    [id(135)] HRESULT IsBreakpoint([in] DWORD Address, [out] _XboxBreakpointType *Type);
+    
+    [id(136)] HRESULT WriteDump( [in] BSTR Filename, [in] _XboxDumpFlags Type );
+
+    [id(140), hidden] HRESULT CopyEventInfo( [out] XBOX_EVENT_INFO *EventInfoDest, [in] XBOX_EVENT_INFO *EventInfoSource);
+    [id(150), hidden] HRESULT FreeEventInfo( [in,out] XBOX_EVENT_INFO *EventInfo);
+
+    [id(160)] HRESULT PgoStartDataCollection (DWORD PgoModule);
+    [id(161)] HRESULT PgoStopDataCollection (DWORD PgoModule);
+    [id(162)] HRESULT PgoSaveSnapshot(BSTR Phase, VARIANT_BOOL Reset, DWORD PgoModule);
+    [id(163)] HRESULT PgoSetAllocScale(DWORD PgoModule, DWORD BufferAllocScale);
+};
+
+cpp_quote("namespace eXboxAutomationButtonFlags {")
+[v1_enum] enum XboxAutomationButtonFlags
+{
+    DPadUp              =0x0001,
+    DPadDown            =0x0002,
+    DPadLeft            =0x0004,
+    DPadRight           =0x0008,
+    StartButton         =0x0010,
+    BackButton          =0x0020,
+    LeftThumbButton     =0x0040,
+    RightThumbButton    =0x0080,
+    LeftShoulderButton  =0x0100,
+    RightShoulderButton =0x0200,
+    A_Button            =0x1000,
+    B_Button            =0x2000,
+    X_Button            =0x4000,
+    Y_Button            =0x8000,
+    Xbox360_Button      =0x0400,
+    Bind_Button         =0x0800
+};
+cpp_quote("}")
+cpp_quote("/*")
+typedef enum XboxAutomationButtonFlags _XboxAutomationButtonFlags;
+cpp_quote("*/ typedef int _XboxAutomationButtonFlags;")
+
+typedef struct XBOX_AUTOMATION_GAMEPAD
+{
+  _XboxAutomationButtonFlags Buttons;
+  DWORD LeftTrigger;
+  DWORD RightTrigger;
+  long  LeftThumbX;
+  long  LeftThumbY;
+  long  RightThumbX;
+  long  RightThumbY;
+} XBOX_AUTOMATION_GAMEPAD, *PXBOX_AUTOMATION_GAMEPAD;
+
+[
+	object,
+	uuid(D81F3E2E-8304-4024-8997-BB1C893516B0),
+    dual,
+    oleautomation,
+    nonextensible,
+    helpstring("Interface to control automation on a console")
+]
+interface IXboxAutomation: IDispatch
+{
+  [id(100)] HRESULT GetInputProcess( [in] DWORD UserIndex, [out] VARIANT_BOOL* SystemProcess);
+  [id(101)] HRESULT BindController( [in] DWORD UserIndex, [in] DWORD QueueLength);
+  [id(102)] HRESULT UnbindController([in] DWORD UserIndex);
+  [id(103)] HRESULT ConnectController([in] DWORD UserIndex);
+  [id(104)] HRESULT DisconnectController([in] DWORD UserIndex);
+  [id(105)] HRESULT SetGamepadState([in] DWORD UserIndex, [in] PXBOX_AUTOMATION_GAMEPAD Gamepad);
+  [id(106)] HRESULT QueueGamepadState_cpp(
+                    [in] DWORD  UserIndex, 
+                    [in, size_is(UserIndex)] PXBOX_AUTOMATION_GAMEPAD GamepadArray,
+                    [in, size_is(UserIndex)] DWORD *TimedDurationArray,
+                    [in, size_is(UserIndex)] DWORD *CountDurationArray,
+                    [in] DWORD  ItemCount, 
+                    [out] DWORD *ItemsAddedToQueue
+                    );
+  [id(107)] HRESULT QueueGamepadState(
+                    [in] DWORD  UserIndex, 
+                    [in] XBOX_AUTOMATION_GAMEPAD* Gamepad,
+                    [in] DWORD TimedDuration,
+                    [in] DWORD CountDuration,
+                    [out, retval] VARIANT_BOOL *AddedToQueue
+                    );
+  [id(108)] HRESULT ClearGamepadQueue([in] DWORD  UserIndex);
+  [id(109)] HRESULT QueryGamepadQueue([in] DWORD  UserIndex,
+                                      [out] DWORD *QueueLength, 
+                                      [out] DWORD *ItemsInQueue,
+                                      [out] DWORD *TimedDurationRemaining,
+                                      [out] DWORD *CountDurationRemaining
+                                      );
+  [id(110)] HRESULT GetUserDefaultProfile([out]  LONGLONG* Xuid);
+  [id(111)] HRESULT SetUserDefaultProfile([in] LONGLONG Xuid);
+};
+
+[
+	object,
+	uuid(0eee2aa0-60f0-4c18-b4ed-e3933e659847),
+    dual,
+    oleautomation,
+    nonextensible,
+	pointer_default(unique),
+    helpstring("Information about a module")
+]
+interface IXboxModule: IDispatch
+{
+	[propget, id(DISPID_VALUE)] HRESULT ModuleInfo([out,retval] XBOX_MODULE_INFO *ModuleInfo);
+    [propget, id(1)] HRESULT Sections([out,retval] IXboxSections** Sections);
+    [id(2)] HRESULT GetFunctionInfo( [in] DWORD Address, [out]XBOX_FUNCTION_INFO *FunctionInfo);
+    [propget, id(3)] HRESULT OriginalSize([out,retval] DWORD* OriginalSize);
+    [propget, id(4)] HRESULT Executable([out,retval] IXboxExecutable** Executable);
+    [id(5)] HRESULT GetEntryPointAddress([out,retval] DWORD* EntryPointAddress);
+};
+
+[
+	object,
+	uuid(e4f0c350-d2da-426e-adec-3d01f60fc842),
+    dual,
+    oleautomation,
+    nonextensible,
+	pointer_default(unique),
+    helpstring("Collection of Modules")
+]
+interface IXboxModules: IDispatch
+{
+    [id(DISPID_VALUE),propget]    HRESULT Item( [in] LONG Index, [out, retval] IXboxModule **Module);
+	[id(1), propget]              HRESULT Count([out, retval]LONG *Count);
+    [id(DISPID_NEWENUM), propget] HRESULT _NewEnum( [out, retval] IEnumVARIANT **Enumerator);
+};
+
+[
+	object,
+	uuid(4B103593-DB52-4e18-913D-B3B17824BD76),
+    dual,
+    oleautomation,
+    nonextensible,
+	pointer_default(unique),
+    helpstring("Information about an Xbox executable")
+]
+interface IXboxExecutable: IDispatch
+{
+   [id(1)]HRESULT GetPEModuleName( [out, retval] BSTR *ModuleName);
+};
+
+[
+	object,
+	uuid(d6df8112-0326-4d29-a6b8-cfb0d89c358a),
+    dual,
+    oleautomation,
+	pointer_default(unique),
+    helpstring("Information about a section")
+]
+interface IXboxSection: IDispatch
+{
+	[propget, id(100)] HRESULT SectionInfo([out,retval] XBOX_SECTION_INFO *SectionInfo);
+};
+
+[
+	object,
+	uuid(9762df66-9516-4531-a507-a11034056f5e),
+	dual,
+    oleautomation,
+    pointer_default(unique),
+    helpstring("Sections in a module")
+]
+interface IXboxSections : IDispatch
+{
+    [id(DISPID_VALUE), propget]   HRESULT Item( [in] LONG Index, [out, retval] IXboxSection **Section);
+	[id(1), propget]              HRESULT Count([out, retval]LONG *Count);
+    [id(DISPID_NEWENUM), propget] HRESULT _NewEnum( [out, retval] IEnumVARIANT **Enumerator);
+};
+
+[
+	object,
+	uuid(8f1e63f5-85ba-4b2d-ad9c-1fa6b750d57f),
+    dual,
+    oleautomation,
+	pointer_default(unique),
+    helpstring("Information about a thread")
+]
+interface IXboxThread: IDispatch
+{
+    [propget, id(DISPID_VALUE)] HRESULT ThreadId([out, retval] DWORD *ThreadId);
+	[propget, id(100)] HRESULT ThreadInfo([out,retval] XBOX_THREAD_INFO *ThreadInfo);
+    [propget, id(101)] HRESULT StopEventInfo([out,retval] PXBOX_EVENT_INFO StopEventInfo);
+    [propget, id(102)] HRESULT TopOfStack([out,retval] IXboxStackFrame **StackFrame);
+    [id(103)] HRESULT Halt();
+    [id(104)] HRESULT Continue([in] VARIANT_BOOL Exception);
+    [id(105)] HRESULT Suspend();
+    [id(106)] HRESULT Resume();
+    [propget, id(107)] HRESULT CurrentProcessor([out,retval] DWORD *Processor);
+    [propget, id(108)] HRESULT LastError([out,retval] DWORD *LastError);
+    
+    // Most likely will be added.
+    // [id(110)] HRESULT StepInstruction( [in] VARIANT_BOOL StepOver);
+    // [id(111)] HRESULT StepRange( [in] DWORD RangeStart, [in] DWORD RangeEnd, [in] VARIANT_BOOL StepOver);
+    // [id(112)] HRESULT StepOut();
+    
+};
+
+[
+	object,
+	uuid(da7c0784-9a34-4a9e-a040-59ebcea92c1e),
+    dual,
+	oleautomation,
+    pointer_default(unique),
+	helpstring("Threads in Process")
+]
+interface IXboxThreads : IDispatch
+{
+    [id(DISPID_VALUE), propget]   HRESULT Item( [in] LONG Index, [out, retval] IXboxThread **Thread);
+	[id(1), propget]              HRESULT Count([out, retval]LONG *Count);
+    [id(DISPID_NEWENUM), propget] HRESULT _NewEnum( [out, retval] IEnumVARIANT **Enumerator);
+};
+
+cpp_quote("namespace eXboxRegisters32{")
+[v1_enum] enum XboxRegisters32
+{
+    msr, iar, lr, cr, xer
+};
+cpp_quote("}")
+cpp_quote("/*")
+typedef enum XboxRegisters32 _XboxRegisters32;
+cpp_quote("*/ typedef eXboxRegisters32::XboxRegisters32 _XboxRegisters32;")
+
+cpp_quote("namespace eXboxRegisters64{")
+[v1_enum] enum XboxRegisters64
+{
+    ctr,
+	r0,  r1,  r2,  r3,  r4,  r5,  r6,   r7,
+    r8,  r9,  r10, r11, r12, r13, r14,  r15,
+    r16, r17, r18, r19, r20, r21, r22,  r23,
+    r24, r25, r26, r27, r28, r29, r30,  r31
+};
+cpp_quote("}")
+cpp_quote("/*")
+typedef enum XboxRegisters64 _XboxRegisters64;
+cpp_quote("*/ typedef eXboxRegisters64::XboxRegisters64 _XboxRegisters64;")
+
+cpp_quote("namespace eXboxRegistersDouble{")
+[v1_enum] enum XboxRegistersDouble
+{
+    fp0,  fp1,  fp2,  fp3,  fp4,  fp5,  fp6,   fp7,
+    fp8,  fp9,  fp10, fp11, fp12, fp13, fp14,  fp15,
+    fp16, fp17, fp18, fp19, fp20, fp21, fp22,  fp23,
+    fp24, fp25, fp26, fp27, fp28, fp29, fp30,  fp31,
+    fpscr
+};
+cpp_quote("}")
+cpp_quote("/*")
+typedef enum XboxRegistersDouble _XboxRegistersDouble;
+cpp_quote("*/ typedef eXboxRegistersDouble::XboxRegistersDouble _XboxRegistersDouble;")
+
+cpp_quote("namespace eXboxRegistersVector{")
+[v1_enum] enum XboxRegistersVector
+{
+    v0,   v1,   v2,   v3,   v4,   v5,   v6,   v7,
+    v8,   v9,   v10,  v11,  v12,  v13,  v14,  v15,
+    v16,  v17,  v18,  v19,  v20,  v21,  v22,  v23,
+    v24,  v25,  v26,  v27,  v28,  v29,  v30,  v31,
+    v32,  v33,  v34,  v35,  v36,  v37,  v38,  v39,
+    v40,  v41,  v42,  v43,  v44,  v45,  v46,  v47,
+    v48,  v49,  v50,  v51,  v52,  v53,  v54,  v55,
+    v56,  v57,  v58,  v59,  v60,  v61,  v62,  v63,
+    v64,  v65,  v66,  v67,  v68,  v69,  v70,  v71,
+    v72,  v73,  v74,  v75,  v76,  v77,  v78,  v79,
+    v80,  v81,  v82,  v83,  v84,  v85,  v86,  v87,
+    v88,  v89,  v90,  v91,  v92,  v93,  v94,  v95,
+    v96,  v97,  v98,  v99,  v100, v101, v102, v103,
+    v104, v105, v106, v107, v108, v109, v110, v111,
+    v112, v113, v114, v115, v116, v117, v118, v119,
+    v120, v121, v122, v123, v124, v125, v126, v127,
+    vscr
+};
+cpp_quote("}")
+cpp_quote("/*")
+typedef enum XboxRegistersVector _XboxRegistersVector;
+cpp_quote("*/ typedef eXboxRegistersVector::XboxRegistersVector _XboxRegistersVector;")
+
+[
+	object,
+	uuid(eabf8976-1a2f-4aaa-bbbb-3ecab03b2ee9),
+    dual,
+    oleautomation,
+	pointer_default(unique),
+    helpstring("a stack frame on a thread")
+]
+interface IXboxStackFrame: IDispatch
+{
+    [propget, id(1)] HRESULT TopOfStack([out,retval] VARIANT_BOOL *TopOfStack);
+    [propget, id(2)] HRESULT Dirty([out,retval] VARIANT_BOOL *Dirty);
+    [propget, id(3)] HRESULT NextStackFrame([out,retval] IXboxStackFrame **StackFrame);
+    
+    // Registers are grouped by data type.
+    [id(100)] HRESULT GetRegister32( 
+                        [in] _XboxRegisters32 Register,
+                        [out] LONG* Value,
+                        [out, retval] VARIANT_BOOL *IsValid
+                        );
+    [id(101)] HRESULT SetRegister32( 
+                        [in] _XboxRegisters32 Register,
+                        [in] LONG Value
+                        );
+    
+    [id(102)] HRESULT GetRegister64( 
+                        [in] _XboxRegisters64 Register,
+                        [out] LONGLONG* Value,
+                        [out, retval] VARIANT_BOOL *IsValid
+                        );
+    [id(103)] HRESULT SetRegister64( 
+                        [in] _XboxRegisters64 Register,
+                        [in] LONGLONG Value
+                        );
+    [id(104)] HRESULT GetRegisterDouble( 
+                        [in] _XboxRegistersDouble Register,
+                        [out] double* Value,
+                        [out, retval] VARIANT_BOOL *IsValid
+                        );
+    [id(105)] HRESULT SetRegisterDouble( 
+                        [in] _XboxRegistersDouble Register,
+                        [in] double Value
+                        );
+    [id(106),hidden] HRESULT GetRegisterVector_cpp( 
+                        [in] _XboxRegistersVector Register,
+                        [out, size_is(4), length_is(4)] float* Value,
+                        [out, retval] VARIANT_BOOL *IsValid
+                        );
+    [id(107),hidden] HRESULT SetRegisterVector_cpp( 
+                        [in] _XboxRegistersVector Register,
+                        [in, size_is(4), length_is(4)] float *Value
+                        );
+    [id(108)] HRESULT GetRegisterVector( 
+                        [in] _XboxRegistersVector Register,
+                        SAFEARRAY(float) Value,
+                        [out, retval] VARIANT_BOOL *IsValid
+                        );
+    [id(109)] HRESULT SetRegisterVector( 
+                        [in] _XboxRegistersVector Register,
+                        SAFEARRAY(float) Value
+                        );
+
+    [id(110)] HRESULT FlushRegisterChanges();
+
+    [propget, id(111)] HRESULT FunctionInfo([out,retval]XBOX_FUNCTION_INFO *FunctionInfo);
+    [propget, id(112)] HRESULT StackPointer([out,retval]DWORD *StackPointer);
+    [propget, id(113)] HRESULT ReturnAddress([out,retval]DWORD *ReturnAddress);
+};
+
+[
+	object,
+	uuid(7f8e857b-fd59-4b67-8156-faa3fd06d1e5),
+    dual,
+    oleautomation,
+    nonextensible,
+	pointer_default(unique),
+    helpstring("Collection of memory regions")
+]
+interface IXboxMemoryRegions : IDispatch
+{
+    [id(DISPID_VALUE),propget]    HRESULT Item( [in] LONG Index, [out, retval] IXboxMemoryRegion **MemoryRegion);
+	[id(1), propget]              HRESULT Count([out, retval]LONG *Count);
+    [id(DISPID_NEWENUM), propget] HRESULT _NewEnum( [out, retval] IEnumVARIANT **Enumerator);
+};
+
+cpp_quote("namespace eXboxMemoryRegionFlags{")
+[v1_enum] enum XboxMemoryRegionFlags
+{
+    NoAccess = 0x01,
+    ReadOnly = 0x02,
+    ReadWrite = 0x04,
+    WriteCopy = 0x08,
+    Execute = 0x10,
+    ExecuteRead = 0x20,
+    ExecuteReadWrite = 0x40,
+    ExecuteWriteCopy = 0x80,
+    Guard = 0x100,
+    NoCache = 0x200,
+    WriteCombine = 0x400,
+    UserReadOnly = 0x1000,
+    UserReadWrite = 0x2000
+};
+
+cpp_quote("}")
+cpp_quote("/*")
+typedef enum XboxMemoryRegionFlags _XboxMemoryRegionFlags;
+cpp_quote("*/ typedef int _XboxMemoryRegionFlags;")
+
+[
+	object,
+	uuid(4f882a21-7f2a-4bea-a0a3-a3710a93deea),
+    dual,
+    oleautomation,
+    nonextensible,
+	pointer_default(unique),
+    helpstring("Memory Region Info")
+]   
+interface IXboxMemoryRegion : IDispatch
+{
+    [propget, id(1)] HRESULT BaseAddress([out,retval] LONG *BaseAddress);
+    [propget, id(2)] HRESULT RegionSize([out,retval] LONG *RegionSize);
+    [propget, id(3)] HRESULT Flags([out,retval] _XboxMemoryRegionFlags *Flags);
+};
+
+[
+	uuid(85c9127a-11ed-47f2-9e87-a83058fc264a),
+	dual,
+    oleautomation
+]
+interface IXboxEventInfo : IDispatch
+{
+    [id(DISPID_VALUE), propget] HRESULT Info( [out, retval] PXBOX_EVENT_INFO EventInfo);
+}
+
+const DISPID DISPID_XBOX_EVENT = 1;
+const DISPID DISPID_XBOX_TEXT_EVENT = 2;
+
+[
+	uuid(420208df-c38c-4efb-9fc3-acd50350941e)
+]
+dispinterface XboxEvents
+{
+    properties:
+    methods:
+    [id(DISPID_XBOX_EVENT)] void OnStdNotify( [in] _XboxDebugEventType EventCode, [in]IXboxEventInfo *eventInfo);
+    [id(DISPID_XBOX_TEXT_EVENT)] void OnTextNotify( [in] BSTR Source, [in] BSTR Notification );
+};
+
+[
+	uuid(e3c9d73f-9df0-4b57-8cee-05f9ca6823be),
+    oleautomation
+]
+interface IXboxEvents : IUnknown
+{
+    HRESULT OnStdNotify( [in] _XboxDebugEventType EventCode, [in]IXboxEventInfo *eventInfo);
+    HRESULT OnTextNotify( [in] BSTR Source, [in] BSTR Notification );
+};
+
+[
+	uuid(d7a62fa2-524f-4f0d-8025-e72f9ff3eff6),
+	version(1.0),
+	helpstring("Xbox Development Kit API 2.0")
+]
+library XDevkit
+{
+	importlib("stdole2.tlb");
+
+    struct XBOX_PROCESS_INFO;
+    enum XboxAccessFlags;
+    struct XBOX_USER;
+    enum XboxModuleInfoFlags;
+    struct XBOX_MODULE_INFO;
+    enum XboxSectionInfoFlags;
+    struct XBOX_SECTION_INFO;
+    struct XBOX_THREAD_INFO;
+    enum XboxFunctionType;
+    struct XBOX_FUNCTION_INFO;
+    enum XboxDebugEventType;
+    enum XboxExecutionState;
+    enum XboxStopOnFlags;
+    enum XboxRebootFlags;
+    enum XboxExceptionFlags;
+    struct XBOX_EVENT_INFO;
+    enum XboxBreakpointType;
+    enum XboxSelectConsoleFlags;
+    enum XboxDebugConnectFlags;
+    enum XboxDumpFlags;
+    enum XboxDumpMode;
+    enum XboxEventDeferFlags;
+    enum XboxDumpReportFlags;
+    struct XBOX_DUMP_SETTINGS;
+    interface IXboxManager;
+    enum XboxCreateDisposition;
+    interface IXboxConsole;
+    interface IXboxConsoles;
+    interface IXboxFile;
+    interface IXboxFiles;
+    interface IXboxUser;
+    interface IXboxUsers;
+    interface IXboxDebugTarget;
+    interface IXboxModule;
+    interface IXboxModules;
+    interface IXboxSection;
+    interface IXboxSections;
+    interface IXboxThread;
+    interface IXboxThreads;
+    enum XboxRegisters32;
+    enum XboxRegisters64;
+    enum XboxRegistersDouble;
+    enum XboxRegistersVector;
+    interface IXboxStackFrame;
+    interface IXboxMemoryRegions;
+    enum XboxMemoryRegionFlags;
+    interface IXboxMemoryRegion;
+    interface IXboxEventInfo;
+    dispinterface XboxEvents;
+    interface IXboxEvents;
+
+    [
+        uuid(3ed2b073-99a1-42db-80cc-295e9ffba18f),
+        helpstring("Xbox Console Object")
+    ]
+    coclass XboxConsole
+    {
+	    [default] interface IXboxConsole;
+	    [default, source]  interface XboxEvents;
+    };
+
+    [
+        uuid(a5eb45d8-f3b6-49b9-984a-0d313ab60342),
+		helpstring("Xbox Manager Object")
+	]
+    coclass XboxManager
+	{
+		[default] interface IXboxManager;
+	};
+
+    [
+        uuid(3151B328-4A0D-4b83-950F-6861AB6B3ECD),
+        helpstring("Xbox Executable Database Object")
+    ]
+    coclass XboxExecutableDatabase
+    {
+	    [default] interface IXboxExecutableDatabase;
+    };
+
+};

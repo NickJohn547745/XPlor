@@ -180,11 +180,11 @@ bool IWIFile::SaveIWI() {
 
     // Determine number of mipmaps based on version
     QVector<qint32> offsets((header.Version == 0x1B) ? 8 : 4);
-    qint32 currentOffset = file.pos() + (offsets.size() * sizeof(qint32));
+    size_t currentOffset = file.pos() + (offsets.size() * sizeof(qint32));
 
     // Compute offsets
     for (int i = 0; i < offsets.size(); i++) {
-        offsets[i] = currentOffset;
+        offsets[i] = static_cast<qint32>(currentOffset);
         if (mipmaps.size() && i < mipmaps.size()) {
             currentOffset += mipmaps[i].size;
         }

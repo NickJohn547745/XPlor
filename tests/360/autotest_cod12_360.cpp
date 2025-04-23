@@ -39,9 +39,15 @@ void AutoTest_COD12_360::testDecompression_data() {
 void AutoTest_COD12_360::testDecompression() {
     QFETCH(QString, fastFilePath_cod12_360);
 
+    const QString testName = "Decompress: " + fastFilePath_cod12_360;
+
     // Open the original .ff file.
     QFile testFastFile(fastFilePath_cod12_360);
-    QVERIFY2(testFastFile.open(QIODevice::ReadOnly),
+    bool fastFileOpened = testFastFile.open(QIODevice::ReadOnly);
+    if (!fastFileOpened) {
+        recordResult(testName, false);
+    }
+    QVERIFY2(fastFileOpened,
              qPrintable("Failed to open test fastfile: " + fastFilePath_cod12_360));
     const QByteArray testFFData = testFastFile.readAll();
     testFastFile.close();
@@ -55,7 +61,11 @@ void AutoTest_COD12_360::testDecompression() {
     zoneStream.setByteOrder(QDataStream::LittleEndian);
     quint32 zoneSize;
     zoneStream >> zoneSize;
-    QVERIFY2(zoneSize + 44 == testZoneData.size(),
+    bool sizeMatches = zoneSize + 44 == testZoneData.size();
+    if (!sizeMatches) {
+        recordResult(testName, false);
+    }
+    QVERIFY2(sizeMatches,
              qPrintable("Decompression validation failed for: " + fastFilePath_cod12_360));
 
     // Write the decompressed zone data to the exports folder with a .zone extension.
@@ -63,8 +73,12 @@ void AutoTest_COD12_360::testDecompression() {
     QString outputFileName = fi.completeBaseName() + ".zone";
     QString outputFilePath = QDir(EXPORT_DIR).filePath(outputFileName);
     QFile outputFile(outputFilePath);
-    QVERIFY2(outputFile.open(QIODevice::WriteOnly),
-             qPrintable("Failed to open output file for writing: " + outputFilePath));
+    bool zoneFileOpened = outputFile.open(QIODevice::WriteOnly);
+    if (!zoneFileOpened) {
+        recordResult(testName, false);
+    }
+    QVERIFY2(zoneFileOpened,
+             qPrintable("Failed to open output zone file for writing: " + outputFilePath));
     outputFile.write(testZoneData);
     outputFile.close();
 }

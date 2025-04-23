@@ -4,6 +4,7 @@
 
 #include "autotest_cod.h"
 #include "compression.h"
+#include "encryption.h"
 
 class AutoTest_COD7_360 : public AutoTest_COD {
     Q_OBJECT
@@ -39,6 +40,8 @@ void AutoTest_COD7_360::testDecompression_data() {
 void AutoTest_COD7_360::testDecompression() {
     QFETCH(QString, fastFilePath_cod7_360);
 
+    const QString testName = "Decompress: " + fastFilePath_cod7_360;
+
     // Open the original .ff file.
     QFile testFastFile(fastFilePath_cod7_360);
     QVERIFY2(testFastFile.open(QIODevice::ReadOnly),
@@ -46,16 +49,77 @@ void AutoTest_COD7_360::testDecompression() {
     const QByteArray testFFData = testFastFile.readAll();
     testFastFile.close();
 
-    // Assume the first 12 bytes are a header; the rest is zlib-compressed zone data.
-    const QByteArray compressedData = testFFData.mid(12);
-    const QByteArray testZoneData = Compression::DecompressZLIB(compressedData);
+    QByteArray decompressedData;
+    QByteArray key = QByteArray::fromHex("1ac1d12d527c59b40eca619120ff8217ccff09cd16896f81b829c7f52793405d");
+
+    // Create a QDataStream on the input data.
+    QDataStream fastFileStream(testFFData);
+    fastFileStream.setByteOrder(QDataStream::BigEndian);
+    fastFileStream.skipRawData(16);
+
+    // Read the 8-byte magic.
+    QByteArray fileMagic(8, Qt::Uninitialized);
+    fastFileStream.readRawData(fileMagic.data(), 8);
+    QVERIFY2(fileMagic == "PHEEBs71",
+             qPrintable("Invalid fast file magic: " + fileMagic));
+    fastFileStream.skipRawData(4);
+
+    // Read IV table name (32 bytes).
+    QByteArray fileName(32, Qt::Uninitialized);
+    fastFileStream.readRawData(fileName.data(), 32);
+
+    // Build the IV table from the fileName.
+    QByteArray ivTable = Encryption::InitIVTable(fileName);
+
+    // Skip the RSA signature (256 bytes).
+    QByteArray rsaSignature(256, Qt::Uninitialized);
+    fastFileStream.readRawData(rsaSignature.data(), 256);
+
+    // Now the stream should be positioned at 0x13C, where sections begin.
+    int sectionIndex = 0;
+    while (true) {
+        qint32 sectionSize = 0;
+        fastFileStream >> sectionSize;
+        if (sectionSize == 0)
+            break;
+
+        // Read the section data.
+        QByteArray sectionData;
+        sectionData.resize(sectionSize);
+        fastFileStream.readRawData(sectionData.data(), sectionSize);
+
+        // Compute the IV for this section.
+        QByteArray iv = Encryption::GetIV(ivTable, sectionIndex);
+
+        // Decrypt the section using Salsa20.
+        QByteArray decData = Encryption::salsa20DecryptSection(sectionData, key, iv);
+
+        // Compute SHA1 hash of the decrypted data.
+        QByteArray sectionHash = QCryptographicHash::hash(decData, QCryptographicHash::Sha1);
+
+        // Update the IV table based on the section hash.
+        Encryption::UpdateIVTable(ivTable, sectionIndex, sectionHash);
+
+        // Build a compressed data buffer by prepending the two-byte zlib header.
+        decompressedData.append(Compression::DecompressDeflate(decData));
+
+        sectionIndex++;
+    }
+
+
+    const QByteArray testZoneData = decompressedData;
 
     // Verify the decompressed data via its embedded zone size.
     QDataStream zoneStream(testZoneData);
-    zoneStream.setByteOrder(QDataStream::LittleEndian);
+    zoneStream.setByteOrder(QDataStream::BigEndian);
     quint32 zoneSize;
     zoneStream >> zoneSize;
-    QVERIFY2(zoneSize + 44 == testZoneData.size(),
+    if (abs(zoneSize - testZoneData.size()) != 36) {
+        qDebug() << "Zone Size: " << zoneSize;
+        qDebug() << "Test zone Size: " << testZoneData.size();
+        qDebug() << "Difference: " << abs(zoneSize - testZoneData.size());
+    }
+    QVERIFY2(zoneSize + 36 == testZoneData.size(),
              qPrintable("Decompression validation failed for: " + fastFilePath_cod7_360));
 
     // Write the decompressed zone data to the exports folder with a .zone extension.

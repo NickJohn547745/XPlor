@@ -5,6 +5,7 @@ Public domain.
 */
 
 #include "ecrypt-sync.h"
+#include "qtpreprocessorsupport.h"
 
 #define ROTATE(v,c) (ROTL32(v,c))
 #define XOR(v,w) ((v) ^ (w))
@@ -21,6 +22,7 @@ static const char tau[17] = "expand 16-byte k";
 
 void ECRYPT_keysetup(ECRYPT_ctx *x,const u8 *k,u32 kbits,u32 ivbits)
 {
+    Q_UNUSED(ivbits);
     const char *constants;
 
     x->input[1] = U8TO32_LITTLE(k + 0);

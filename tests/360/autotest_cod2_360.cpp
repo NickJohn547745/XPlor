@@ -39,10 +39,16 @@ void AutoTest_COD2_360::testDecompression_data() {
 void AutoTest_COD2_360::testDecompression() {
     QFETCH(QString, fastFilePath_cod2_360);
 
+    const QString testName = "Decompress: " + fastFilePath_cod2_360;
+
     // Open the original .ff file.
     QFile testFastFile(fastFilePath_cod2_360);
-    QVERIFY2(testFastFile.open(QIODevice::ReadOnly),
-             qPrintable("Failed to open test fastfile: " + fastFilePath_cod2_360));
+    bool fastFileOpened = testFastFile.open(QIODevice::ReadOnly);
+    if (!fastFileOpened) {
+        recordResult(testName, false);
+    }
+    QVERIFY2(fastFileOpened
+        , qPrintable("Failed to open test fastfile: " + fastFilePath_cod2_360));
     const QByteArray testFFData = testFastFile.readAll();
     testFastFile.close();
 
@@ -64,10 +70,16 @@ void AutoTest_COD2_360::testDecompression() {
     QString outputFileName = fi.completeBaseName() + ".zone";
     QString outputFilePath = QDir(EXPORT_DIR).filePath(outputFileName);
     QFile outputFile(outputFilePath);
-    QVERIFY2(outputFile.open(QIODevice::WriteOnly),
-             qPrintable("Failed to open output file for writing: " + outputFilePath));
+    bool zoneFileOpened = outputFile.open(QIODevice::WriteOnly);
+    if (!zoneFileOpened) {
+        recordResult(testName, false);
+    }
+    QVERIFY2(zoneFileOpened,
+             qPrintable("Failed to open output zone file for writing: " + outputFilePath));
     outputFile.write(testZoneData);
     outputFile.close();
+
+    recordResult(testName, true);
 }
 
 void AutoTest_COD2_360::testCompression_data() {
@@ -83,8 +95,14 @@ void AutoTest_COD2_360::testCompression_data() {
 void AutoTest_COD2_360::testCompression() {
     QFETCH(QString, zoneFilePath_cod2_360);
 
+    const QString testName = "Compress: " + zoneFilePath_cod2_360;
+
     QFile zoneFile(zoneFilePath_cod2_360);
-    QVERIFY2(zoneFile.open(QIODevice::ReadOnly), qPrintable("Failed to open zone file: " + zoneFilePath_cod2_360));
+    bool zoneFileOpened = zoneFile.open(QIODevice::ReadOnly);
+    if (!zoneFileOpened) {
+        recordResult(testName, false);
+    }
+    QVERIFY2(zoneFileOpened, qPrintable("Failed to open zone file: " + zoneFilePath_cod2_360));
     QByteArray decompressedData = zoneFile.readAll();
     zoneFile.close();
 
@@ -92,7 +110,11 @@ void AutoTest_COD2_360::testCompression() {
     QString originalFFPath = QDir(getFastFileDirectory()).filePath(fi.completeBaseName() + ".ff");
 
     QFile originalFile(originalFFPath);
-    QVERIFY2(originalFile.open(QIODevice::ReadOnly), qPrintable("Failed to open original .ff file: " + originalFFPath));
+    bool origFileOpened = originalFile.open(QIODevice::ReadOnly);
+    if (!origFileOpened) {
+        recordResult(testName, false);
+    }
+    QVERIFY2(origFileOpened, qPrintable("Failed to open original .ff file: " + originalFFPath));
     QByteArray originalFFData = originalFile.readAll();
     originalFile.close();
 
@@ -105,11 +127,21 @@ void AutoTest_COD2_360::testCompression() {
 
     QString recompressedFilePath = QDir(EXPORT_DIR).filePath(fi.completeBaseName() + ".ff");
     QFile recompressedFile(recompressedFilePath);
-    QVERIFY2(recompressedFile.open(QIODevice::WriteOnly), qPrintable("Failed to write recompressed file."));
+    bool fastFileOpened = recompressedFile.open(QIODevice::WriteOnly);
+    if (!fastFileOpened) {
+        recordResult(testName, false);
+    }
+    QVERIFY2(fastFileOpened, qPrintable("Failed to write recompressed file."));
     recompressedFile.write(recompressedData);
     recompressedFile.close();
 
+    bool dataMatches = recompressedData == originalFFData;
+    if (!dataMatches) {
+        recordResult(testName, false);
+    }
     QCOMPARE(recompressedData, originalFFData);
+
+    recordResult(testName, true);
 }
 
 void AutoTest_COD2_360::cleanupTestCase() {

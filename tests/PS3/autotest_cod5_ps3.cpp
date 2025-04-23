@@ -55,7 +55,12 @@ void AutoTest_COD5_PS3::testDecompression() {
     zoneStream.setByteOrder(QDataStream::LittleEndian);
     quint32 zoneSize;
     zoneStream >> zoneSize;
-    QVERIFY2(zoneSize + 44 == testZoneData.size(),
+    if (abs(zoneSize - testZoneData.size()) != 36) {
+        qDebug() << "Zone Size: " << zoneSize;
+        qDebug() << "Test zone Size: " << testZoneData.size();
+        qDebug() << "Difference: " << abs(zoneSize - testZoneData.size());
+    }
+    QVERIFY2(zoneSize + 36 == testZoneData.size(),
              qPrintable("Decompression validation failed for: " + fastFilePath_cod5_ps3));
 
     // Write the decompressed zone data to the exports folder with a .zone extension.

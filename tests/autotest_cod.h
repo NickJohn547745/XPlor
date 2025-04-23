@@ -6,7 +6,16 @@
 class AutoTest_COD : public QObject {
     Q_OBJECT
 
+protected:
+    QList<QPair<QString, bool>> m_subtestResults;
+
 public:
+    const QList<QPair<QString, bool>>& getCollectedTestResults() const {
+        return m_subtestResults;
+    }
+    void recordResult(const QString& name, bool passed) {
+        m_subtestResults.append({ name, passed });
+    }
     void setFastFileDirectory(const QString aFastFileDir) {
         mFastFileDirectory = aFastFileDir;
     }
@@ -22,10 +31,8 @@ public:
     }
 
     void createDirectory(const QString aDir) {
-        QDir newDir(aDir);
-        if (!newDir.exists()) {
-            newDir.mkpath(aDir);
-        }
+        QDir newDir(".");
+        newDir.mkpath(aDir);
     }
     QStringList findFastFiles(const QString &aBaseDir, int aMaxIter = MAX_ITER) {
         QStringList fastFiles;
@@ -61,7 +68,7 @@ public:
     virtual void cleanupTestCase() = 0;
 
 private:
-    static const int MAX_ITER = -1;
+    static const int MAX_ITER = 10000;
     QString mFastFileDirectory;
     QString mZoneFileDirectory;
 };
