@@ -314,18 +314,33 @@ RawFile ZoneFile_COD5::pParseAsset_RawFile(QDataStream *aZoneFileStream) {
         *aZoneFileStream >> scriptPathChar;
     }
     result.path.replace(",", "");
+
     const QStringList pathParts = result.path.split('/');
     if (pathParts.size() == 0) {
         qDebug() << "Failed to parse ff path! " << result.path;
         exit(-1);
     }
+    if (result.path.contains(".bik")) {
+        qDebug() << "rawFileLength: " << result.length;
+        QByteArray bikData(result.length, Qt::Uninitialized);
+        aZoneFileStream->readRawData(bikData.data(), result.length);
 
-    // Parse gsc contents
-    char rawFileContentsChar;
-    *aZoneFileStream >> rawFileContentsChar;
-    while (rawFileContentsChar != 0 && rawFileContentsChar != -1) {
-        result.contents += rawFileContentsChar;
+        //QFile bikFile(QDir::currentPath() + "/" + rawFilePath.split('/').last());
+        //qDebug() << bikFile.fileName();
+        //if (!bikFile.open(QIODevice::WriteOnly)) {
+        //    qWarning() << "Failed to open .bik file for writing!";
+        //    return;
+        //}
+        //qDebug() << QString("%1: %2").arg(rawFilePath).arg(bikFile.fileName());
+        //bikFile.write(bikData);
+    } else {
+        // Parse gsc contents
+        char rawFileContentsChar;
         *aZoneFileStream >> rawFileContentsChar;
+        while (rawFileContentsChar != 0 && rawFileContentsChar != -1) {
+            result.contents += rawFileContentsChar;
+            *aZoneFileStream >> rawFileContentsChar;
+        }
     }
     return result;
 }
@@ -340,10 +355,10 @@ Model ZoneFile_COD5::pParseAsset_Model(QDataStream *aZoneFileStream) {
     qDebug() << "Model Info:";
 
     *aZoneFileStream >> result.namePtr >> result.tagCount >> result.rootTagCount
-            >> result.surfCount >> result.unknownCount >> result.boneNamePtr
-            >> result.parentListPtr >> result.quatsPtr >> result.transPtr
-            >> result.partClassPtr >> result.baseMatPtr
-            >> result.surfsPtr >> result.materialHandlesPtr;
+        >> result.surfCount >> result.unknownCount >> result.boneNamePtr
+        >> result.parentListPtr >> result.quatsPtr >> result.transPtr
+        >> result.partClassPtr >> result.baseMatPtr
+        >> result.surfsPtr >> result.materialHandlesPtr;
 
     // Parse XModelLodInfo
     for (int i = 1; i <= 4; i++) {
@@ -358,16 +373,16 @@ Model ZoneFile_COD5::pParseAsset_Model(QDataStream *aZoneFileStream) {
         aZoneFileStream->skipRawData(4);
 
         *aZoneFileStream >> result.lodInfo[i].partBits[0]
-                >> result.lodInfo[i].partBits[1]
-                >> result.lodInfo[i].partBits[2]
-                >> result.lodInfo[i].partBits[3];
+            >> result.lodInfo[i].partBits[1]
+            >> result.lodInfo[i].partBits[2]
+            >> result.lodInfo[i].partBits[3];
     }
 
     *aZoneFileStream >> result.collSurfsPtr >> result.numCollSurfs >> result.contents >> result.boneInfoPtr;
 
     quint32 intRadius, intMins[3], intMaxs[3];
     *aZoneFileStream >> intRadius >> intMins[0] >> intMins[1]
-            >> intMins[2] >> intMaxs[0] >> intMaxs[1] >> intMaxs[2];
+        >> intMins[2] >> intMaxs[0] >> intMaxs[1] >> intMaxs[2];
 
     std::memcpy(&result.radius, &intRadius, sizeof(result.radius));
 
@@ -380,7 +395,7 @@ Model ZoneFile_COD5::pParseAsset_Model(QDataStream *aZoneFileStream) {
     std::memcpy(&result.maxs[2], &intMaxs[2], sizeof(result.maxs[3]));
 
     *aZoneFileStream >> result.numLods >> result.collLod >> result.streamInfoPtr
-            >> result.memUsage >> result.flags >> result.physPresetPtr >> result.physGeomsPtr;
+        >> result.memUsage >> result.flags >> result.physPresetPtr >> result.physGeomsPtr;
 
     // Parse model name
     char modelNameChar;
@@ -396,8 +411,64 @@ Model ZoneFile_COD5::pParseAsset_Model(QDataStream *aZoneFileStream) {
 }
 
 Material ZoneFile_COD5::pParseAsset_Material(QDataStream *aZoneFileStream) {
-    Q_UNUSED(aZoneFileStream);
+    aZoneFileStream->skipRawData(27 * 4);
 
+    qint32 materialNamePtr;
+    *aZoneFileStream >> materialNamePtr;
+    qDebug() << "materialNamePtr: " << materialNamePtr;
+    if (materialNamePtr == -1) {
+        QString materialName;
+        char materialNameChar;
+        *aZoneFileStream >> materialNameChar;
+        while (materialNameChar != 0) {
+            materialName += materialNameChar;
+            *aZoneFileStream >> materialNameChar;
+        }
+        qDebug() << "Parsing Material: " << materialName;
+    }
+
+    aZoneFileStream->skipRawData(3 * 4);
+
+    qint32 compressionPtr, compression, unknownSectionPtr;
+    *aZoneFileStream >> compressionPtr;
+    qDebug() << "compressionPtr: " << compressionPtr;
+    if (compressionPtr == -1) {
+        *aZoneFileStream >> compression;
+        qDebug() << QString("Found material with DXT%1 compression!").arg(compression);
+
+        *aZoneFileStream >> unknownSectionPtr;
+        qDebug() << "unknownSectionPtr: " << unknownSectionPtr;
+        if (unknownSectionPtr == -2) {
+            aZoneFileStream->skipRawData(6 * 4);
+        }
+    }
+
+    qint32 imageNamePtr;
+    *aZoneFileStream >> imageNamePtr;
+    qDebug() << "imageNamePtr: " << imageNamePtr;
+    if (imageNamePtr == -1) {
+        QString imageName;
+        char imageNameChar;
+        *aZoneFileStream >> imageNameChar;
+        while (imageNameChar != 0) {
+            imageName += imageNameChar;
+            *aZoneFileStream >> imageNameChar;
+        }
+        qDebug() << "- Embeded image: " << imageName;
+    }
+
+    QByteArray compressionData(4, Qt::Uninitialized);
+    QString compressionStr;
+    if (compressionPtr == -1) {
+        aZoneFileStream->skipRawData(2 * 4);
+        aZoneFileStream->readRawData(compressionData.data(), 4);
+        aZoneFileStream->skipRawData(4);
+        compressionStr = QString::fromUtf8(compressionData);
+        aZoneFileStream->skipRawData(4);
+    }
+    aZoneFileStream->skipRawData(4);
+
+    // TODO: Fill out this material
     return Material();
 }
 
@@ -472,9 +543,9 @@ Image ZoneFile_COD5::pParseAsset_Image(QDataStream *aZoneFileStream) {
 
     aZoneFileStream->skipRawData(4);
     *aZoneFileStream >> result.unknowna >> result.unknownb
-            >> result.unknownc >> result.unknownd
-            >> result.unknowne >> result.unknownf
-            >> result.unknowng;
+        >> result.unknownc >> result.unknownd
+        >> result.unknowne >> result.unknownf
+        >> result.unknowng;
 
     aZoneFileStream->skipRawData(15 * 4);
     *aZoneFileStream >> result.unknownh >> result.unknowni;
@@ -504,8 +575,8 @@ Image ZoneFile_COD5::pParseAsset_Image(QDataStream *aZoneFileStream) {
         aZoneFileStream->skipRawData(4);
 
         *aZoneFileStream >> result.unknown2 >> result.unknown3
-                >> result.size1 >> result.size2
-                >> result.unknown4 >> result.unknown5;
+            >> result.size1 >> result.size2
+            >> result.unknown4 >> result.unknown5;
 
         aZoneFileStream->skipRawData(4);
 
@@ -691,43 +762,43 @@ Animation ZoneFile_COD5::pParseAsset_Animation(QDataStream *aZoneFileStream) {
     aZoneFileStream->skipRawData(4);
 
     *aZoneFileStream
-            >> result.dataByteCount
-            >> result.dataShortCount
-            >> result.dataIntCount
-            >> result.randomDataByteCount
-            >> result.randomDataIntCount
-            >> result.numframes
-            >> result.isLooped
-            >> result.isDelta
-            >> result.noneRotatedBoneCount
-            >> result.twoDRotatedBoneCount
-            >> result.normalRotatedBoneCount
-            >> result.twoDRotatedBoneCount
-            >> result.normalRotatedBoneCount
-            >> result.normalTranslatedBoneCount
-            >> result.preciseTranslatedBoneCount
-            >> result.staticTranslatedBoneCount
-            >> result.noneTranslatedBoneCount
-            >> result.totalBoneCount
-            >> result.otherBoneCount1
-            >> result.otherBoneCount2
-            >> result.notifyCount
-            >> result.assetType
-            >> result.pad
-            >> result.randomDataShortCount
-            >> result.indexCount
-            >> result.frameRate
-            >> result.frequency
-            >> result.boneIDsPtr
-            >> result.dataBytePtr
-            >> result.dataShortPtr
-            >> result.dataIntPtr
-            >> result.randomDataShortPtr
-            >> result.randomDataBytePtr
-            >> result.randomDataIntPtr
-            >> result.longIndiciesPtr
-            >> result.notificationsPtr
-            >> result.deltaPartsPtr;
+        >> result.dataByteCount
+        >> result.dataShortCount
+        >> result.dataIntCount
+        >> result.randomDataByteCount
+        >> result.randomDataIntCount
+        >> result.numframes
+        >> result.isLooped
+        >> result.isDelta
+        >> result.noneRotatedBoneCount
+        >> result.twoDRotatedBoneCount
+        >> result.normalRotatedBoneCount
+        >> result.twoDRotatedBoneCount
+        >> result.normalRotatedBoneCount
+        >> result.normalTranslatedBoneCount
+        >> result.preciseTranslatedBoneCount
+        >> result.staticTranslatedBoneCount
+        >> result.noneTranslatedBoneCount
+        >> result.totalBoneCount
+        >> result.otherBoneCount1
+        >> result.otherBoneCount2
+        >> result.notifyCount
+        >> result.assetType
+        >> result.pad
+        >> result.randomDataShortCount
+        >> result.indexCount
+        >> result.frameRate
+        >> result.frequency
+        >> result.boneIDsPtr
+        >> result.dataBytePtr
+        >> result.dataShortPtr
+        >> result.dataIntPtr
+        >> result.randomDataShortPtr
+        >> result.randomDataBytePtr
+        >> result.randomDataIntPtr
+        >> result.longIndiciesPtr
+        >> result.notificationsPtr
+        >> result.deltaPartsPtr;
 
     // Read in x_anim file name
     QString xAnimName;
@@ -798,21 +869,21 @@ MenuFile ZoneFile_COD5::pParseAsset_MenuFile(QDataStream *aZoneFileStream) {
 
         quint32 hClientAlignInt, vClientAlignInt, styleInt, borderInt;
         *aZoneFileStream >> hClientAlignInt >> vClientAlignInt >> menu.groupPtr
-                >> styleInt >> borderInt >> menu.ownerDraw >> menu.ownerDrawFlags
-                >> menu.borderSize >> menu.staticFlags >> menu.dynamicFlags >> menu.nextTime;
+            >> styleInt >> borderInt >> menu.ownerDraw >> menu.ownerDrawFlags
+            >> menu.borderSize >> menu.staticFlags >> menu.dynamicFlags >> menu.nextTime;
         menu.hClientAlign = (MENU_H_ALIGNMENT)hClientAlignInt;
         menu.vClientAlign = (MENU_V_ALIGNMENT)vClientAlignInt;
         menu.style = (MENU_WINDOW_STYLE)styleInt;
         menu.border = (MENU_WINDOW_BORDER)borderInt;
 
         float foregroundColorR, foregroundColorG, foregroundColorB, foregroundColorA,
-                backgroundColorR, backgroundColorG, backgroundColorB, backgroundColorA,
-                borderColorR, borderColorG, borderColorB, borderColorA,
-                outlineColorR, outlineColorG, outlineColorB, outlineColorA;
+            backgroundColorR, backgroundColorG, backgroundColorB, backgroundColorA,
+            borderColorR, borderColorG, borderColorB, borderColorA,
+            outlineColorR, outlineColorG, outlineColorB, outlineColorA;
         *aZoneFileStream >> foregroundColorR >> foregroundColorG >> foregroundColorB >> foregroundColorA
-                >> backgroundColorR >> backgroundColorG >> backgroundColorB >> backgroundColorA
-                >> borderColorR >> borderColorG >> borderColorB >> borderColorA
-                >> outlineColorR >> outlineColorG >> outlineColorB >> outlineColorA;
+            >> backgroundColorR >> backgroundColorG >> backgroundColorB >> backgroundColorA
+            >> borderColorR >> borderColorG >> borderColorB >> borderColorA
+            >> outlineColorR >> outlineColorG >> outlineColorB >> outlineColorA;
 
         menu.foregroundColor = QColor(foregroundColorR, foregroundColorG, foregroundColorB, foregroundColorA);
         menu.backgroundColor = QColor(backgroundColorR, backgroundColorG, backgroundColorB, backgroundColorA);
@@ -820,16 +891,16 @@ MenuFile ZoneFile_COD5::pParseAsset_MenuFile(QDataStream *aZoneFileStream) {
         menu.outlineColor = QColor(outlineColorR, outlineColorG, outlineColorB, outlineColorA);
 
         *aZoneFileStream >> menu.materialPtr >> menu.fontPtr >> menu.fullScreen >> menu.itemCount
-                >> menu.fontIndex >> menu.cursorItem >> menu.fadeCycle >> menu.fadeClamp
-                >> menu.fadeAmount >> menu.fadeInAmount >> menu.blurRadius >> menu.onOpenPtr
-                >> menu.onFocusPtr >> menu.onClosePtr >> menu.onESCPtr >> menu.onKeyPtr
-                >> menu.visibleExpCount >> menu.expEntryPtr >> menu.allowedBindingPtr
-                >> menu.soundNamePtr >> menu.imageTrack;
+            >> menu.fontIndex >> menu.cursorItem >> menu.fadeCycle >> menu.fadeClamp
+            >> menu.fadeAmount >> menu.fadeInAmount >> menu.blurRadius >> menu.onOpenPtr
+            >> menu.onFocusPtr >> menu.onClosePtr >> menu.onESCPtr >> menu.onKeyPtr
+            >> menu.visibleExpCount >> menu.expEntryPtr >> menu.allowedBindingPtr
+            >> menu.soundNamePtr >> menu.imageTrack;
 
         float focusColorR, focusColorG, focusColorB, focusColorA,
-                disabledColorR, disabledColorG, disabledColorB, disabledColorA;
+            disabledColorR, disabledColorG, disabledColorB, disabledColorA;
         *aZoneFileStream >> focusColorR >> focusColorG >> focusColorB >> focusColorA
-                >> disabledColorR >> disabledColorG >> disabledColorB >> disabledColorA;
+            >> disabledColorR >> disabledColorG >> disabledColorB >> disabledColorA;
         menu.focusColor = QColor(focusColorR, focusColorG, focusColorB, focusColorA);
         menu.disabledColor = QColor(disabledColorR, disabledColorG, disabledColorB, disabledColorA);
 
@@ -863,18 +934,18 @@ MenuFile ZoneFile_COD5::pParseAsset_MenuFile(QDataStream *aZoneFileStream) {
         menu.itemRect = QRectF(itemRectX, itemRectY, itemRectWidth, itemRectHeight);
 
         *aZoneFileStream >> menu.itemHAlignment >> menu.itemVAlignment >> menu.itemGroupPtr
-                >> menu.itemWindowStyle >> menu.itemWindowBorder >> menu.itemOwnerDraw
-                >> menu.itemOwnerDrawFlags >> menu.itemBorderSize >> menu.itemStaticFlags
-                >> menu.itemDynamicFlags >> menu.itemNextTime;
+            >> menu.itemWindowStyle >> menu.itemWindowBorder >> menu.itemOwnerDraw
+            >> menu.itemOwnerDrawFlags >> menu.itemBorderSize >> menu.itemStaticFlags
+            >> menu.itemDynamicFlags >> menu.itemNextTime;
 
         float itemForegroundColorR, itemForegroundColorG, itemForegroundColorB, itemForegroundColorA,
-                itemBackgroundColorR, itemBackgroundColorG, itemBackgroundColorB, itemBackgroundColorA,
-                itemBorderColorR, itemBorderColorG, itemBorderColorB, itemBorderColorA,
-                itemOutlineColorR, itemOutlineColorG, itemOutlineColorB, itemOutlineColorA;
+            itemBackgroundColorR, itemBackgroundColorG, itemBackgroundColorB, itemBackgroundColorA,
+            itemBorderColorR, itemBorderColorG, itemBorderColorB, itemBorderColorA,
+            itemOutlineColorR, itemOutlineColorG, itemOutlineColorB, itemOutlineColorA;
         *aZoneFileStream >> itemForegroundColorR >> itemForegroundColorG >> itemForegroundColorB >> itemForegroundColorA
-                >> itemBackgroundColorR >> itemBackgroundColorG >> itemBackgroundColorB >> itemBackgroundColorA
-                >> itemBorderColorR >> itemBorderColorG >> itemBorderColorB >> itemBorderColorA
-                >> itemOutlineColorR >> itemOutlineColorG >> itemOutlineColorB >> itemOutlineColorA;
+            >> itemBackgroundColorR >> itemBackgroundColorG >> itemBackgroundColorB >> itemBackgroundColorA
+            >> itemBorderColorR >> itemBorderColorG >> itemBorderColorB >> itemBorderColorA
+            >> itemOutlineColorR >> itemOutlineColorG >> itemOutlineColorB >> itemOutlineColorA;
 
         menu.itemForegroundColor = QColor(itemForegroundColorR, itemForegroundColorG, itemForegroundColorB, itemForegroundColorA);
         menu.itemBackgroundColor = QColor(itemBackgroundColorR, itemBackgroundColorG, itemBackgroundColorB, itemBackgroundColorA);
@@ -889,9 +960,9 @@ MenuFile ZoneFile_COD5::pParseAsset_MenuFile(QDataStream *aZoneFileStream) {
 
         quint32 hItemTextAlignInt, vItemTextAlignInt, itemType, fontTypeInt, textStyleInt;
         *aZoneFileStream >> hItemTextAlignInt >> vItemTextAlignInt >> itemType >> menu.dataType
-                >> menu.alignment >> fontTypeInt >> menu.textAlignMode >> menu.textalignx >> menu.textaligny
-                >> menu.textscale >> textStyleInt >> menu.gameMsgWindowIndex >> menu.gameMsgWindowMode
-                >> menu.testPtr >> menu.textSavegameInfo >> menu.parentPtr;
+            >> menu.alignment >> fontTypeInt >> menu.textAlignMode >> menu.textalignx >> menu.textaligny
+            >> menu.textscale >> textStyleInt >> menu.gameMsgWindowIndex >> menu.gameMsgWindowMode
+            >> menu.testPtr >> menu.textSavegameInfo >> menu.parentPtr;
         menu.itemText_hAlign = (MENU_H_ALIGNMENT)hItemTextAlignInt;
         menu.itemText_vAlign = (MENU_V_ALIGNMENT)vItemTextAlignInt;
         menu.itemType = (MENU_ITEM_TYPE)itemType;
@@ -899,9 +970,9 @@ MenuFile ZoneFile_COD5::pParseAsset_MenuFile(QDataStream *aZoneFileStream) {
         menu.textStyle = (MENU_ITEM_TEXTSTYLE)textStyleInt;
 
         *aZoneFileStream >> menu.mouseEnterText >> menu.mouseExitText >> menu.mouseEnter >> menu.mouseExit
-                >> menu.action >> menu.onAccept >> menu.onFocus >> menu.leaveFocus >> menu.dvar >> menu.dvarTest
-                >> menu.keyHandlerPtr >> menu.enableDvarPtr >> menu.dvarFlags >> menu.focusSoundPtr
-                >> menu.special >> menu.cursorPos;
+            >> menu.action >> menu.onAccept >> menu.onFocus >> menu.leaveFocus >> menu.dvar >> menu.dvarTest
+            >> menu.keyHandlerPtr >> menu.enableDvarPtr >> menu.dvarFlags >> menu.focusSoundPtr
+            >> menu.special >> menu.cursorPos;
 
         // itemDefData_t typeData;
 
@@ -921,11 +992,11 @@ MenuFile ZoneFile_COD5::pParseAsset_MenuFile(QDataStream *aZoneFileStream) {
         *aZoneFileStream >> menu.notselectable >> menu.noScrollBars >> menu.usePaging;
 
         float itemSelectBorderColorR, itemSelectBorderColorG, itemSelectBorderColorB, itemSelectBorderColorA,
-                itemDisableColorR, itemDisableColorG, itemDisableColorB, itemDisableColorA,
-                itemFocusColorR, itemFocusColorG, itemFocusColorB, itemFocusColorA;
+            itemDisableColorR, itemDisableColorG, itemDisableColorB, itemDisableColorA,
+            itemFocusColorR, itemFocusColorG, itemFocusColorB, itemFocusColorA;
         *aZoneFileStream >> itemSelectBorderColorR >> itemSelectBorderColorG >> itemSelectBorderColorB >> itemSelectBorderColorA
-                >> itemDisableColorR >> itemDisableColorG >> itemDisableColorB >> itemDisableColorA
-                >> itemFocusColorR >> itemFocusColorG >> itemFocusColorB >> itemFocusColorA;
+            >> itemDisableColorR >> itemDisableColorG >> itemDisableColorB >> itemDisableColorA
+            >> itemFocusColorR >> itemFocusColorG >> itemFocusColorB >> itemFocusColorA;
         menu.itemSelectBorderColor = QColor(itemSelectBorderColorR, itemSelectBorderColorG, itemSelectBorderColorB, itemSelectBorderColorA);
         menu.itemDisableColor = QColor(itemDisableColorR, itemDisableColorG, itemDisableColorB, itemDisableColorA);
         menu.itemFocusColor = QColor(itemFocusColorR, itemFocusColorG, itemFocusColorB, itemFocusColorA);
@@ -935,7 +1006,7 @@ MenuFile ZoneFile_COD5::pParseAsset_MenuFile(QDataStream *aZoneFileStream) {
         // editFieldDef_s *editField;
 
         *aZoneFileStream >> menu.minVal >> menu.maxVal >> menu.defVal >> menu.range >> menu.maxChars
-                >> menu.maxCharsGotoNext >> menu.maxPaintChars >> menu.paintOffset;
+            >> menu.maxCharsGotoNext >> menu.maxPaintChars >> menu.paintOffset;
 
         // multiDef_s *multi;
 
@@ -993,8 +1064,8 @@ StringTable ZoneFile_COD5::pParseAsset_StringTable(QDataStream *aZoneFileStream)
     aZoneFileStream->skipRawData(4);
 
     *aZoneFileStream
-            >> result.columnCount
-            >> result.rowCount;
+        >> result.columnCount
+        >> result.rowCount;
 
     // Todo fix this
     result.columnCount = 0;
