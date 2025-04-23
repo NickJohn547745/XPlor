@@ -2,7 +2,7 @@ TEMPLATE = app
 CONFIG += no_main
 
 # Enable the testlib module
-QT += testlib concurrent
+QT += testlib concurrent core-private
 
 # Define a test-specific flag
 DEFINES += QT_TESTS
@@ -70,18 +70,25 @@ app.depends += \
     libs/fastfile
 
 LIBS += \
-    -L$$OUT_PWD/../libs/ -lcore -lencryption -lcompression -lfastfile
+    -L$$OUT_PWD/../libs/ -lcore -lencryption -lcompression -lfastfile \
+    -L$$PWD/../third_party/xbox_sdk/lib -lxcompress64
 
 INCLUDEPATH += \
+    $$PWD/../third_party/xbox_sdk/include \
     $$PWD/../libs/core \
     $$PWD/../libs/encryption \
     $$PWD/../libs/compression \
     $$PWD/../libs/fastfile
 
 DEPENDPATH += \
+    $$PWD/../third_party/xbox_sdk/include \
     $$PWD/../libs/core \
     $$PWD/../libs/encryption \
     $$PWD/../libs/compression \
     $$PWD/../libs/fastfile
 
 RESOURCES +=
+
+# Copy DLLs to Debug & Release folder
+QMAKE_POST_LINK += xcopy /Y /E /I \"$$PWD/../third_party/xbox_sdk/lib\\*.dll\" \"$$OUT_PWD/debug/\" $$escape_expand(\\n\\t)
+QMAKE_POST_LINK += xcopy /Y /E /I \"$$PWD/../third_party/xbox_sdk/lib\\*.dll\" \"$$OUT_PWD/release/\" $$escape_expand(\\n\\t)

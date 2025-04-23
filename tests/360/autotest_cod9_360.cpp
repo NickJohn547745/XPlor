@@ -39,6 +39,8 @@ void AutoTest_COD9_360::testDecompression_data() {
 void AutoTest_COD9_360::testDecompression() {
     QFETCH(QString, fastFilePath_cod9_360);
 
+    const QString testName = "Decompress: " + fastFilePath_cod9_360;
+
     // Open the original .ff file.
     QFile testFastFile(fastFilePath_cod9_360);
     QVERIFY2(testFastFile.open(QIODevice::ReadOnly),

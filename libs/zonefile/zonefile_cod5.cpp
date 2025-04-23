@@ -31,6 +31,8 @@ bool ZoneFile_COD5::Load(const QByteArray aFileData, FF_PLATFORM aPlatform) {
 }
 
 void ZoneFile_COD5::pParseZoneHeader(QDataStream *aZoneFileStream, FF_PLATFORM aPlatform) {
+    Q_UNUSED(aPlatform);
+
     SetSize(pParseZoneSize(aZoneFileStream));
     pParseZoneUnknownsA(aZoneFileStream);
 

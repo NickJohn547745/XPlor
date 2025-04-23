@@ -1,37 +1,117 @@
 #include "compression.h"
-#include "lzokay.h"
-#include "qlibrary.h"
+//#include "lzokay.h"
+
+#define XBOXAPI __declspec(dllimport)
+#include "xcompress.h"
+
+#include <QLibrary>
+#include <QDebug>
+#include <QFile>
+#include <QDataStream>
+
+QByteArray Compression::CompressXMem(const QByteArray &data)
+{
+    XMEMCODEC_PARAMETERS_LZX lzxParams = {};
+    lzxParams.Flags = 0;
+    lzxParams.WindowSize = XCOMPRESS_LZX_BLOCK_SIZE;
+    lzxParams.CompressionPartitionSize = XCOMPRESS_LZX_BLOCK_SIZE;
+
+    XMEMCOMPRESSION_CONTEXT ctx = nullptr;
+    if (FAILED(XMemCreateCompressionContext(XMEMCODEC_LZX, &lzxParams, 0, &ctx)) || !ctx)
+        return QByteArray();
+
+    SIZE_T estimatedSize = data.size() + XCOMPRESS_LZX_BLOCK_GROWTH_SIZE_MAX;
+    QByteArray output(static_cast<int>(estimatedSize), 0);
+    SIZE_T actualSize = estimatedSize;
+
+    HRESULT hr = XMemCompress(ctx, output.data(), &actualSize, data.constData(), data.size());
+    XMemDestroyCompressionContext(ctx);
+
+    if (FAILED(hr))
+        return QByteArray();
+
+    output.resize(static_cast<int>(actualSize));
+    return output;
+}
+
+QByteArray Compression::DecompressXMem(const QByteArray &data)
+{
+    XMEMCODEC_PARAMETERS_LZX lzxParams = {};
+    lzxParams.Flags = 0;
+    lzxParams.WindowSize = XCOMPRESS_LZX_BLOCK_SIZE;
+    lzxParams.CompressionPartitionSize = XCOMPRESS_LZX_BLOCK_SIZE;
+
+    XMEMDECOMPRESSION_CONTEXT ctx = nullptr;
+    if (FAILED(XMemCreateDecompressionContext(XMEMCODEC_LZX, &lzxParams, 0, &ctx)) || !ctx)
+        return QByteArray();
+
+    QByteArray output(data.size(), 0);
+    SIZE_T actualSize = data.size();
+
+    HRESULT hr = XMemDecompress(ctx, output.data(), &actualSize, data.constData(), data.size());
+    XMemDestroyDecompressionContext(ctx);
+
+    if (FAILED(hr))
+        return QByteArray();
+
+    output.resize(static_cast<int>(actualSize));
+    return output;
+}
+
+quint32 Compression::CalculateAdler32Checksum(const QByteArray &data) {
+    // Start with the initial value for Adler-32
+    quint32 adler = adler32(0L, Z_NULL, 0);
+
+    // Calculate Adler-32 checksum
+    adler = adler32(adler, reinterpret_cast<const Bytef *>(data.constData()), data.size());
+
+    return adler;
+}
 
 QByteArray Compression::DecompressZLIB(const QByteArray &aCompressedData) {
-    if (aCompressedData.isEmpty())
+    if (aCompressedData.isEmpty()) {
         return {};
+    }
 
     z_stream strm{};
-    strm.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(aCompressedData.data()));
+    strm.zalloc = Z_NULL;
+    strm.zfree = Z_NULL;
+    strm.opaque = Z_NULL;
     strm.avail_in = static_cast<uInt>(aCompressedData.size());
+    strm.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(aCompressedData.data()));
 
     if (inflateInit2(&strm, MAX_WBITS) != Z_OK) {
-        qWarning() << "Failed to initialize zlib for decompression.";
+        qWarning() << "inflateInit2 failed";
         return {};
     }
 
     QByteArray decompressed;
-    char buffer[4096];
+    QByteArray buffer(fmin(strm.avail_in * 2, 4096), Qt::Uninitialized);
 
     int ret;
     do {
-        strm.next_out = reinterpret_cast<Bytef*>(buffer);
-        strm.avail_out = sizeof(buffer);
+        strm.next_out = reinterpret_cast<Bytef*>(buffer.data());
+        strm.avail_out = buffer.size();
 
         ret = inflate(&strm, Z_NO_FLUSH);
 
-        if (ret != Z_OK && ret != Z_STREAM_END) {
-            qWarning() << "Zlib decompression error:" << zError(ret);
-            inflateEnd(&strm);
-            return {};
+        if (strm.avail_out < buffer.size()) {  // Data has been written to the buffer
+            decompressed.append(buffer.constData(), buffer.size() - strm.avail_out);
         }
 
-        decompressed.append(buffer, sizeof(buffer) - strm.avail_out);
+        if (ret == Z_STREAM_END) {
+            break;  // Proper end of the data stream
+        }
+
+        if (ret == Z_BUF_ERROR && strm.avail_out == 0) {
+            // Buffer was completely used, resize it
+            int newSize = buffer.size() * 2;  // Double the buffer size
+            buffer.resize(newSize);
+        } else if (ret != Z_OK) {
+            qWarning() << "Zlib error:" << zError(ret);
+            inflateEnd(&strm);
+            return {};  // Return on other errors
+        }
     } while (ret != Z_STREAM_END);
 
     inflateEnd(&strm);
@@ -123,6 +203,8 @@ QByteArray Compression::CompressDeflate(const QByteArray &aData) {
 }
 
 QByteArray Compression::CompressDeflateWithSettings(const QByteArray &aData, int aCompressionLevel, int aWindowBits, int aMemLevel, int aStrategy, const QByteArray &aDictionary) {
+    Q_UNUSED(aDictionary);
+
     if (aData.isEmpty())
         return QByteArray();
 
@@ -158,7 +240,6 @@ QByteArray Compression::CompressDeflateWithSettings(const QByteArray &aData, int
 
     deflateEnd(&strm);
     return compressed;
-
 }
 
 QByteArray Compression::DecompressOodle(const QByteArray &aCompressedData, quint32 aDecompressedSize) {
@@ -166,10 +247,9 @@ QByteArray Compression::DecompressOodle(const QByteArray &aCompressedData, quint
 }
 
 QByteArray Compression::CompressOodle(const QByteArray &aData) {
-
     quint32 maxSize = pGetOodleCompressedBounds(aData.length());
     QByteArray compressedData = pCompressOodle(aData, aData.length(),
-                                  maxSize, OodleFormat::Kraken, OodleCompressionLevel::Optimal5);
+                                               maxSize, OodleFormat::Kraken, OodleCompressionLevel::Optimal5);
 
     return compressedData.mid(0, maxSize);
 }
@@ -224,169 +304,4 @@ QByteArray Compression::pDecompressOodle(QByteArray aBuffer, quint32 aBufferSize
         OodleLZ_Decompress(reinterpret_cast<std::byte*>(aBuffer.data()), aBufferSize, outputBuffer, aOutputBufferSize, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
     return QByteArray(reinterpret_cast<const char*>(outputBuffer), aOutputBufferSize);
-}
-
-QByteArray Compression::DecompressLZO(const QByteArray &aCompressedData) {
-    lzokay::EResult error;
-
-    // Ensure the input QByteArray is valid
-    if (aCompressedData.isEmpty()) {
-        qDebug() << "Input QByteArray is empty.";
-        return QByteArray();
-    }
-
-    // Step 1: Cast QByteArray to uint8_t*
-    const uint8_t *compressedData = reinterpret_cast<const uint8_t *>(aCompressedData.constData());
-    std::size_t compressedSize = static_cast<std::size_t>(aCompressedData.size());
-
-    // Step 2: Allocate a sufficiently large decompression buffer
-    // Use a large initial estimate if the decompressed size is unknown
-    std::size_t initialBufferSize = compressedSize * 20; // Arbitrary multiplier for decompression
-    std::unique_ptr<uint8_t[]> decompressed(new uint8_t[initialBufferSize]);
-
-    // Step 3: Attempt decompression
-    std::size_t decompressedSize = 0;
-    error = lzokay::decompress(
-        compressedData, compressedSize, // Input data and size
-        decompressed.get(), initialBufferSize, // Output buffer and initial size
-        decompressedSize // Actual decompressed size
-        );
-
-    // Step 4: Handle decompression errors
-    if (error != lzokay::EResult::Success) {
-        qDebug() << "Decompression failed with error code:" << static_cast<int>(error);
-        return QByteArray();
-    }
-
-    // Step 5: Return the decompressed data as a QByteArray
-    return QByteArray(reinterpret_cast<const char *>(decompressed.get()), decompressedSize);
-}
-
-QByteArray Compression::CompressLZO(const QByteArray &aData) {
-    lzokay::EResult error;
-
-    // Check input validity
-    if (aData.isEmpty()) {
-        qDebug() << "Input QByteArray is empty.";
-        return QByteArray();
-    }
-
-    // Step 1: Cast QByteArray to uint8_t*
-    const uint8_t *uncompressedData = reinterpret_cast<const uint8_t *>(aData.constData());
-    std::size_t uncompressedSize = static_cast<std::size_t>(aData.size());
-
-    // Step 2: Allocate output buffer with sufficient size (compressBound-like estimation)
-    std::size_t maxCompressedSize = uncompressedSize + uncompressedSize / 16 + 64 + 3; // Safe estimation
-    std::unique_ptr<uint8_t[]> compressed(new uint8_t[maxCompressedSize]);
-
-    // Step 3: Compress data
-    std::size_t compressedSize = 0;
-    error = lzokay::compress(
-        uncompressedData, uncompressedSize,   // Input data
-        compressed.get(), maxCompressedSize,  // Output buffer
-        compressedSize                        // Actual compressed size
-        );
-
-    // Step 4: Handle compression errors
-    if (error != lzokay::EResult::Success) {
-        qDebug() << "Compression failed with error code:" << static_cast<int>(error);
-        return QByteArray();
-    }
-
-    // Step 5: Return compressed data as QByteArray
-    return QByteArray(reinterpret_cast<const char *>(compressed.get()), compressedSize);
-}
-
-QByteArray Compression::DecompressLZX(const QByteArray &compressedData, uint32_t windowBits)
-{
-    if (compressedData.isEmpty())
-        return QByteArray();
-
-    // Calculate sliding window size.
-    const uint32_t windowSize = 1u << windowBits;
-    std::vector<uint8_t> window(windowSize, 0);
-    uint32_t windowPos = 0;
-
-    // Use a dynamic output buffer.
-    QByteArray outArray;
-    // Reserve an initial capacity.
-    outArray.reserve(1024);
-
-    // --- Bitstream state ---
-    const uint8_t *inData = reinterpret_cast<const uint8_t*>(compressedData.constData());
-    size_t inSize = compressedData.size();
-    size_t inPos = 0;
-    uint32_t bitBuffer = 0;
-    int bitsInBuffer = 0;
-
-    // Lambda: Ensure at least 'count' bits are available.
-    auto ensureBits = [&](int count) -> bool {
-        while (bitsInBuffer < count) {
-            if (inPos < inSize) {
-                bitBuffer = (bitBuffer << 8) | inData[inPos++];
-                bitsInBuffer += 8;
-            } else {
-                return false;
-            }
-        }
-        return true;
-    };
-
-    // Lambda: Get (and remove) 'count' bits from the bit buffer.
-    auto getBits = [&](int count) -> uint32_t {
-        if (!ensureBits(count))
-            return 0;
-        uint32_t result = (bitBuffer >> (bitsInBuffer - count)) & ((1u << count) - 1);
-        bitsInBuffer -= count;
-        return result;
-    };
-
-    // --- Main decompression loop ---
-    // In this simplified placeholder format:
-    // - A flag bit of 1 means a literal byte follows (8 bits).
-    // - A flag bit of 0 means a match follows: first 4 bits for match length (plus base 2)
-    //   then windowBits bits for the match offset (relative to the current sliding window).
-    while (true) {
-        // Try to read a flag bit; if not available, we assume the stream is complete.
-        if (!ensureBits(1))
-            break;
-        uint32_t flag = getBits(1);
-        if (flag == 1) {
-            // Literal: next 8 bits form a literal byte.
-            if (!ensureBits(8)) {
-                qWarning() << "Unexpected end of input while reading literal.";
-                break;
-            }
-            uint8_t literal = static_cast<uint8_t>(getBits(8));
-            outArray.append(static_cast<char>(literal));
-            // Update the sliding window.
-            window[windowPos] = literal;
-            windowPos = (windowPos + 1) % windowSize;
-        } else {
-            // Match: first read a 4-bit match length (with a base of 2).
-            if (!ensureBits(4)) {
-                qWarning() << "Unexpected end of input while reading match length.";
-                break;
-            }
-            uint32_t matchLength = getBits(4) + 2;
-            // Then read the match offset (fixed number of bits equals windowBits).
-            if (!ensureBits(windowBits)) {
-                qWarning() << "Unexpected end of input while reading match offset.";
-                break;
-            }
-            uint32_t matchOffset = getBits(windowBits);
-            // Compute the source position in the sliding window.
-            uint32_t copyPos = (windowPos + windowSize - matchOffset) % windowSize;
-            // Copy matchLength bytes from the sliding window.
-            for (uint32_t i = 0; i < matchLength; i++) {
-                uint8_t byte = window[(copyPos + i) % windowSize];
-                outArray.append(static_cast<char>(byte));
-                // Update the sliding window with the decompressed byte.
-                window[windowPos] = byte;
-                windowPos = (windowPos + 1) % windowSize;
-            }
-        }
-    }
-
-    return outArray;
 }

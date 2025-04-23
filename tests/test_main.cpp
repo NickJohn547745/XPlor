@@ -38,7 +38,7 @@
 #include "WiiU/autotest_cod10_wiiu.cpp"
 
 // clearly named defines for filtering logic
-#define TEST_EVERYTHING      1
+#define TEST_EVERYTHING      0
 
 // Global filters
 #define TEST_ALL_PLATFORMS   0
@@ -46,11 +46,11 @@
 
 // individual games
 #define TEST_COD2            0
-#define TEST_COD4            1
+#define TEST_COD4            0
 #define TEST_COD5            0
 #define TEST_COD6            0
 #define TEST_COD7            0
-#define TEST_COD8            0
+#define TEST_COD8            1
 #define TEST_COD9            0
 #define TEST_COD10           0
 #define TEST_COD11           0
@@ -95,61 +95,61 @@ int main(int argc, char *argv[]) {
     QVector<AutoTest_COD*> wiiUTests;
 
     AutoTest_COD2_360 *test_cod2_360 = new AutoTest_COD2_360();
-    test_cod2_360->setFastFileDirectory("G:/Fast Files/Xbox360/COD2");
+    test_cod2_360->setFastFileDirectory("G:/Fast Files/360/COD2");
     test_cod2_360->setZoneFileDirectory("./exports/cod2/360");
     cod2Tests << test_cod2_360;
     xbox360Tests << test_cod2_360;
 
     AutoTest_COD4_360 *test_cod4_360 = new AutoTest_COD4_360();
-    test_cod4_360->setFastFileDirectory("G:/Fast Files/Xbox360/COD4");
+    test_cod4_360->setFastFileDirectory("G:/Fast Files/360/COD4");
     test_cod4_360->setZoneFileDirectory("./exports/cod4/360");
     cod4Tests << test_cod4_360;
     xbox360Tests << test_cod4_360;
 
     AutoTest_COD5_360 *test_cod5_360 = new AutoTest_COD5_360();
-    test_cod5_360->setFastFileDirectory("G:/Fast Files/Xbox360/COD5");
+    test_cod5_360->setFastFileDirectory("G:/Fast Files/360/COD5");
     test_cod5_360->setZoneFileDirectory("./exports/cod5/360");
     cod5Tests << test_cod5_360;
     xbox360Tests << test_cod5_360;
 
     AutoTest_COD6_360 *test_cod6_360 = new AutoTest_COD6_360();
-    test_cod6_360->setFastFileDirectory("G:/Fast Files/Xbox360/COD6");
+    test_cod6_360->setFastFileDirectory("G:/Fast Files/360/COD6");
     test_cod6_360->setZoneFileDirectory("./exports/cod6/360");
     cod6Tests << test_cod6_360;
     xbox360Tests << test_cod6_360;
 
     AutoTest_COD7_360 *test_cod7_360 = new AutoTest_COD7_360();
-    test_cod7_360->setFastFileDirectory("G:/Fast Files/Xbox360/COD7");
+    test_cod7_360->setFastFileDirectory("G:/Fast Files/360/COD7");
     test_cod7_360->setZoneFileDirectory("./exports/cod7/360");
     cod7Tests << test_cod7_360;
     xbox360Tests << test_cod7_360;
 
     AutoTest_COD8_360 *test_cod8_360 = new AutoTest_COD8_360();
-    test_cod8_360->setFastFileDirectory("G:/Fast Files/Xbox360/COD8");
+    test_cod8_360->setFastFileDirectory("G:/Fast Files/360/COD8");
     test_cod8_360->setZoneFileDirectory("./exports/cod8/360");
     cod8Tests << test_cod8_360;
     xbox360Tests << test_cod8_360;
 
     AutoTest_COD9_360 *test_cod9_360 = new AutoTest_COD9_360();
-    test_cod9_360->setFastFileDirectory("G:/Fast Files/Xbox360/COD9");
+    test_cod9_360->setFastFileDirectory("G:/Fast Files/360/COD9");
     test_cod9_360->setZoneFileDirectory("./exports/cod9/360");
     cod9Tests << test_cod9_360;
     xbox360Tests << test_cod9_360;
 
     AutoTest_COD10_360 *test_cod10_360 = new AutoTest_COD10_360();
-    test_cod10_360->setFastFileDirectory("G:/Fast Files/Xbox360/COD10");
+    test_cod10_360->setFastFileDirectory("G:/Fast Files/360/COD10");
     test_cod10_360->setZoneFileDirectory("./exports/cod10/360");
     cod10Tests << test_cod10_360;
     xbox360Tests << test_cod10_360;
 
     AutoTest_COD11_360 *test_cod11_360 = new AutoTest_COD11_360();
-    test_cod11_360->setFastFileDirectory("G:/Fast Files/Xbox360/COD11");
+    test_cod11_360->setFastFileDirectory("G:/Fast Files/360/COD11");
     test_cod11_360->setZoneFileDirectory("./exports/cod11/360");
     cod11Tests << test_cod11_360;
     xbox360Tests << test_cod11_360;
 
     AutoTest_COD12_360 *test_cod12_360 = new AutoTest_COD12_360();
-    test_cod12_360->setFastFileDirectory("G:/Fast Files/Xbox360/COD12");
+    test_cod12_360->setFastFileDirectory("G:/Fast Files/360/COD12");
     test_cod12_360->setZoneFileDirectory("./exports/cod12/360");
     cod12Tests << test_cod12_360;
     xbox360Tests << test_cod12_360;
@@ -185,7 +185,7 @@ int main(int argc, char *argv[]) {
     AutoTest_COD8_PC *test_cod8_pc = new AutoTest_COD8_PC();
     test_cod8_pc->setFastFileDirectory("G:/Fast Files/PC/COD8");
     test_cod8_pc->setZoneFileDirectory("./exports/cod8/PC");
-    cod8Tests << test_cod8_pc;
+    //cod8Tests << test_cod8_pc;
     pcTests << test_cod8_pc;
 
     AutoTest_COD9_PC *test_cod9_pc = new AutoTest_COD9_PC();
@@ -225,7 +225,7 @@ int main(int argc, char *argv[]) {
     AutoTest_COD5_PS3 *test_cod5_ps3 = new AutoTest_COD5_PS3();
     test_cod5_ps3->setFastFileDirectory("G:/Fast Files/PS3/COD5");
     test_cod5_ps3->setZoneFileDirectory("./exports/cod5/PS3");
-    cod5Tests << test_cod5_ps3;
+    //cod5Tests << test_cod5_ps3;
     ps3Tests << test_cod5_ps3;
 
     AutoTest_COD6_PS3 *test_cod6_ps3 = new AutoTest_COD6_PS3();
@@ -243,7 +243,7 @@ int main(int argc, char *argv[]) {
     AutoTest_COD8_PS3 *test_cod8_ps3 = new AutoTest_COD8_PS3();
     test_cod8_ps3->setFastFileDirectory("G:/Fast Files/PS3/COD8");
     test_cod8_ps3->setZoneFileDirectory("./exports/cod8/PS3");
-    cod8Tests << test_cod8_ps3;
+    //cod8Tests << test_cod8_ps3;
     ps3Tests << test_cod8_ps3;
 
     AutoTest_COD9_PS3 *test_cod9_ps3 = new AutoTest_COD9_PS3();
@@ -296,10 +296,13 @@ int main(int argc, char *argv[]) {
     cod10Tests << test_cod10_wiiu;
     wiiUTests << test_cod10_wiiu;
 
+    QList<QPair<QString, QList<QPair<QString, bool>>>> allResults;
+
     if (TEST_EVERYTHING || TEST_ALL_COD_GAMES || TEST_COD2) {
         qDebug() << "-- RUNNING TEST_COD2 --";
         foreach (auto test, cod2Tests) {
             QTest::qExec(test, argc, argv);
+            allResults.append({ test->metaObject()->className(), test->getCollectedTestResults() });
         }
     }
     if (TEST_EVERYTHING || TEST_ALL_COD_GAMES || TEST_COD4) {
@@ -387,6 +390,46 @@ int main(int argc, char *argv[]) {
             QTest::qExec(test, argc, argv);
         }
     }
+
+    QJsonObject root;
+    root["project"] = "XPlor";
+    root["lastRun"] = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
+
+    bool allPassed = true;
+    QJsonArray testFiles;
+
+    for (const auto& [className, subtests] : allResults) {
+        QJsonObject fileEntry;
+        fileEntry["name"] = className;
+
+        QJsonArray testArray;
+        bool filePassed = true;
+
+        for (const auto& [testName, passed] : subtests) {
+            testArray.append(QJsonObject{
+                {"name", testName},
+                {"status", passed ? "passed" : "failed"}
+            });
+            if (!passed)
+                filePassed = false;
+        }
+
+        fileEntry["status"] = filePassed ? "passed" : "failed";
+        fileEntry["tests"] = testArray;
+        testFiles.append(fileEntry);
+
+        if (!filePassed)
+            allPassed = false;
+    }
+
+    root["status"] = allPassed ? "passed" : "failed";
+    root["tests"] = testFiles;
+
+    QFile file("G:/FileServer/files/auto_test.json");
+    if (file.open(QIODevice::WriteOnly | QIODevice::Truncate))
+        file.write(QJsonDocument(root).toJson(QJsonDocument::Indented));
+    else
+        qWarning() << "Failed to write JSON output";
 
     return 0;
 }

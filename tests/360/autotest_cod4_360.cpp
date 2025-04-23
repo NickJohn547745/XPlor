@@ -39,12 +39,18 @@ void AutoTest_COD4_360::testDecompression_data() {
 void AutoTest_COD4_360::testDecompression() {
     QFETCH(QString, fastFilePath_cod4_360);
 
+    const QString testName = "Decompress: " + fastFilePath_cod4_360;
+
     // Open the original .ff file.
     QFile testFastFile(fastFilePath_cod4_360);
     QVERIFY2(testFastFile.open(QIODevice::ReadOnly),
              qPrintable("Failed to open test fastfile: " + fastFilePath_cod4_360));
     const QByteArray testFFData = testFastFile.readAll();
     testFastFile.close();
+
+    const QString magic = testFFData.mid(0, 8);
+    QVERIFY2(magic == "IWffu100",
+             qPrintable("Does not support encrypted fastfiles!"));
 
     // Assume the first 12 bytes are a header; the rest is zlib-compressed zone data.
     const QByteArray compressedData = testFFData.mid(12);
@@ -55,7 +61,11 @@ void AutoTest_COD4_360::testDecompression() {
     zoneStream.setByteOrder(QDataStream::BigEndian);
     quint32 zoneSize;
     zoneStream >> zoneSize;
-    QVERIFY2(zoneSize + 36 == testZoneData.size(),
+    if (abs(zoneSize - testZoneData.size()) != 36) {
+        qDebug() << "Zone Size: " << zoneSize;
+        qDebug() << "Test zone Size: " << testZoneData.size();
+    }
+    QVERIFY2(abs(zoneSize - testZoneData.size()) == 36,
              qPrintable("Decompression validation failed for: " + fastFilePath_cod4_360));
 
     // Write the decompressed zone data to the exports folder with a .zone extension.

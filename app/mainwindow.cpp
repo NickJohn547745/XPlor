@@ -755,7 +755,7 @@ int MainWindow::LoadFile_IPAK(const QString aFilePath) {
 
                 QString outputFilePath = outputFolder.filePath(QString("%1.iwi").arg(j));
                 if (command.compressed) {
-                    data = Compression::DecompressLZO(data);
+                    //data = Compression::DecompressLZO(data);
                 }
                 QFile outputFile(outputFilePath);
                 if (!outputFile.open(QIODevice::WriteOnly)) {
@@ -872,7 +872,7 @@ void MainWindow::dropEvent(QDropEvent *event) {
                     qDebug() << "LZO: Failed to read file!";
                     continue;
                 }
-                QByteArray data = Compression::DecompressLZO(lzoFile.readAll());
+                QByteArray data;// = Compression::DecompressLZO(lzoFile.readAll());
                 lzoFile.close();
 
                 if (data.isEmpty()) {

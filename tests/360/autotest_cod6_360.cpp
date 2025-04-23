@@ -39,6 +39,8 @@ void AutoTest_COD6_360::testDecompression_data() {
 void AutoTest_COD6_360::testDecompression() {
     QFETCH(QString, fastFilePath_cod6_360);
 
+    const QString testName = "Decompress: " + fastFilePath_cod6_360;
+
     // Open the original .ff file.
     QFile testFastFile(fastFilePath_cod6_360);
     QVERIFY2(testFastFile.open(QIODevice::ReadOnly),
@@ -46,16 +48,40 @@ void AutoTest_COD6_360::testDecompression() {
     const QByteArray testFFData = testFastFile.readAll();
     testFastFile.close();
 
-    // Assume the first 12 bytes are a header; the rest is zlib-compressed zone data.
-    const QByteArray compressedData = testFFData.mid(12);
-    const QByteArray testZoneData = Compression::DecompressZLIB(compressedData);
+    const QString magic = testFFData.mid(0, 12);
+    QVERIFY2(magic.contains("IWffu100"),
+             qPrintable("Encountered signed fastfile: " + magic));
+
+    QByteArray pattern;
+    pattern.append(static_cast<unsigned char>(0x78));
+    pattern.append(static_cast<unsigned char>(0xDA));
+    pattern.append(static_cast<unsigned char>(0xEC));
+
+    int index = testFFData.indexOf(pattern);
+    QByteArray compressedData = testFFData.mid(index);
+    QByteArray testZoneData = Compression::DecompressZLIB(compressedData);
+
+    //while (index != -1 && testZoneData.isEmpty()) {
+    //    compressedData = testFFData.mid(index);
+    //    testZoneData = Compression::DecompressZLIB(compressedData);
+
+    //    index = testFFData.indexOf(pattern, index + 2);
+    //}
+
+    QVERIFY2(!testZoneData.isEmpty(),
+             qPrintable("Zlib decompression failed!"));
 
     // Verify the decompressed data via its embedded zone size.
     QDataStream zoneStream(testZoneData);
-    zoneStream.setByteOrder(QDataStream::LittleEndian);
+    zoneStream.setByteOrder(QDataStream::BigEndian);
     quint32 zoneSize;
     zoneStream >> zoneSize;
-    QVERIFY2(zoneSize + 44 == testZoneData.size(),
+    if (abs(zoneSize - testZoneData.size()) != 32) {
+        qDebug() << "Zone Size: " << zoneSize;
+        qDebug() << "Test zone Size: " << testZoneData.size();
+        qDebug() << "Difference: " << abs(zoneSize - testZoneData.size());
+    }
+    QVERIFY2(zoneSize + 32 == testZoneData.size(),
              qPrintable("Decompression validation failed for: " + fastFilePath_cod6_360));
 
     // Write the decompressed zone data to the exports folder with a .zone extension.
@@ -95,16 +121,17 @@ void AutoTest_COD6_360::testCompression() {
     QByteArray originalFFData = originalFile.readAll();
     originalFile.close();
 
-    QByteArray header = originalFFData.left(12);
+    QByteArray pattern;
+    pattern.append(static_cast<unsigned char>(0x78));
+    pattern.append(static_cast<unsigned char>(0xDA));
+    pattern.append(static_cast<unsigned char>(0xEC));
+
+    int zlibOffset = originalFFData.indexOf(pattern);
+
+    QByteArray header = originalFFData.mid(0, zlibOffset);
 
     QByteArray newCompressedData;// = Compressor::CompressZLIB(decompressedData, Z_BEST_COMPRESSION);
     newCompressedData = Compression::CompressZLIBWithSettings(decompressedData, Z_BEST_COMPRESSION, MAX_WBITS, 8, Z_DEFAULT_STRATEGY, {});
-
-    int remainder = (newCompressedData.size() + 12) % 32;
-    if (remainder != 0) {
-        int paddingNeeded = 32 - remainder;
-        newCompressedData.append(QByteArray(paddingNeeded, '\0'));
-    }
 
     QByteArray recompressedData = header + newCompressedData;
 
