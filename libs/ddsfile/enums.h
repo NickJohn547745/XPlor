@@ -1,7 +1,86 @@
 #ifndef ENUMS_H
 #define ENUMS_H
 
-#include "qtypes.h"
+#include <QString>
+
+enum FF_PLATFORM {
+    FF_PLATFORM_NONE = 0x00,    // No platform
+    FF_PLATFORM_XBOX = 0x01,    // Xbox 360
+    FF_PLATFORM_PS3 = 0x02,     // Playstation 3
+    FF_PLATFORM_PC = 0x03       // PC
+};
+
+enum FF_GAME {
+    FF_GAME_NONE = 0x00,        // No game
+    FF_GAME_COD1 = 0x01,        // Call of Duty
+    FF_GAME_COD2 = 0x02,        // Call of Duty 2
+    FF_GAME_COD3 = 0x03,        // Call of Duty 3
+    FF_GAME_COD4 = 0x04,        // Modern Warware 1
+    FF_GAME_COD5 = 0x05,        // World at War
+    FF_GAME_COD6 = 0x06,        // Modern Warfare 2
+    FF_GAME_COD7 = 0x07,        // Black Ops 1
+    FF_GAME_COD8 = 0x08,        // Modern Warfare 3
+    FF_GAME_COD9 = 0x09,        // Black Ops 2
+};
+
+enum IWI_VERSION {
+    IWI_VERSION_COD2   = 0x05, // 05 CoD2
+    IWI_VERSION_COD4   = 0x06, // 06 CoD4
+    IWI_VERSION_COD5   = 0x06, // 06 CoD5
+    IWI_VERSION_CODMW2 = 0x08, // 08 CoDMW2
+    IWI_VERSION_CODMW3 = 0x08, // 08 CoDMW3
+    IWI_VERSION_CODBO1 = 0x0D, // 13 CoDBO1
+    IWI_VERSION_CODBO2 = 0x1B, // 27 CoDBO2
+};
+
+enum IWI_FORMAT {
+    // IWI Format
+    IWI_FORMAT_ARGB32 = 0x01, // 01 ARGB32
+    IWI_FORMAT_RGB24  = 0x02, // 02 RGB24
+    IWI_FORMAT_GA16   = 0x03, // 03 GA16
+    IWI_FORMAT_A8     = 0x04, // 04 A8
+    IWI_FORMAT_DXT1   = 0x0B, // 11 DXT1
+    IWI_FORMAT_DXT3   = 0x0C, // 12 DXT3
+    IWI_FORMAT_DXT5   = 0x0D  // 13 DXT5
+};
+
+enum DDS_FLAGS {
+    DDSD_CAPS        = 0x1,
+    DDSD_HEIGHT      = 0x2,
+    DDSD_WIDTH       = 0x4,
+    DDSD_PITCH       = 0x8,
+    DDSD_PIXELFORMAT = 0x1000,
+    DDSD_MIPMAPCOUNT = 0x20000,
+    DDSD_LINEARSIZE  = 0x80000,
+    DDSD_DEPTH       = 0x800000
+};
+
+enum DDS_PIXELFORMAT_FLAGS {
+    DDPF_ALPHAPIXELS = 0x1,
+    DDPF_ALPHA       = 0x2,
+    DDPF_FOURCC      = 0x4,
+    DDPF_RGB         = 0x40,
+    DDPF_YUV         = 0x200,
+    DDPF_LUMINANCE   = 0x20000
+};
+
+enum DDS_CAPS_FLAGS {
+    DDSCAPS_COMPLEX = 0x8,
+    DDSCAPS_MIPMAP  = 0x400000,
+    DDSCAPS_TEXTURE = 0x1000
+};
+
+enum DDS_CAPS2_FLAGS {
+    DDSCAPS2_CUBEMAP = 0x200, // Indicates a cubemap.
+    DDSCAPS2_CUBEMAP_POSITIVEX = 0x400,
+    DDSCAPS2_CUBEMAP_NEGATIVEX = 0x800,
+    DDSCAPS2_CUBEMAP_POSITIVEY = 0x1000,
+    DDSCAPS2_CUBEMAP_NEGATIVEY = 0x2000,
+    DDSCAPS2_CUBEMAP_POSITIVEZ = 0x4000,
+    DDSCAPS2_CUBEMAP_NEGATIVEZ = 0x8000,
+    DDSCAPS2_VOLUME = 0x200000 // Indicates that the texture is a volume texture.
+};
+
 enum LUMP_TYPE
 {
     LUMP_MATERIALS = 0x0,
@@ -99,6 +178,31 @@ enum BSPVERSION_TYPE
     BSPVERSION_COD_BO = 45
 };
 
+enum FF_COMPANY {
+    COMPANY_NONE = 0x00,
+    COMPANY_INFINITY_WARD = 0x01,
+    COMPANY_TREYARCH = 0x02,
+    COMPANY_SLEDGEHAMMER = 0x03,
+    COMPANY_NEVERSOFT = 0x04
+};
+
+enum FF_FILETYPE {
+    FILETYPE_NONE = 0x00,
+    FILETYPE_FAST_FILE = 0x01
+};
+
+enum FF_SIGNAGE {
+    SIGNAGE_NONE = 0x00,
+    SIGNAGE_SIGNED = 0x01,
+    SIGNAGE_UNSIGNED = 0x02
+};
+
+enum IMAGE_COMPRESSION {
+    COMPRESSION_NONE = 0x00,
+    COMPRESSION_DXT1 = 0x01,
+    COMPRESSION_DXT3 = 0x02,
+    COMPRESSION_DXT5 = 0x03
+};
 enum MENU_ITEM_TYPE {
     ITEM_TYPE_TEXT = 0,                             // simple text
     ITEM_TYPE_BUTTON = 1,                           // button, basically text with a border
@@ -563,6 +667,112 @@ enum ASSET_TYPE {
     ASSET_STRING_TABLE = 33     // string_table           PARTIALLY VERIFIED
 };
 
+enum SHADER_TYPE {
+    SHADER_NONE = 0x00,
+    SHADER_PIXEL = 0x01,
+    SHADER_VERTEX = 0x02
+};
+
+enum SHADER_OPCODE {
+    OPCODE_Nop,
+    OPCODE_Mov,
+    OPCODE_Add,
+    OPCODE_Sub,
+    OPCODE_Mad,
+    OPCODE_Mul,
+    OPCODE_Rcp,
+    OPCODE_Rsq,
+    OPCODE_Dp3,
+    OPCODE_Dp4,
+    OPCODE_Min,
+    OPCODE_Max,
+    OPCODE_Slt,
+    OPCODE_Sge,
+    OPCODE_Exp,
+    OPCODE_Log,
+    OPCODE_Lit,
+    OPCODE_Dst,
+    OPCODE_Lrp,
+    OPCODE_Frc,
+    OPCODE_M4x4,
+    OPCODE_M4x3,
+    OPCODE_M3x4,
+    OPCODE_M3x3,
+    OPCODE_M3x2,
+    OPCODE_Call,
+    OPCODE_CallNZ,
+    OPCODE_Loop,
+    OPCODE_Ret,
+    OPCODE_EndLoop,
+    OPCODE_Label,
+    OPCODE_Dcl,
+    OPCODE_Pow,
+    OPCODE_Crs,
+    OPCODE_Sgn,
+    OPCODE_Abs,
+    OPCODE_Nrm,
+    OPCODE_SinCos,
+    OPCODE_Rep,
+    OPCODE_EndRep,
+    OPCODE_If,
+    OPCODE_IfC,
+    OPCODE_Else,
+    OPCODE_Endif,
+    OPCODE_Break,
+    OPCODE_BreakC,
+    OPCODE_MovA,
+    OPCODE_DefB,
+    OPCODE_DefI,
+    OPCODE_TexCoord = 64,
+    OPCODE_TexKill,
+    OPCODE_Tex,
+    OPCODE_TexBem,
+    OPCODE_TexBeml,
+    OPCODE_TexReg2AR,
+    OPCODE_TexReg2GB,
+    OPCODE_TeXM3x2Pad,
+    OPCODE_TexM3x2Tex,
+    OPCODE_TeXM3x3Pad,
+    OPCODE_TexM3x3Tex,
+    OPCODE_TexM3x3Diff,
+    OPCODE_TexM3x3Spec,
+    OPCODE_TexM3x3VSpec,
+    OPCODE_ExpP,
+    OPCODE_LogP,
+    OPCODE_Cnd,
+    OPCODE_Def,
+    OPCODE_TexReg2RGB,
+    OPCODE_TexDP3Tex,
+    OPCODE_TexM3x2Depth,
+    OPCODE_TexDP3,
+    OPCODE_TexM3x3,
+    OPCODE_TexDepth,
+    OPCODE_Cmp,
+    OPCODE_Bem,
+    OPCODE_DP2Add,
+    OPCODE_DSX,
+    OPCODE_DSY,
+    OPCODE_TexLDD,
+    OPCODE_SetP,
+    OPCODE_TexLDL,
+    OPCODE_Breakp,
+    OPCODE_Phase = 0xFFFD,
+    OPCODE_Comment = 0xFFFE,
+    OPCODE_End = 0xFFFF
+};
+
+#define SECTION_TYPE_INFO 1
+#define SECTION_TYPE_DATA 2
+
+#define IPAK_SECTION_ENTRY 1
+#define IPAK_SECTION_DATA 2
+#define IPAK_SECTION_METADATA 3
+
+#define FORMAT_DXT1 0
+#define FORMAT_DXT3 1
+#define FORMAT_DXT5 2
+#define FORMAT_A8R8G8B8 3
+
 // Change this depending on the platform
 // PC
 #define DEVMAP_LEVEL_FIRST "devmap intro_pac"
@@ -663,8 +873,4 @@ enum ASSET_TYPE {
 #define PRESTIGE_FINISH (stat(2326) == MAX_PRESTIGE)
 
 #define CAN_RANK_UP	(stat(252) < MAX_RANK || stat(2326) < MAX_PRESTIGE)
-
-// Bink constants
-const quint32 BINK_SURFACE32RGBA = 6;
-
 #endif // ENUMS_H
