@@ -234,7 +234,7 @@
             "WEIGHTS_0": 6
           },
           "indices": 1,
-          "material": 0,
+          ASSET_MATERIAL: 0,
           "mode": 4
         }
       ]
@@ -250,7 +250,7 @@
             "WEIGHTS_0": 12
           },
           "indices": 7,
-          "material": 0,
+          ASSET_MATERIAL: 0,
           "mode": 4
         }
       ]

@@ -14,10 +14,10 @@ public:
     ZoneFile(const ZoneFile &aZoneFile);
     ZoneFile &operator=(const ZoneFile &other);
 
-    virtual bool Load(const QByteArray aFileData, FF_PLATFORM platform = FF_PLATFORM_NONE) = 0;
-    virtual QString AssetTypeToString(const QString aAssetType) = 0;
-
-    QIcon AssetStrToIcon(const QString aAssetStr);
+    virtual bool Load(const QByteArray aFileData) = 0;
+    virtual AssetType AssetStrToEnum(const QString aAssetType) = 0;
+    virtual QString AssetEnumToStr(const AssetType aAssetType);
+    virtual QIcon AssetTypeToIcon(const AssetType aAssetType);
 
     virtual QByteArray GetBinaryData() = 0;
     virtual bool SaveZoneFile(const QString aZoneFilePath);
@@ -39,7 +39,7 @@ public:
     void SetAssetMap(const AssetMap aAssetMap);
 
 private slots:
-    virtual void pParseZoneHeader(QDataStream *aZoneFileStream, FF_PLATFORM aPlatform) = 0;
+    virtual void pParseZoneHeader(QDataStream *aZoneFileStream) = 0;
     virtual quint32 pParseZoneSize(QDataStream *aZoneFileStream) = 0;
     virtual void pParseZoneUnknownsA(QDataStream *aZoneFileStream) = 0;
     virtual quint32 pParseZoneTagCount(QDataStream *aZoneFileStream) = 0;

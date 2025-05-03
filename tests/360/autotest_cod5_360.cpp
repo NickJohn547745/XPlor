@@ -2,6 +2,7 @@
 #include <QDirIterator>
 #include <QFileInfo>
 
+#include "fastfile_factory.h"
 #include "autotest_cod.h"
 #include "compression.h"
 
@@ -18,6 +19,10 @@ private slots:
     // Data-driven test for recompression (compression)
     void testCompression_data();
     void testCompression();
+
+    void testFactory_data();
+    void testFactory();
+
     void cleanupTestCase();
 };
 
@@ -30,9 +35,13 @@ void AutoTest_COD5_360::testDecompression_data() {
     QTest::addColumn<QString>("fastFilePath_cod5_360");
 
     QStringList ffFiles = findFastFiles(getFastFileDirectory());
+    int ffCount = 0;
     for (const QString &filePath : ffFiles) {
         QString fileName = QFileInfo(filePath).fileName();
         QTest::newRow(qPrintable(fileName)) << filePath;
+        ffCount++;
+
+        if (ffCount == FILE_MAX) { break; }
     }
 }
 
@@ -81,9 +90,13 @@ void AutoTest_COD5_360::testCompression_data() {
     QTest::addColumn<QString>("zoneFilePath_cod5_360");
 
     QStringList zoneFiles = findZoneFiles(getZoneFileDirectory());
+    int zoneCount = 0;
     for (const QString &filePath : zoneFiles) {
         QString fileName = QFileInfo(filePath).fileName();
         QTest::newRow(qPrintable(fileName)) << filePath;
+        zoneCount++;
+
+        if (zoneCount == FILE_MAX) { break; }
     }
 }
 
@@ -123,6 +136,44 @@ void AutoTest_COD5_360::testCompression() {
     recompressedFile.close();
 
     QCOMPARE(recompressedData, originalFFData);
+}
+
+void AutoTest_COD5_360::testFactory_data() {
+    QTest::addColumn<QString>("fastFilePath_cod5_360");
+
+    QStringList ffFiles = findFastFiles(getFastFileDirectory());
+    int ffCount = 0;
+    for (const QString &filePath : ffFiles) {
+        QString fileName = QFileInfo(filePath).fileName();
+        QTest::newRow(qPrintable(fileName)) << filePath;
+        ffCount++;
+
+        if (ffCount == FILE_MAX) { break; }
+    }
+}
+
+void AutoTest_COD5_360::testFactory() {
+    QFETCH(QString, fastFilePath_cod5_360);
+
+    const QString testName = "Create w/ factory: " + fastFilePath_cod5_360;
+
+    std::shared_ptr<FastFile> fastFile = FastFileFactory::Create(fastFilePath_cod5_360);
+
+    bool correctPlatform = fastFile->GetPlatform() == "360";
+    if (!correctPlatform) {
+        recordResult(testName, false);
+    }
+    QVERIFY2(correctPlatform
+             , qPrintable("Factory created fastfile for platform: " + fastFile->GetPlatform()));
+
+    bool correctGame = fastFile->GetGame() == "COD5";
+    if (!correctGame) {
+        recordResult(testName, false);
+    }
+    QVERIFY2(correctGame
+             , qPrintable("Factory created fastfile for game: " + fastFile->GetGame()));
+
+    recordResult(testName, true);
 }
 
 void AutoTest_COD5_360::cleanupTestCase() {

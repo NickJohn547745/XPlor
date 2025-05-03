@@ -20,18 +20,11 @@ void MaterialViewer::SetMaterial(std::shared_ptr<Material> aMaterial) {
     ui->lineEdit_Name->setText(aMaterial->name);
     ui->lineEdit_RefPtr->setText(ToHexStr(aMaterial->refNamePtr));
     ui->lineEdit_RefName->setText(aMaterial->refName);
-    ui->lineEdit_Unknowns->setText(ToHexStr(aMaterial->unknownA[0])
-                                   + ToHexStr(aMaterial->unknownA[1])
-                                   + ToHexStr(aMaterial->unknownA[2])
-                                   + ToHexStr(aMaterial->unknownA[3])
-                                   + ToHexStr(aMaterial->unknownA[4])
-                                   + ToHexStr(aMaterial->unknownA[5])
-                                   + ToHexStr(aMaterial->unknownA[6])
-                                   + ToHexStr(aMaterial->unknownA[7])
-                                   + ToHexStr(aMaterial->unknownA[8])
-                                   + ToHexStr(aMaterial->unknownA[9])
-                                   + ToHexStr(aMaterial->unknownA[10])
-                                   + ToHexStr(aMaterial->unknownA[11]));
+    QString unknownStr = "";
+    foreach (quint32 unknownPtr, aMaterial->pointers) {
+        unknownStr += ToHexStr(unknownPtr) + "\n";
+    }
+    ui->lineEdit_Unknowns->setText(unknownStr);
     ui->lineEdit_StateA->setText(ToHexStr(aMaterial->stateBits[0]));
     ui->lineEdit_StateA->setText(ToHexStr(aMaterial->stateBits[1]));
     ui->spinBox_TextureCount->setValue(aMaterial->textureCount);

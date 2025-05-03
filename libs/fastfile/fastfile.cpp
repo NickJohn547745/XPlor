@@ -1,9 +1,6 @@
 #include "fastfile.h"
 
-#include "fastfile_cod2.h"
-#include "fastfile_cod5.h"
-#include "fastfile_cod7.h"
-#include "fastfile_cod9.h"
+#include "fastfile_factory.h"
 #include "logmanager.h"
 
 #include <QFile>
@@ -20,6 +17,10 @@ FastFile::FastFile()
       mGame(""),
       mPlatform("") {
 
+}
+
+FastFile::FastFile(const QByteArray &aData) {
+    Q_UNUSED(aData);
 }
 
 FastFile::FastFile(FastFile &fastFile)
@@ -297,32 +298,12 @@ std::shared_ptr<FastFile> FastFile::Open(const QString &aFilePath) {
     const QString fastFileStem = aFilePath.section("/", -1, -1).section('.', 0, 0);
     LogManager::instance().addEntry(QString("Stem: %1").arg(fastFileStem));
 
-    FastFile *fastFile;
-    bool validff = true;
-    if (game == "COD2") {
-        fastFile = new FastFile_COD2();
-    } else if (game == "COD5") {
-        fastFile = new FastFile_COD5();
-    } else if (game == "COD7") {
-        fastFile = new FastFile_COD7();
-    } else if (game == "COD9") {
-        fastFile = new FastFile_COD9();
-    } else {
-        validff = false;
-    }
+    std::shared_ptr<FastFile> fastFile =  FastFileFactory::Create(data);
 
-    LogManager::instance().addLine();
+    fastFile->SetCompany(company);
+    fastFile->SetStem(fastFileStem);
 
-    if (validff) {
-        fastFile->SetCompany(company);
-        fastFile->SetStem(fastFileStem);
-        fastFile->Load(data);
-        return std::unique_ptr<FastFile>(fastFile);
-    }
-
-
-    // Open zone file after decompressing ff and writing
-    return nullptr;
+    return fastFile;
 }
 bool FastFile::ExportFastFile(const QString aFastFilePath) {
     QFile fastFile(aFastFilePath);

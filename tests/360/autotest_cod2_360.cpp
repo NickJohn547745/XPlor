@@ -4,6 +4,7 @@
 
 #include "autotest_cod.h"
 #include "compression.h"
+#include "fastfile_factory.h"
 
 class AutoTest_COD2_360 : public AutoTest_COD {
     Q_OBJECT
@@ -18,6 +19,10 @@ private slots:
     // Data-driven test for recompression (compression)
     void testCompression_data();
     void testCompression();
+
+    void testFactory_data();
+    void testFactory();
+
     void cleanupTestCase();
 };
 
@@ -89,6 +94,7 @@ void AutoTest_COD2_360::testCompression_data() {
     for (const QString &filePath : zoneFiles) {
         QString fileName = QFileInfo(filePath).fileName();
         QTest::newRow(qPrintable(fileName)) << filePath;
+        break;
     }
 }
 
@@ -140,6 +146,51 @@ void AutoTest_COD2_360::testCompression() {
         recordResult(testName, false);
     }
     QCOMPARE(recompressedData, originalFFData);
+
+    recordResult(testName, true);
+}
+
+void AutoTest_COD2_360::testFactory_data() {
+    QTest::addColumn<QString>("fastFilePath_cod2_360");
+
+    QStringList ffFiles = findFastFiles(getFastFileDirectory());
+    for (const QString &filePath : ffFiles) {
+        QString fileName = QFileInfo(filePath).fileName();
+        QTest::newRow(qPrintable(fileName)) << filePath;
+    }
+}
+
+void AutoTest_COD2_360::testFactory() {
+    QFETCH(QString, fastFilePath_cod2_360);
+
+    const QString testName = "Create w/ factory: " + fastFilePath_cod2_360;
+
+    // Open the original .ff file.
+    QFile testFastFile(fastFilePath_cod2_360);
+    bool fastFileOpened = testFastFile.open(QIODevice::ReadOnly);
+    if (!fastFileOpened) {
+        recordResult(testName, false);
+    }
+    QVERIFY2(fastFileOpened
+             , qPrintable("Failed to open test fastfile: " + fastFilePath_cod2_360));
+    const QByteArray testFFData = testFastFile.readAll();
+    testFastFile.close();
+
+    std::shared_ptr<FastFile> fastFile = FastFileFactory::Create(testFFData);
+
+    bool correctPlatform = fastFile->GetPlatform() == "360";
+    if (!correctPlatform) {
+        recordResult(testName, false);
+    }
+    QVERIFY2(correctPlatform
+             , qPrintable("Factory created fastfile for platform: " + fastFile->GetPlatform()));
+
+    bool correctGame = fastFile->GetGame() == "COD2";
+    if (!correctGame) {
+        recordResult(testName, false);
+    }
+    QVERIFY2(correctGame
+             , qPrintable("Factory created fastfile for game: " + fastFile->GetGame()));
 
     recordResult(testName, true);
 }

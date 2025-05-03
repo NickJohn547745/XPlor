@@ -87,5 +87,8 @@
         <file>icons/Icon_PhysPreset.png</file>
         <file>icons/Icon_Wii.png</file>
         <file>icons/Icon_WiiU.png</file>
+        <file>icons/Icon_COD10.png</file>
+        <file>icons/Icon_COD11.png</file>
+        <file>icons/Icon_COD12.png</file>
     </qresource>
 </RCC>

@@ -70,6 +70,8 @@ app.depends += \
     libs/iwifile \
     libs/zonefile
 
+QMAKE_PRE_BUILD += make clean
+
 LIBS += \
     -L$$PWD/../third_party/devil_sdk/lib/ -lDevIL -lILU -lILUT \
     -L$$PWD/../third_party/zlib/lib/ -lzlib \

@@ -8,6 +8,87 @@
 #include <QRectF>
 #include <QMap>
 
+enum AssetType {
+    ASSET_NONE = 0x00,
+    ASSET_RAW_FILE = 0x01,
+    ASSET_SCRIPT_PARSE_TREE = 0x02,
+    ASSET_EFFECT = 0x03,
+    ASSET_SOUND = 0x04,
+    ASSET_ANIMATION = 0x05,
+    ASSET_COLLISION_MAP = 0x06,
+    ASSET_STRING_TABLE = 0x07,
+    ASSET_MENU = 0x08,
+    ASSET_TECH_SET = 0x09,
+    ASSET_WEAPON = 0x10,
+    ASSET_GFX_MAP = 0x11,
+    ASSET_LIGHT_DEF = 0x12,
+    ASSET_FONT = 0x13,
+    ASSET_MODEL = 0x14,
+    ASSET_D3DBSP = 0x15,
+    ASSET_IMAGE = 0x16,
+    ASSET_GAME_MAP_SP = 0x17,
+    ASSET_COL_MAP_SP = 0x18,
+    ASSET_PHYS_PRESET = 0x19,
+    ASSET_DESTRUCTIBLE = 0x20,
+    ASSET_LOCAL_STRING = 0x21,
+    ASSET_SHADER = 0x22,
+    ASSET_MP_MAP = 0x23,
+    ASSET_SP_MAP = 0x24,
+    ASSET_UI_MAP = 0x25,
+    ASSET_SND_DRIVER_GLOBALS = 0x26,
+    ASSET_AI_TYPE = 0x27,
+    ASSET_MATERIAL = 0x28,
+    ASSET_COMPUTE_SHADER_SET = 0x29,
+    ASSET_LIGHT_DESCRIPTION = 0x30,
+    ASSET_BIT_FIELD = 0x31,
+    ASSET_STRUCTURED_TABLE = 0x32,
+    ASSET_LEADERBOARD_DEF = 0x33,
+    ASSET_DDL = 0x34,
+    ASSET_KEY_VALUE_PAIRS = 0x35,
+    ASSET_SCRIPT_BUNDLE = 0x36,
+    ASSET_SCRIPT_BUNDLE_LIST = 0x37,
+    ASSET_MAP_TABLE = 0x38,
+    ASSET_MAP_TABLE_LOADING_IMAGES = 0x39,
+    ASSET_SURFACE_SOUND_DEF = 0x40,
+    ASSET_SURFACE_FX_TABLE = 0x41,
+    ASSET_RUMBLE = 0x42,
+    ASSET_AIM_TABLE = 0x43,
+    ASSET_MEDAL = 0x44,
+    ASSET_MEDAL_TABLE = 0x45,
+    ASSET_OBJECTIVE = 0x46,
+    ASSET_OBJECTIVE_LIST = 0x47,
+    ASSET_LASER = 0x48,
+    ASSET_BEAM = 0x49,
+    ASSET_STREAMER_HINT = 0x50,
+    ASSET_ANIM_SELECTOR_TABLE = 0x51,
+    ASSET_ANIM_MAPPING_TABLE = 0x52,
+    ASSET_ANIM_STATE_MACHINE = 0x53,
+    ASSET_BEHAVIOR_TREE = 0x54,
+    ASSET_BEHAVIOR_STATE_MACHINE = 0x55,
+    ASSET_FOOTSTEP_TABLE = 0x56,
+    ASSET_ENTITY_FX_IMPACTS = 0x57,
+    ASSET_ENTITY_SOUND_IMPACTS = 0x58,
+    ASSET_VEHICLE_FX_DEF = 0x59,
+    ASSET_VEHICLE_SOUND_DEF = 0x60,
+    ASSET_VEHICLE = 0x61,
+    ASSET_VEHICLE_TRACER = 0x62,
+    ASSET_PLAYER_SOUNDS_TABLE = 0x63,
+    ASSET_PLAYER_FX_TABLE = 0x64,
+    ASSET_SHARED_WEAPON_SOUNDS = 0x65,
+    ASSET_ATTACHMENT = 0x66,
+    ASSET_ATTACHMENT_UNIQUE = 0x67,
+    ASSET_WEAPON_CAMO = 0x68,
+    ASSET_CUSTOMIZATION_TABLE = 0x69,
+    ASSET_CUSTOMIZATION_TABLE_FEIMAGES = 0x70,
+    ASSET_CUSTOMIZATION_TABLE_COLOR = 0x71,
+    ASSET_PHYS_CONSTRAINTS = 0x72,
+    ASSET_DESTRUCTIBLE_DEF = 0x73,
+    ASSET_MODEL_MESH = 0x74,
+    ASSET_S_ANIM = 0x75,
+    ASSET_FONT_ICON = 0x76,
+    ASSET_CG_MEDIA_TABLE = 0x77
+};
+
 struct LocalString {
     QString string;
     QString alias;
@@ -15,6 +96,12 @@ struct LocalString {
 
 struct RawFile {
     quint32 length;
+    QString path;
+    QString contents;
+};
+
+struct GscFile {
+    quint64 length;
     QString path;
     QString contents;
 };
@@ -178,11 +265,11 @@ struct Image {
 };
 
 struct Material {
-    quint32 namePtr;
+    qint32 namePtr;
     QString name;
     quint32 refNamePtr;
     QString refName;
-    quint8 unknownA[12];
+    QVector<quint32> pointers;
     quint32 stateBits[2];
     quint16 textureCount;
     quint16 constCount;
@@ -353,6 +440,7 @@ struct SoundAsset {
 struct AssetMap {
     QVector<LocalString> localStrings;
     QVector<RawFile> rawFiles;
+    QVector<GscFile> gscFiles;
     //QVector<PhysPreset> phyPresets;
     QVector<Model> models;
     QVector<Material> materials;

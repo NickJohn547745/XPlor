@@ -63,6 +63,12 @@ void XTreeWidget::AddFastFile(std::shared_ptr<FastFile> aFastFile) {
         fastFileItem->setIcon(2, QIcon(":/icons/icons/Icon_COD8.png"));
     } else if (aFastFile->GetGame() == "COD9") {
         fastFileItem->setIcon(2, QIcon(":/icons/icons/Icon_COD9.png"));
+    } else if (aFastFile->GetGame() == "COD10") {
+        fastFileItem->setIcon(2, QIcon(":/icons/icons/Icon_COD10.png"));
+    } else if (aFastFile->GetGame() == "COD11") {
+        fastFileItem->setIcon(2, QIcon(":/icons/icons/Icon_COD11.png"));
+    } else if (aFastFile->GetGame() == "COD12") {
+        fastFileItem->setIcon(2, QIcon(":/icons/icons/Icon_COD12.png"));
     }
 
     AddZoneFile(aFastFile->GetZoneFile(), fastFileItem);
@@ -155,7 +161,7 @@ void XTreeWidget::AddZoneFile(std::shared_ptr<ZoneFile> aZoneFile, XTreeWidgetIt
             menuFileRoot->setText(0, QString("Menu %1").arg(menuIndex));
             for (Menu menu : menuFile.menuDefs) {
                 XTreeWidgetItem *menuItem = new XTreeWidgetItem(menuFileRoot);
-                menuItem->setText(0, menu.name);
+                menuItem->setText(0, menu.filePath);
                 menuItem->setIcon(0, QIcon(":/icons/icons/Icon_MenuFile.png"));
             }
             menuIndex++;

@@ -19,9 +19,15 @@ public:
     ~ZoneFileViewer();
 
     void SetZoneFile(std::shared_ptr<ZoneFile> aZoneFile);
+
+public slots:
+    void SortTags(const QString &aSearchText);
+
+    void HighlightRecordInOrder();
+
 private:
     Ui::ZoneFileViewer *ui;
-    std::shared_ptr<ZoneFile> aZoneFile;
+    std::shared_ptr<ZoneFile> mZoneFile;
 };
 
 #endif // ZONEFILEVIEWER_H

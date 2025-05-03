@@ -67,10 +67,11 @@ app.depends += \
     libs/core \
     libs/compression \
     libs/encryption \
+    libs/zonefile \
     libs/fastfile
 
 LIBS += \
-    -L$$OUT_PWD/../libs/ -lcore -lencryption -lcompression -lfastfile \
+    -L$$OUT_PWD/../libs/ -lcore -lencryption -lcompression -lfastfile -lzonefile \
     -L$$PWD/../third_party/xbox_sdk/lib -lxcompress64
 
 INCLUDEPATH += \
@@ -78,14 +79,16 @@ INCLUDEPATH += \
     $$PWD/../libs/core \
     $$PWD/../libs/encryption \
     $$PWD/../libs/compression \
-    $$PWD/../libs/fastfile
+    $$PWD/../libs/fastfile \
+    $$PWD/../libs/zonefile
 
 DEPENDPATH += \
     $$PWD/../third_party/xbox_sdk/include \
     $$PWD/../libs/core \
     $$PWD/../libs/encryption \
     $$PWD/../libs/compression \
-    $$PWD/../libs/fastfile
+    $$PWD/../libs/fastfile \
+    $$PWD/../libs/zonefile
 
 RESOURCES +=
 

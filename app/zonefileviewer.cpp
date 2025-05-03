@@ -6,7 +6,7 @@ ZoneFileViewer::ZoneFileViewer(QWidget *parent)
     , ui(new Ui::ZoneFileViewer) {
     ui->setupUi(this);
 
-    aZoneFile = nullptr;
+    mZoneFile = nullptr;
 
     ui->tableWidget_RecordCounts->setColumnCount(4);
     ui->tableWidget_RecordCounts->setHorizontalHeaderLabels({ "Identifier", "Asset", "Count", "Icon" });
@@ -15,20 +15,64 @@ ZoneFileViewer::ZoneFileViewer(QWidget *parent)
     ui->tableWidget_RecordOrder->setColumnCount(4);
     ui->tableWidget_RecordOrder->setHorizontalHeaderLabels({ "Identifier", "Asset", "Count", "Icon" });
     ui->tableWidget_RecordOrder->horizontalHeader()->setStretchLastSection(true);
+
+    connect(ui->lineEdit_TagSearch, &QLineEdit::textChanged, this, &ZoneFileViewer::SortTags);
+    connect(ui->tableWidget_RecordCounts, &QTableWidget::itemSelectionChanged, this, &ZoneFileViewer::HighlightRecordInOrder);
 }
 
 ZoneFileViewer::~ZoneFileViewer() {
     delete ui;
 }
 
+void ZoneFileViewer::HighlightRecordInOrder() {
+    ui->tableWidget_RecordOrder->clearSelection();
+
+    foreach (auto selectedItem, ui->tableWidget_RecordCounts->selectedItems()) {
+        int selectedRow = selectedItem->row();
+        const QString assetId = ui->tableWidget_RecordCounts->item(selectedRow, 0)->text();
+
+        for (int i = 0; i < ui->tableWidget_RecordOrder->rowCount(); i++) {
+            const QString testAssetId = ui->tableWidget_RecordOrder->item(i, 0)->text();
+            if (testAssetId != assetId) { continue; }
+
+            ui->tableWidget_RecordOrder->selectRow(i);
+            ui->tableWidget_RecordOrder->item(i, 0)->setSelected(true);
+            ui->tableWidget_RecordOrder->item(i, 1)->setSelected(true);
+            ui->tableWidget_RecordOrder->item(i, 2)->setSelected(true);
+            ui->tableWidget_RecordOrder->item(i, 3)->setSelected(true);
+        }
+    }
+}
+
+void ZoneFileViewer::SortTags(const QString &aSearchText) {
+    ui->listWidget_Tags->clear();
+
+    const QStringList tags = mZoneFile->GetTags();
+    if (aSearchText.isEmpty()) {
+        ui->listWidget_Tags->addItems(tags);
+        return;
+    }
+
+    QStringList sortedTags;
+    foreach (const QString tag, tags) {
+        if (tag.contains(aSearchText)) {
+            sortedTags << tag;
+        }
+    }
+
+    ui->listWidget_Tags->addItems(sortedTags);
+}
+
 void ZoneFileViewer::SetZoneFile(std::shared_ptr<ZoneFile> aZoneFile) {
+    mZoneFile = aZoneFile;
+
     ui->tableWidget_RecordCounts->clearContents();
     ui->tableWidget_RecordOrder->clearContents();
     ui->listWidget_Tags->clear();
 
-    const QStringList tags = aZoneFile->GetTags();
+    const QStringList tags = mZoneFile->GetTags();
     ui->listWidget_Tags->addItems(tags);
-    ui->label_Title->setText(aZoneFile->GetStem() + ".zone");
+    ui->label_Title->setText(mZoneFile->GetStem() + ".zone");
 
     if (tags.isEmpty()) {
         ui->groupBox_Tags->hide();
@@ -36,79 +80,62 @@ void ZoneFileViewer::SetZoneFile(std::shared_ptr<ZoneFile> aZoneFile) {
         ui->groupBox_Tags->show();
     }
 
-    QString lastAsset = "";
-    QString lastRecord = "";
-    QIcon assetIcon;
-    int consecutiveCount = 1;
-    int consecutiveIndex = 0;
-    const QStringList records = aZoneFile->GetRecords();
     QMap<QString, int> recordCounts = QMap<QString, int>();
-    for (const QString &record : records) {
-        lastRecord = record;
-        if (record == "ffffffff") { break; }
+    QVector<QPair<QString, int>> assetOccurances = QVector<QPair<QString, int>>();
+    for (const QString &record : mZoneFile->GetRecords()) {
         if (!recordCounts.contains(record)) {
             recordCounts[record] = 0;
         }
         recordCounts[record]++;
 
-        QString assetType = aZoneFile->AssetTypeToString(record);
+        if (!assetOccurances.isEmpty() && assetOccurances.last().first == record) {
+            assetOccurances.last().second++;
+            continue;
+        }
+
+        QPair<QString, int> assetOccurance(record, 1);
+        assetOccurances << assetOccurance;
+    }
+    ui->tableWidget_RecordOrder->setRowCount(assetOccurances.size());
+
+    int assetIndex = 0;
+    foreach (auto assetOccurance, assetOccurances) {
+        const QString record = assetOccurance.first;
+        AssetType assetType = mZoneFile->AssetStrToEnum(record);
+        int assetCount = assetOccurance.second;
+
+        QIcon assetIcon = mZoneFile->AssetTypeToIcon(assetType);
         if (assetIcon.isNull()) {
             qDebug() << "Icon is null for record: " << record;
         }
 
-        if (lastAsset.isEmpty()) {
-            lastAsset = assetType;
-            lastRecord = record;
-        } else if (lastAsset == assetType) {
-            consecutiveCount++;
-        } else {
-            ui->tableWidget_RecordOrder->setRowCount(consecutiveIndex + 1);
+        QTableWidgetItem *recordItem = new QTableWidgetItem(record.toUpper());
+        QTableWidgetItem *recordStrItem = new QTableWidgetItem(mZoneFile->AssetEnumToStr(assetType));
+        QTableWidgetItem *recordCountItem = new QTableWidgetItem(QString::number(assetCount));
+        QTableWidgetItem *recordIconItem = new QTableWidgetItem();
+        recordIconItem->setIcon(assetIcon);
 
-            QTableWidgetItem *recordItem = new QTableWidgetItem(lastRecord.toUpper());
-            QTableWidgetItem *recordStrItem = new QTableWidgetItem(lastAsset);
-            QTableWidgetItem *recordCountItem = new QTableWidgetItem(QString::number(consecutiveCount));
-            QTableWidgetItem *recordIconItem = new QTableWidgetItem();
-            assetIcon = aZoneFile->AssetStrToIcon(lastAsset);
-            recordIconItem->setIcon(assetIcon);
+        ui->tableWidget_RecordOrder->setItem(assetIndex, 0, recordItem);
+        ui->tableWidget_RecordOrder->setItem(assetIndex, 1, recordStrItem);
+        ui->tableWidget_RecordOrder->setItem(assetIndex, 2, recordCountItem);
+        ui->tableWidget_RecordOrder->setItem(assetIndex, 3, recordIconItem);
 
-            ui->tableWidget_RecordOrder->setItem(consecutiveIndex, 0, recordItem);
-            ui->tableWidget_RecordOrder->setItem(consecutiveIndex, 1, recordStrItem);
-            ui->tableWidget_RecordOrder->setItem(consecutiveIndex, 2, recordCountItem);
-            ui->tableWidget_RecordOrder->setItem(consecutiveIndex, 3, recordIconItem);
-
-            consecutiveCount = 1;
-            consecutiveIndex++;
-            lastAsset = assetType;
-            lastRecord = record;
-        }
+        assetIndex++;
     }
-    ui->tableWidget_RecordOrder->setRowCount(consecutiveIndex + 1);
-
-    QTableWidgetItem *recordItem = new QTableWidgetItem(lastRecord.toUpper());
-    QTableWidgetItem *recordStrItem = new QTableWidgetItem(lastAsset);
-    QTableWidgetItem *recordCountItem = new QTableWidgetItem(QString::number(consecutiveCount));
-    QTableWidgetItem *recordIconItem = new QTableWidgetItem();
-    assetIcon = aZoneFile->AssetStrToIcon(lastAsset);
-    recordIconItem->setIcon(assetIcon);
-
-    ui->tableWidget_RecordOrder->setItem(consecutiveIndex, 0, recordItem);
-    ui->tableWidget_RecordOrder->setItem(consecutiveIndex, 1, recordStrItem);
-    ui->tableWidget_RecordOrder->setItem(consecutiveIndex, 2, recordCountItem);
-    ui->tableWidget_RecordOrder->setItem(consecutiveIndex, 3, recordIconItem);
 
     int recordIndex = 0;
     for (const QString &record : recordCounts.keys()) {
         int recordCount = recordCounts[record];
 
-        QString assetType = aZoneFile->AssetTypeToString(record);
-        assetIcon = aZoneFile->AssetStrToIcon(assetType);
+        AssetType assetType = mZoneFile->AssetStrToEnum(record);
+        QIcon assetIcon = mZoneFile->AssetTypeToIcon(assetType);
         if (assetIcon.isNull()) {
             qDebug() << "Icon is null for record: " << record;
         }
 
         ui->tableWidget_RecordCounts->setRowCount(recordIndex + 1);
 
-        QTableWidgetItem *recordCountStrItem = new QTableWidgetItem(assetType);
+        QTableWidgetItem *recordCountStrItem = new QTableWidgetItem(mZoneFile->AssetEnumToStr(assetType));
         QTableWidgetItem *recordItem = new QTableWidgetItem(record.toUpper());
         QTableWidgetItem *recordCountItem = new QTableWidgetItem(QString::number(recordCount));
         QTableWidgetItem *recordIconItem = new QTableWidgetItem();

@@ -650,25 +650,6 @@ enum MENU_BUTTON {
     APAD_RIGHT = 31
 };
 
-enum ASSET_TYPE {
-    ASSET_UNKNOWN = 0,
-    ASSET_ANIMATION = 4,        // x_anim                 PARTIALLY VERIFIED
-    ASSET_MODEL = 5,            // xmodel                 PARTIALLY VERIFIED
-    ASSET_MATERIAL = 6,         // material               VERIFIED
-    ASSET_BIK_FILE = 7,         // .bik file              PARTIALLY VERIFIED
-    ASSET_SOUND = 9,            // loaded_sound           VERIFIED
-    ASSET_COLLISION_MAP = 12,   // collision_map          PARTIALLY VERIFIED
-    ASSET_SHADER = 13,          // shader                 PARTIALLY VERIFIED
-    ASSET_D3DBSP_DUMP = 17,     // d3dbsp dump            VERIFIED
-    ASSET_FONT = 20,            // font                   PARTIALLY VERIFIED
-    ASSET_MENU = 21,            // menu_file              VERIFIED
-    ASSET_LOCAL_STRING = 23,    // localized string       VERIFIED
-    ASSET_WEAPON = 24,          // weapon                 VERIFIED
-    ASSET_EFFECT = 26,          // fx                     VERIFIED
-    ASSET_RAW_FILE = 32,        // raw_file               VERIFIED
-    ASSET_STRING_TABLE = 33     // string_table           PARTIALLY VERIFIED
-};
-
 enum SHADER_TYPE {
     SHADER_NONE = 0x00,
     SHADER_PIXEL = 0x01,
