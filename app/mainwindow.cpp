@@ -8,6 +8,7 @@
 #include "techsetviewer.h"
 #include "ui_mainwindow.h"
 #include "compression.h"
+#include "fastfile_factory.h"
 #include "iwifile.h"
 #include "ddsfile.h"
 #include "statusbarmanager.h"
@@ -268,9 +269,9 @@ MainWindow::MainWindow(QWidget *parent)
         fastFileViewer->SetFastFile(aFastFile);
         fastFileViewer->setProperty("PARENT_NAME", QVariant::fromValue(aParentName));
 
-        QString fileStem = aFastFile->GetStem() + ".ff";
+        QString fileStem = aFastFile->GetStem();
         for (int i = 0; i < ui->tabWidget->count(); i++) {
-            if (ui->tabWidget->tabText(i) == fileStem) {
+            if (ui->tabWidget->tabText(i) == fileStem + ".ff") {
                 return;
             }
         }
@@ -481,8 +482,7 @@ bool MainWindow::OpenFastFile(const QString aFastFilePath) {
         return false;
     }
 
-    std::shared_ptr<FastFile> fastFile = FastFile::Open(aFastFilePath);
-    fastFile->SetStem(fastFileStem);
+    std::shared_ptr<FastFile> fastFile = FastFileFactory::Create(aFastFilePath);
     mTreeWidget->AddFastFile(fastFile);
 
     // Open zone file after decompressing ff and writing

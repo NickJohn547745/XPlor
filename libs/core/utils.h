@@ -91,53 +91,6 @@ public:
     }
 
     /*
-    AssetTypeToString()
-
-    Convert asset type string to asset desc string
-*/
-    static QString AssetTypeToString(const QString aAssetType) {
-        const QString cleanedType = aAssetType.toUpper();
-        if (cleanedType == "17000000") {        // localized string       PARTIALLY VERIFIED
-            return "LOCAL STRING";
-        } else if (cleanedType == "20000000") { // raw_file               PARTIALLY VERIFIED
-            return "RAW FILE";
-        } else if (cleanedType == "1A000000") { // fx                     PARTIALLY VERIFIED
-            return "EFFECT";
-        } else if (cleanedType == "09000000") { // loaded_sound           PARTIALLY VERIFIED
-            return "SOUND";
-        } else if (cleanedType == "04000000") { // x_anim                 PARTIALLY VERIFIED
-            return "ANIMATION";
-        } else if (cleanedType == "0C000000") { // collision_map          PARTIALLY VERIFIED
-            return "COLLISION MAP";
-        } else if (cleanedType == "21000000") { // string_table           PARTIALLY VERIFIED
-            return "STRING TABLE";
-        } else if (cleanedType == "15000000") { // menu_file              PARTIALLY VERIFIED
-            return "MENU";
-        } else if (cleanedType == "07000000") { // tech set               PARTIALLY VERIFIED
-            return "TECH SET";
-        } else if (cleanedType == "18000000") { // weapon                 PARTIALLY VERIFIED
-            return "WEAPON";
-        } else if (cleanedType == "11000000") { // gfx map                PARTIALLY VERIFIED
-            return "GFX MAP";
-        } else if (cleanedType == "12000000") { // light_def              PARTIALLY VERIFIED
-            return "LIGHT DEF";
-        } else if (cleanedType == "14000000") { // font                   PARTIALLY VERIFIED
-            return "FONT";
-        } else if (cleanedType == "05000000") { // xmodel                 PARTIALLY VERIFIED
-            return "MODEL";
-        } else if (cleanedType == "0D000000") { // d3dbsp                 PARTIALLY VERIFIED
-            return "D3DBSP";
-        } else if (cleanedType == "06000000") { // image                  PARTIALLY VERIFIED
-            return "IMAGE";
-        } else if (cleanedType == "0E000000") { // game map sp            PARTIALLY VERIFIED
-            return "GAME MAP SP";
-        } else if (cleanedType == "0B000000") { // col map sp             PARTIALLY VERIFIED
-            return "COL MAP SP";
-        }
-        return aAssetType;
-    }
-
-    /*
     LumpTypeToString()
 
     Convert BSP lump type to desc string

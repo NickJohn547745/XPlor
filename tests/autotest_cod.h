@@ -3,6 +3,8 @@
 
 #include <QtTest/QtTest>
 
+#define FILE_MAX 1
+
 class AutoTest_COD : public QObject {
     Q_OBJECT
 

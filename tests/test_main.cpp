@@ -47,10 +47,10 @@
 // individual games
 #define TEST_COD2            0
 #define TEST_COD4            0
-#define TEST_COD5            0
+#define TEST_COD5            1
 #define TEST_COD6            0
 #define TEST_COD7            0
-#define TEST_COD8            1
+#define TEST_COD8            0
 #define TEST_COD9            0
 #define TEST_COD10           0
 #define TEST_COD11           0

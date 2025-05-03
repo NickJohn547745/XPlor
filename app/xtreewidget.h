@@ -10,6 +10,7 @@
 #include "zonefile.h"
 
 #include <QTreeWidget>
+#include <QFileDialog>
 
 class XTreeWidget : public QTreeWidget
 {

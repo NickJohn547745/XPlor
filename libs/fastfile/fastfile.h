@@ -6,12 +6,14 @@
 
 #include <QString>
 #include <QCryptographicHash>
-#include <QFileDialog>
+
+class ZoneFile;
 
 class FastFile
 {
 public:
     FastFile();
+    FastFile(const QByteArray& aData);
     FastFile(FastFile &fastFile);
     ~FastFile();
 
