@@ -46,7 +46,8 @@ public:
 
     static void generateNewIV(int index, const QByteArray& hash, QByteArray& ivTable, QVector<quint32>& ivCounter);
 
-    static QByteArray decryptFastFile(const QByteArray& fastFileData);
+    static QByteArray decryptFastFile_BO2(const QByteArray& fastFileData);
+    static QByteArray decryptFastFile_BO3(const QByteArray& fastFileData);
 };
 
 #endif // ENCRYPTION_H

@@ -12,12 +12,16 @@ class AutoTest_COD5_PS3 : public AutoTest_COD {
 
 private slots:
     void initTestCase();
-    // Data-driven test for decompression
+
     void testDecompression_data();
     void testDecompression();
-    // Data-driven test for recompression (compression)
+
     void testCompression_data();
     void testCompression();
+
+    void testFactory_data();
+    void testFactory();
+
     void cleanupTestCase();
 };
 
@@ -27,72 +31,79 @@ void AutoTest_COD5_PS3::initTestCase() {
 }
 
 void AutoTest_COD5_PS3::testDecompression_data() {
-    QTest::addColumn<QString>("fastFilePath_cod5_ps3");
-
-    QStringList ffFiles = findFastFiles(getFastFileDirectory());
-    for (const QString &filePath : ffFiles) {
-        QString fileName = QFileInfo(filePath).fileName();
-        QTest::newRow(qPrintable(fileName)) << filePath;
-    }
+    AutoTest_COD::testDecompression_data();
 }
 
 void AutoTest_COD5_PS3::testDecompression() {
-    QFETCH(QString, fastFilePath_cod5_ps3);
+    QFETCH(QString, fastFilePath);
 
-    // Open the original .ff file.
-    QFile testFastFile(fastFilePath_cod5_ps3);
+    QFile testFastFile(fastFilePath);
     QVERIFY2(testFastFile.open(QIODevice::ReadOnly),
-             qPrintable("Failed to open test fastfile: " + fastFilePath_cod5_ps3));
+             qPrintable("Failed to open test fastfile: " + fastFilePath));
     const QByteArray testFFData = testFastFile.readAll();
     testFastFile.close();
 
-    // Assume the first 12 bytes are a header; the rest is zlib-compressed zone data.
-    const QByteArray compressedData = testFFData.mid(12);
-    const QByteArray testZoneData = Compression::DecompressZLIB(compressedData);
+    // Validate header
+    QVERIFY2(testFFData.size() > 12, "FastFile too small to contain header");
+    QByteArray header = testFFData.left(8);
+    QVERIFY2(header == "IWffu100", "Invalid FastFile header!");
 
-    // Verify the decompressed data via its embedded zone size.
-    QDataStream zoneStream(testZoneData);
-    zoneStream.setByteOrder(QDataStream::LittleEndian);
-    quint32 zoneSize;
-    zoneStream >> zoneSize;
-    if (abs(zoneSize - testZoneData.size()) != 36) {
-        qDebug() << "Zone Size: " << zoneSize;
-        qDebug() << "Test zone Size: " << testZoneData.size();
-        qDebug() << "Difference: " << abs(zoneSize - testZoneData.size());
+    QDataStream headerStream(testFFData.mid(8, 6));
+    headerStream.setByteOrder(QDataStream::BigEndian);
+    qint32 version;
+    qint16 identifier;
+    headerStream >> version >> identifier;
+    QVERIFY2(version == 387, "Unsupported game version");
+
+    QByteArray decompressed;
+    int pos = 12;
+
+    // Loop until EOF or invalid chunk
+    while (pos <= testFFData.size()) {
+        // Read 2-byte BIG-ENDIAN chunk size
+        quint16 chunkSize;
+        QDataStream chunkStream(testFFData.mid(pos, 2));
+        chunkStream.setByteOrder(QDataStream::BigEndian);
+        chunkStream >> chunkSize;
+
+        pos += 2;
+
+        if (chunkSize == 0 || pos + chunkSize > testFFData.size()) {
+            qWarning() << "Invalid or incomplete chunk detected, stopping.";
+            break;
+        }
+
+        const QByteArray compressedChunk = testFFData.mid(pos, chunkSize);
+
+        decompressed.append(Compression::DecompressDeflate(compressedChunk));
+
+        pos += chunkSize;
     }
-    QVERIFY2(zoneSize + 36 == testZoneData.size(),
-             qPrintable("Decompression validation failed for: " + fastFilePath_cod5_ps3));
 
-    // Write the decompressed zone data to the exports folder with a .zone extension.
-    QFileInfo fi(fastFilePath_cod5_ps3);
+    // Write decompressed .zone file
+    QFileInfo fi(fastFilePath);
     QString outputFileName = fi.completeBaseName() + ".zone";
     QString outputFilePath = QDir(EXPORT_DIR).filePath(outputFileName);
     QFile outputFile(outputFilePath);
     QVERIFY2(outputFile.open(QIODevice::WriteOnly),
              qPrintable("Failed to open output file for writing: " + outputFilePath));
-    outputFile.write(testZoneData);
+    outputFile.write(decompressed);
     outputFile.close();
 }
 
 void AutoTest_COD5_PS3::testCompression_data() {
-    QTest::addColumn<QString>("zoneFilePath_cod5_ps3");
-
-    QStringList zoneFiles = findZoneFiles(getZoneFileDirectory());
-    for (const QString &filePath : zoneFiles) {
-        QString fileName = QFileInfo(filePath).fileName();
-        QTest::newRow(qPrintable(fileName)) << filePath;
-    }
+    AutoTest_COD::testCompression_data();
 }
 
 void AutoTest_COD5_PS3::testCompression() {
-    QFETCH(QString, zoneFilePath_cod5_ps3);
+    QFETCH(QString, zoneFilePath);
 
-    QFile zoneFile(zoneFilePath_cod5_ps3);
-    QVERIFY2(zoneFile.open(QIODevice::ReadOnly), qPrintable("Failed to open zone file: " + zoneFilePath_cod5_ps3));
+    QFile zoneFile(zoneFilePath);
+    QVERIFY2(zoneFile.open(QIODevice::ReadOnly), qPrintable("Failed to open zone file: " + zoneFilePath));
     QByteArray decompressedData = zoneFile.readAll();
     zoneFile.close();
 
-    QFileInfo fi(zoneFilePath_cod5_ps3);
+    QFileInfo fi(zoneFilePath);
     QString originalFFPath = QDir(getFastFileDirectory()).filePath(fi.completeBaseName() + ".ff");
 
     QFile originalFile(originalFFPath);
@@ -101,25 +112,68 @@ void AutoTest_COD5_PS3::testCompression() {
     originalFile.close();
 
     QByteArray header = originalFFData.left(12);
+    QByteArray recompressedData = header;
 
-    QByteArray newCompressedData;// = Compressor::CompressZLIB(decompressedData, Z_BEST_COMPRESSION);
-    newCompressedData = Compression::CompressZLIBWithSettings(decompressedData, Z_BEST_COMPRESSION, MAX_WBITS, 8, Z_DEFAULT_STRATEGY, {});
+    // Split decompressed data into chunks (optional: same size as original or fixed 0x4000)
+    const int chunkSize = 0x4000;
+    int offset = 0;
 
-    int remainder = (newCompressedData.size() + 12) % 32;
-    if (remainder != 0) {
-        int paddingNeeded = 32 - remainder;
-        newCompressedData.append(QByteArray(paddingNeeded, '\0'));
+    while (offset < decompressedData.size()) {
+        QByteArray chunk = decompressedData.mid(offset, chunkSize);
+        offset += chunk.size();
+
+        QByteArray compressedChunk = Compression::CompressDeflate(chunk);
+        quint16 length = static_cast<quint16>(compressedChunk.size());
+
+        // Write 2-byte big-endian chunk size
+        recompressedData.append(static_cast<char>((length >> 8) & 0xFF));
+        recompressedData.append(static_cast<char>(length & 0xFF));
+
+        // Write compressed chunk
+        recompressedData.append(compressedChunk);
     }
 
-    QByteArray recompressedData = header + newCompressedData;
+    // No terminator chunk needed if original didn't have one
 
+    // Save new file
     QString recompressedFilePath = QDir(EXPORT_DIR).filePath(fi.completeBaseName() + ".ff");
     QFile recompressedFile(recompressedFilePath);
     QVERIFY2(recompressedFile.open(QIODevice::WriteOnly), qPrintable("Failed to write recompressed file."));
     recompressedFile.write(recompressedData);
     recompressedFile.close();
 
+    // Validate byte-for-byte match
     QCOMPARE(recompressedData, originalFFData);
+}
+
+void AutoTest_COD5_PS3::testFactory_data() {
+    AutoTest_COD::testFactory_data();
+}
+
+void AutoTest_COD5_PS3::testFactory() {
+    QFETCH(QString, fastFilePath);
+
+    const QString testName = "Factory ingest: " + fastFilePath;
+
+    std::shared_ptr<FastFile> fastFile = FastFileFactory::Create(fastFilePath);
+
+    const QString game = fastFile->GetGame();
+    bool correctGame = game == "COD5";
+    if (!correctGame) {
+        recordResult(testName, false);
+    }
+    QVERIFY2(correctGame
+             , qPrintable("Factory parsed wrong game [" + game + "] for fastfile: " + fastFilePath));
+
+    const QString platform = fastFile->GetPlatform();
+    bool correctPlatform = platform == "PS3";
+    if (!correctPlatform) {
+        recordResult(testName, false);
+    }
+    QVERIFY2(correctPlatform
+             , qPrintable("Factory parsed wrong platform [" + platform + "] for fastfile: " + fastFilePath));
+
+    recordResult(testName, true);
 }
 
 void AutoTest_COD5_PS3::cleanupTestCase() {

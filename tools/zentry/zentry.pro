@@ -13,11 +13,6 @@ SOURCES += \
 HEADERS += \
     zentrywindow.h
 
-FORMS +=
-
-app.depends += \
-    libs/compression
-
 LIBS += \
     -L$$OUT_PWD/../../libs/ -lcompression \
     -L$$PWD/../../third_party/xbox_sdk/lib -lxcompress64

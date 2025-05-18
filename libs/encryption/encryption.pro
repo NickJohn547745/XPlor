@@ -17,4 +17,16 @@ HEADERS += \
     config_win32.h \
     sha1.h
 
+app.depends += \
+    compression
+
+LIBS += \
+    -L$$OUT_PWD/../ -lcompression
+
+INCLUDEPATH += \
+    $$PWD/../compression
+
+DEPENDPATH += \
+    $$PWD/../compression
+
 DESTDIR = $$OUT_PWD/../

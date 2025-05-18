@@ -32,7 +32,9 @@
 #include "PS3/autotest_cod11_ps3.cpp"
 #include "PS3/autotest_cod12_ps3.cpp"
 
+#include "Wii/autotest_cod4_wii.cpp"
 #include "Wii/autotest_cod7_wii.cpp"
+#include "Wii/autotest_cod8_wii.cpp"
 
 #include "WiiU/autotest_cod9_wiiu.cpp"
 #include "WiiU/autotest_cod10_wiiu.cpp"
@@ -47,10 +49,10 @@
 // individual games
 #define TEST_COD2            0
 #define TEST_COD4            0
-#define TEST_COD5            1
+#define TEST_COD5            0
 #define TEST_COD6            0
 #define TEST_COD7            0
-#define TEST_COD8            0
+#define TEST_COD8            1
 #define TEST_COD9            0
 #define TEST_COD10           0
 #define TEST_COD11           0
@@ -185,7 +187,7 @@ int main(int argc, char *argv[]) {
     AutoTest_COD8_PC *test_cod8_pc = new AutoTest_COD8_PC();
     test_cod8_pc->setFastFileDirectory("G:/Fast Files/PC/COD8");
     test_cod8_pc->setZoneFileDirectory("./exports/cod8/PC");
-    //cod8Tests << test_cod8_pc;
+    cod8Tests << test_cod8_pc;
     pcTests << test_cod8_pc;
 
     AutoTest_COD9_PC *test_cod9_pc = new AutoTest_COD9_PC();
@@ -225,7 +227,7 @@ int main(int argc, char *argv[]) {
     AutoTest_COD5_PS3 *test_cod5_ps3 = new AutoTest_COD5_PS3();
     test_cod5_ps3->setFastFileDirectory("G:/Fast Files/PS3/COD5");
     test_cod5_ps3->setZoneFileDirectory("./exports/cod5/PS3");
-    //cod5Tests << test_cod5_ps3;
+    cod5Tests << test_cod5_ps3;
     ps3Tests << test_cod5_ps3;
 
     AutoTest_COD6_PS3 *test_cod6_ps3 = new AutoTest_COD6_PS3();
@@ -243,7 +245,7 @@ int main(int argc, char *argv[]) {
     AutoTest_COD8_PS3 *test_cod8_ps3 = new AutoTest_COD8_PS3();
     test_cod8_ps3->setFastFileDirectory("G:/Fast Files/PS3/COD8");
     test_cod8_ps3->setZoneFileDirectory("./exports/cod8/PS3");
-    //cod8Tests << test_cod8_ps3;
+    cod8Tests << test_cod8_ps3;
     ps3Tests << test_cod8_ps3;
 
     AutoTest_COD9_PS3 *test_cod9_ps3 = new AutoTest_COD9_PS3();
@@ -274,11 +276,23 @@ int main(int argc, char *argv[]) {
     /********* Wii COD TESTS  *********/
     /**********************************/
 
+    AutoTest_COD4_Wii *test_cod4_wii = new AutoTest_COD4_Wii();
+    test_cod4_wii->setFastFileDirectory("G:/Fast Files/Wii/COD4");
+    test_cod4_wii->setZoneFileDirectory("./exports/cod4/Wii");
+    cod4Tests << test_cod4_wii;
+    wiiTests << test_cod4_wii;
+
     AutoTest_COD7_Wii *test_cod7_wii = new AutoTest_COD7_Wii();
     test_cod7_wii->setFastFileDirectory("G:/Fast Files/Wii/COD7");
     test_cod7_wii->setZoneFileDirectory("./exports/cod7/Wii");
     cod7Tests << test_cod7_wii;
     wiiTests << test_cod7_wii;
+
+    AutoTest_COD8_Wii *test_cod8_wii = new AutoTest_COD8_Wii();
+    test_cod8_wii->setFastFileDirectory("G:/Fast Files/Wii/COD8");
+    test_cod8_wii->setZoneFileDirectory("./exports/cod8/Wii");
+    cod8Tests << test_cod8_wii;
+    wiiTests << test_cod8_wii;
 
     /**********************************/
     /********* WiiU COD TESTS *********/
@@ -309,87 +323,101 @@ int main(int argc, char *argv[]) {
         qDebug() << "-- RUNNING TEST_COD4 --";
         foreach (auto test, cod4Tests) {
             QTest::qExec(test, argc, argv);
+            allResults.append({ test->metaObject()->className(), test->getCollectedTestResults() });
         }
     }
     if (TEST_EVERYTHING || TEST_ALL_COD_GAMES || TEST_COD5) {
         qDebug() << "-- RUNNING TEST_COD5 --";
         foreach (auto test, cod5Tests) {
             QTest::qExec(test, argc, argv);
+            allResults.append({ test->metaObject()->className(), test->getCollectedTestResults() });
         }
     }
     if (TEST_EVERYTHING || TEST_ALL_COD_GAMES || TEST_COD6) {
         qDebug() << "-- RUNNING TEST_COD6 --";
         foreach (auto test, cod6Tests) {
             QTest::qExec(test, argc, argv);
+            allResults.append({ test->metaObject()->className(), test->getCollectedTestResults() });
         }
     }
     if (TEST_EVERYTHING || TEST_ALL_COD_GAMES || TEST_COD7) {
         qDebug() << "-- RUNNING TEST_COD7 --";
         foreach (auto test, cod7Tests) {
             QTest::qExec(test, argc, argv);
+            allResults.append({ test->metaObject()->className(), test->getCollectedTestResults() });
         }
     }
     if (TEST_EVERYTHING || TEST_ALL_COD_GAMES || TEST_COD8) {
         qDebug() << "-- RUNNING TEST_COD8 --";
         foreach (auto test, cod8Tests) {
             QTest::qExec(test, argc, argv);
+            allResults.append({ test->metaObject()->className(), test->getCollectedTestResults() });
         }
     }
     if (TEST_EVERYTHING || TEST_ALL_COD_GAMES || TEST_COD9) {
         qDebug() << "-- RUNNING TEST_COD9 --";
         foreach (auto test, cod9Tests) {
             QTest::qExec(test, argc, argv);
+            allResults.append({ test->metaObject()->className(), test->getCollectedTestResults() });
         }
     }
     if (TEST_EVERYTHING || TEST_ALL_COD_GAMES || TEST_COD10) {
         qDebug() << "-- RUNNING TEST_COD10 --";
         foreach (auto test, cod10Tests) {
             QTest::qExec(test, argc, argv);
+            allResults.append({ test->metaObject()->className(), test->getCollectedTestResults() });
         }
     }
     if (TEST_EVERYTHING || TEST_ALL_COD_GAMES || TEST_COD11) {
         qDebug() << "-- RUNNING TEST_COD11 --";
         foreach (auto test, cod11Tests) {
             QTest::qExec(test, argc, argv);
+            allResults.append({ test->metaObject()->className(), test->getCollectedTestResults() });
         }
     }
     if (TEST_EVERYTHING || TEST_ALL_COD_GAMES || TEST_COD12) {
         qDebug() << "-- RUNNING TEST_COD12 --";
         foreach (auto test, cod12Tests) {
             QTest::qExec(test, argc, argv);
+            allResults.append({ test->metaObject()->className(), test->getCollectedTestResults() });
         }
     }
 
-    if (TEST_EVERYTHING || TEST_ALL_PLATFORMS || TEST_360) {
-        qDebug() << "-- RUNNING TEST_360 --";
-        foreach (auto test, xbox360Tests) {
-            QTest::qExec(test, argc, argv);
-        }
-    }
-    if (TEST_EVERYTHING || TEST_ALL_PLATFORMS || TEST_PC) {
-        qDebug() << "-- RUNNING TEST_PC --";
-        foreach (auto test, pcTests) {
-            QTest::qExec(test, argc, argv);
-        }
-    }
-    if (TEST_EVERYTHING || TEST_ALL_PLATFORMS || TEST_PS3) {
-        qDebug() << "-- RUNNING TEST_PS3 --";
-        foreach (auto test, ps3Tests) {
-            QTest::qExec(test, argc, argv);
-        }
-    }
-    if (TEST_EVERYTHING || TEST_ALL_PLATFORMS || TEST_WII) {
-        qDebug() << "-- RUNNING TEST_WII --";
-        foreach (auto test, wiiTests) {
-            QTest::qExec(test, argc, argv);
-        }
-    }
-    if (TEST_EVERYTHING || TEST_ALL_PLATFORMS || TEST_WIIU) {
-        qDebug() << "-- RUNNING TEST_WIIU --";
-        foreach (auto test, wiiUTests) {
-            QTest::qExec(test, argc, argv);
-        }
-    }
+    // if (TEST_EVERYTHING || TEST_ALL_PLATFORMS || TEST_360) {
+    //     qDebug() << "-- RUNNING TEST_360 --";
+    //     foreach (auto test, xbox360Tests) {
+    //         QTest::qExec(test, argc, argv);
+    //         allResults.append({ test->metaObject()->className(), test->getCollectedTestResults() });
+    //     }
+    // }
+    // if (TEST_EVERYTHING || TEST_ALL_PLATFORMS || TEST_PC) {
+    //     qDebug() << "-- RUNNING TEST_PC --";
+    //     foreach (auto test, pcTests) {
+    //         QTest::qExec(test, argc, argv);
+    //         allResults.append({ test->metaObject()->className(), test->getCollectedTestResults() });
+    //     }
+    // }
+    // if (TEST_EVERYTHING || TEST_ALL_PLATFORMS || TEST_PS3) {
+    //     qDebug() << "-- RUNNING TEST_PS3 --";
+    //     foreach (auto test, ps3Tests) {
+    //         QTest::qExec(test, argc, argv);
+    //         allResults.append({ test->metaObject()->className(), test->getCollectedTestResults() });
+    //     }
+    // }
+    // if (TEST_EVERYTHING || TEST_ALL_PLATFORMS || TEST_WII) {
+    //     qDebug() << "-- RUNNING TEST_WII --";
+    //     foreach (auto test, wiiTests) {
+    //         QTest::qExec(test, argc, argv);
+    //         allResults.append({ test->metaObject()->className(), test->getCollectedTestResults() });
+    //     }
+    // }
+    // if (TEST_EVERYTHING || TEST_ALL_PLATFORMS || TEST_WIIU) {
+    //     qDebug() << "-- RUNNING TEST_WIIU --";
+    //     foreach (auto test, wiiUTests) {
+    //         QTest::qExec(test, argc, argv);
+    //         allResults.append({ test->metaObject()->className(), test->getCollectedTestResults() });
+    //     }
+    // }
 
     QJsonObject root;
     root["project"] = "XPlor";
