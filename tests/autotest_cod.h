@@ -3,6 +3,8 @@
 
 #include <QtTest/QtTest>
 
+#include "fastfile_factory.h"
+
 #define FILE_MAX 1
 
 class AutoTest_COD : public QObject {
@@ -36,41 +38,93 @@ public:
         QDir newDir(".");
         newDir.mkpath(aDir);
     }
-    QStringList findFastFiles(const QString &aBaseDir, int aMaxIter = MAX_ITER) {
-        QStringList fastFiles;
-
-        QDirIterator it(aBaseDir, QStringList() << "*.ff", QDir::Files, QDirIterator::Subdirectories);
-
-        int i = 0;
-        while (it.hasNext() && i < aMaxIter) {
-            fastFiles << it.next();
-            ++i;
-        }
-
-        return fastFiles;
-    }
-    QStringList findZoneFiles(const QString &aBaseDir, int aMaxIter = MAX_ITER) {
-        QStringList zoneFiles;
+    QStringList findZoneFiles(const QString &aBaseDir, int aMaxIter = FILE_MAX) {
+        QList<QPair<qint64, QString>> fileList;
 
         QDirIterator it(aBaseDir, QStringList() << "*.zone", QDir::Files, QDirIterator::Subdirectories);
-
         int i = 0;
         while (it.hasNext() && i < aMaxIter) {
-            zoneFiles << it.next();
+            QString path = it.next();
+            QFileInfo fi(path);
+            fileList.append(qMakePair(fi.size(), path));
             ++i;
         }
 
-        return zoneFiles;
+        std::sort(fileList.begin(), fileList.end(),
+                  [](const QPair<qint64, QString> &a, const QPair<qint64, QString> &b) {
+                      return a.first < b.first; // sort by size
+                  });
+
+        QStringList sorted;
+        for (const auto &pair : fileList)
+            sorted << pair.second;
+
+        return sorted;
     }
+
+    QStringList findFastFiles(const QString &aBaseDir, int aMaxIter = FILE_MAX) {
+        QList<QPair<qint64, QString>> fileList;
+
+        QDirIterator it(aBaseDir, QStringList() << "*.ff", QDir::Files, QDirIterator::Subdirectories);
+        int i = 0;
+        while (it.hasNext() && i < aMaxIter) {
+            QString path = it.next();
+            QFileInfo fi(path);
+            fileList.append(qMakePair(fi.size(), path));
+            ++i;
+        }
+
+        std::sort(fileList.begin(), fileList.end(),
+                  [](const QPair<qint64, QString> &a, const QPair<qint64, QString> &b) {
+                      return a.first < b.first; // sort by size
+                  });
+
+        QStringList sorted;
+        for (const auto &pair : fileList)
+            sorted << pair.second;
+
+        return sorted;
+    }
+
     virtual void initTestCase() = 0;
-    virtual void testDecompression_data() = 0;
+
+    void testDecompression_data() {
+        QTest::addColumn<QString>("fastFilePath");
+
+        QStringList ffFiles = findFastFiles(getFastFileDirectory());
+        for (const QString &filePath : ffFiles) {
+            QString fileName = QFileInfo(filePath).fileName();
+            QTest::newRow(qPrintable(fileName)) << filePath;
+        }
+    }
     virtual void testDecompression() = 0;
-    virtual void testCompression_data() = 0;
+
+    void testCompression_data() {
+        QTest::addColumn<QString>("zoneFilePath");
+
+        QStringList zoneFiles = findZoneFiles(getZoneFileDirectory());
+        for (const QString &filePath : zoneFiles) {
+            QString fileName = QFileInfo(filePath).fileName();
+            QTest::newRow(qPrintable(fileName)) << filePath;
+            break;
+        }
+    }
     virtual void testCompression() = 0;
+
+    void testFactory_data() {
+        QTest::addColumn<QString>("fastFilePath");
+
+        QStringList ffFiles = findFastFiles(getFastFileDirectory());
+        for (const QString &filePath : ffFiles) {
+            QString fileName = QFileInfo(filePath).fileName();
+            QTest::newRow(qPrintable(fileName)) << filePath;
+        }
+    }
+    virtual void testFactory() = 0;
+
     virtual void cleanupTestCase() = 0;
 
 private:
-    static const int MAX_ITER = 10000;
     QString mFastFileDirectory;
     QString mZoneFileDirectory;
 };

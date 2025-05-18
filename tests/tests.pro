@@ -43,7 +43,9 @@ SOURCES += \
     PS3/autotest_cod11_ps3.cpp \
     PS3/autotest_cod12_ps3.cpp \
     # Wii autotests
+    Wii/autotest_cod4_wii.cpp \
     Wii/autotest_cod7_wii.cpp \
+    Wii/autotest_cod8_wii.cpp \
     # WiiU autotests
     WiiU/autotest_cod9_wiiu.cpp \
     WiiU/autotest_cod10_wiiu.cpp \
@@ -62,13 +64,6 @@ HEADERS += \
 # } else {
 #     SOURCES -= autotest_cod5.cpp
 # }
-
-app.depends += \
-    libs/core \
-    libs/compression \
-    libs/encryption \
-    libs/zonefile \
-    libs/fastfile
 
 LIBS += \
     -L$$OUT_PWD/../libs/ -lcore -lencryption -lcompression -lfastfile -lzonefile \
@@ -89,8 +84,6 @@ DEPENDPATH += \
     $$PWD/../libs/compression \
     $$PWD/../libs/fastfile \
     $$PWD/../libs/zonefile
-
-RESOURCES +=
 
 # Copy DLLs to Debug & Release folder
 QMAKE_POST_LINK += xcopy /Y /E /I \"$$PWD/../third_party/xbox_sdk/lib\\*.dll\" \"$$OUT_PWD/debug/\" $$escape_expand(\\n\\t)

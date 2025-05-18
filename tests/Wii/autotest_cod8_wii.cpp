@@ -2,14 +2,13 @@
 #include <QDirIterator>
 #include <QFileInfo>
 
-#include "fastfile_factory.h"
 #include "autotest_cod.h"
 #include "compression.h"
 
-class AutoTest_COD5_360 : public AutoTest_COD {
+class AutoTest_COD8_Wii : public AutoTest_COD {
     Q_OBJECT
 
-    const QString EXPORT_DIR = "./exports/cod5/360";
+    const QString EXPORT_DIR = "./exports/cod7/Wii";
 
 private slots:
     void initTestCase();
@@ -26,19 +25,17 @@ private slots:
     void cleanupTestCase();
 };
 
-void AutoTest_COD5_360::initTestCase() {
+void AutoTest_COD8_Wii::initTestCase() {
     // Ensure the exports directory exists.
     createDirectory(EXPORT_DIR);
 }
 
-void AutoTest_COD5_360::testDecompression_data() {
+void AutoTest_COD8_Wii::testDecompression_data() {
     AutoTest_COD::testDecompression_data();
 }
 
-void AutoTest_COD5_360::testDecompression() {
+void AutoTest_COD8_Wii::testDecompression() {
     QFETCH(QString, fastFilePath);
-
-    const QString testName = "Decompress: " + fastFilePath;
 
     // Open the original .ff file.
     QFile testFastFile(fastFilePath);
@@ -53,15 +50,10 @@ void AutoTest_COD5_360::testDecompression() {
 
     // Verify the decompressed data via its embedded zone size.
     QDataStream zoneStream(testZoneData);
-    zoneStream.setByteOrder(QDataStream::BigEndian);
+    zoneStream.setByteOrder(QDataStream::LittleEndian);
     quint32 zoneSize;
     zoneStream >> zoneSize;
-    if (abs(zoneSize - testZoneData.size()) != 36) {
-        qDebug() << "Zone Size: " << zoneSize;
-        qDebug() << "Test zone Size: " << testZoneData.size();
-        qDebug() << "Difference: " << abs(zoneSize - testZoneData.size());
-    }
-    QVERIFY2(zoneSize + 36 == testZoneData.size(),
+    QVERIFY2(zoneSize + 44 == testZoneData.size(),
              qPrintable("Decompression validation failed for: " + fastFilePath));
 
     // Write the decompressed zone data to the exports folder with a .zone extension.
@@ -75,11 +67,11 @@ void AutoTest_COD5_360::testDecompression() {
     outputFile.close();
 }
 
-void AutoTest_COD5_360::testCompression_data() {
+void AutoTest_COD8_Wii::testCompression_data() {
     AutoTest_COD::testCompression_data();
 }
 
-void AutoTest_COD5_360::testCompression() {
+void AutoTest_COD8_Wii::testCompression() {
     QFETCH(QString, zoneFilePath);
 
     QFile zoneFile(zoneFilePath);
@@ -98,7 +90,7 @@ void AutoTest_COD5_360::testCompression() {
     QByteArray header = originalFFData.left(12);
 
     QByteArray newCompressedData;// = Compressor::CompressZLIB(decompressedData, Z_BEST_COMPRESSION);
-    newCompressedData = Compression::CompressZLIBWithSettings(decompressedData, Z_BEST_SPEED, MAX_WBITS, 8, Z_DEFAULT_STRATEGY, {});
+    newCompressedData = Compression::CompressZLIBWithSettings(decompressedData, Z_BEST_COMPRESSION, MAX_WBITS, 8, Z_DEFAULT_STRATEGY, {});
 
     int remainder = (newCompressedData.size() + 12) % 32;
     if (remainder != 0) {
@@ -117,11 +109,11 @@ void AutoTest_COD5_360::testCompression() {
     QCOMPARE(recompressedData, originalFFData);
 }
 
-void AutoTest_COD5_360::testFactory_data() {
+void AutoTest_COD8_Wii::testFactory_data() {
     AutoTest_COD::testFactory_data();
 }
 
-void AutoTest_COD5_360::testFactory() {
+void AutoTest_COD8_Wii::testFactory() {
     QFETCH(QString, fastFilePath);
 
     const QString testName = "Factory ingest: " + fastFilePath;
@@ -129,7 +121,7 @@ void AutoTest_COD5_360::testFactory() {
     std::shared_ptr<FastFile> fastFile = FastFileFactory::Create(fastFilePath);
 
     const QString game = fastFile->GetGame();
-    bool correctGame = game == "COD5";
+    bool correctGame = game == "COD7";
     if (!correctGame) {
         recordResult(testName, false);
     }
@@ -137,7 +129,7 @@ void AutoTest_COD5_360::testFactory() {
              , qPrintable("Factory parsed wrong game [" + game + "] for fastfile: " + fastFilePath));
 
     const QString platform = fastFile->GetPlatform();
-    bool correctPlatform = platform == "360";
+    bool correctPlatform = platform == "Wii";
     if (!correctPlatform) {
         recordResult(testName, false);
     }
@@ -147,9 +139,9 @@ void AutoTest_COD5_360::testFactory() {
     recordResult(testName, true);
 }
 
-void AutoTest_COD5_360::cleanupTestCase() {
+void AutoTest_COD8_Wii::cleanupTestCase() {
     // Any cleanup if necessary.
 }
 
 // Don't generate a main() function
-#include "autotest_cod5_360.moc"
+#include "AutoTest_COD8_Wii.moc"

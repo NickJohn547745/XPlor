@@ -13,10 +13,10 @@ class AutoTest_COD2_360 : public AutoTest_COD {
 
 private slots:
     void initTestCase();
-    // Data-driven test for decompression
+
     void testDecompression_data();
     void testDecompression();
-    // Data-driven test for recompression (compression)
+
     void testCompression_data();
     void testCompression();
 
@@ -32,28 +32,22 @@ void AutoTest_COD2_360::initTestCase() {
 }
 
 void AutoTest_COD2_360::testDecompression_data() {
-    QTest::addColumn<QString>("fastFilePath_cod2_360");
-
-    QStringList ffFiles = findFastFiles(getFastFileDirectory());
-    for (const QString &filePath : ffFiles) {
-        QString fileName = QFileInfo(filePath).fileName();
-        QTest::newRow(qPrintable(fileName)) << filePath;
-    }
+    AutoTest_COD::testDecompression_data();
 }
 
 void AutoTest_COD2_360::testDecompression() {
-    QFETCH(QString, fastFilePath_cod2_360);
+    QFETCH(QString, fastFilePath);
 
-    const QString testName = "Decompress: " + fastFilePath_cod2_360;
+    const QString testName = "Decompress: " + fastFilePath;
 
     // Open the original .ff file.
-    QFile testFastFile(fastFilePath_cod2_360);
+    QFile testFastFile(fastFilePath);
     bool fastFileOpened = testFastFile.open(QIODevice::ReadOnly);
     if (!fastFileOpened) {
         recordResult(testName, false);
     }
     QVERIFY2(fastFileOpened
-        , qPrintable("Failed to open test fastfile: " + fastFilePath_cod2_360));
+             , qPrintable("Failed to open test fastfile: " + fastFilePath));
     const QByteArray testFFData = testFastFile.readAll();
     testFastFile.close();
 
@@ -68,10 +62,10 @@ void AutoTest_COD2_360::testDecompression() {
     zoneStream >> zoneSize;
     // TODO: Find new way to verify as cod2 doesn't store size in zone file
     //QVERIFY2(zoneSize + 44 == testZoneData.size(),
-    //         qPrintable("Decompression validation failed for: " + fastFilePath_cod2_360));
+    //         qPrintable("Decompression validation failed for: " + fastFilePath));
 
     // Write the decompressed zone data to the exports folder with a .zone extension.
-    QFileInfo fi(fastFilePath_cod2_360);
+    QFileInfo fi(fastFilePath);
     QString outputFileName = fi.completeBaseName() + ".zone";
     QString outputFilePath = QDir(EXPORT_DIR).filePath(outputFileName);
     QFile outputFile(outputFilePath);
@@ -88,31 +82,24 @@ void AutoTest_COD2_360::testDecompression() {
 }
 
 void AutoTest_COD2_360::testCompression_data() {
-    QTest::addColumn<QString>("zoneFilePath_cod2_360");
-
-    QStringList zoneFiles = findZoneFiles(getZoneFileDirectory());
-    for (const QString &filePath : zoneFiles) {
-        QString fileName = QFileInfo(filePath).fileName();
-        QTest::newRow(qPrintable(fileName)) << filePath;
-        break;
-    }
+    AutoTest_COD::testCompression_data();
 }
 
 void AutoTest_COD2_360::testCompression() {
-    QFETCH(QString, zoneFilePath_cod2_360);
+    QFETCH(QString, zoneFilePath);
 
-    const QString testName = "Compress: " + zoneFilePath_cod2_360;
+    const QString testName = "Compress: " + zoneFilePath;
 
-    QFile zoneFile(zoneFilePath_cod2_360);
+    QFile zoneFile(zoneFilePath);
     bool zoneFileOpened = zoneFile.open(QIODevice::ReadOnly);
     if (!zoneFileOpened) {
         recordResult(testName, false);
     }
-    QVERIFY2(zoneFileOpened, qPrintable("Failed to open zone file: " + zoneFilePath_cod2_360));
+    QVERIFY2(zoneFileOpened, qPrintable("Failed to open zone file: " + zoneFilePath));
     QByteArray decompressedData = zoneFile.readAll();
     zoneFile.close();
 
-    QFileInfo fi(zoneFilePath_cod2_360);
+    QFileInfo fi(zoneFilePath);
     QString originalFFPath = QDir(getFastFileDirectory()).filePath(fi.completeBaseName() + ".ff");
 
     QFile originalFile(originalFFPath);
@@ -126,10 +113,7 @@ void AutoTest_COD2_360::testCompression() {
 
     QByteArray header = originalFFData.left(20);
 
-    QByteArray newCompressedData;// = Compressor::CompressZLIB(decompressedData, Z_BEST_COMPRESSION);
-    newCompressedData = Compression::CompressZLIBWithSettings(decompressedData, Z_BEST_COMPRESSION, MAX_WBITS, 8, Z_DEFAULT_STRATEGY, {});
-
-    QByteArray recompressedData = header + newCompressedData;
+    QByteArray recompressedData = header + Compression::CompressZLIB(decompressedData);
 
     QString recompressedFilePath = QDir(EXPORT_DIR).filePath(fi.completeBaseName() + ".ff");
     QFile recompressedFile(recompressedFilePath);
@@ -151,46 +135,31 @@ void AutoTest_COD2_360::testCompression() {
 }
 
 void AutoTest_COD2_360::testFactory_data() {
-    QTest::addColumn<QString>("fastFilePath_cod2_360");
-
-    QStringList ffFiles = findFastFiles(getFastFileDirectory());
-    for (const QString &filePath : ffFiles) {
-        QString fileName = QFileInfo(filePath).fileName();
-        QTest::newRow(qPrintable(fileName)) << filePath;
-    }
+    AutoTest_COD::testFactory_data();
 }
 
 void AutoTest_COD2_360::testFactory() {
-    QFETCH(QString, fastFilePath_cod2_360);
+    QFETCH(QString, fastFilePath);
 
-    const QString testName = "Create w/ factory: " + fastFilePath_cod2_360;
+    const QString testName = "Factory ingest: " + fastFilePath;
 
-    // Open the original .ff file.
-    QFile testFastFile(fastFilePath_cod2_360);
-    bool fastFileOpened = testFastFile.open(QIODevice::ReadOnly);
-    if (!fastFileOpened) {
-        recordResult(testName, false);
-    }
-    QVERIFY2(fastFileOpened
-             , qPrintable("Failed to open test fastfile: " + fastFilePath_cod2_360));
-    const QByteArray testFFData = testFastFile.readAll();
-    testFastFile.close();
+    std::shared_ptr<FastFile> fastFile = FastFileFactory::Create(fastFilePath);
 
-    std::shared_ptr<FastFile> fastFile = FastFileFactory::Create(testFFData);
-
-    bool correctPlatform = fastFile->GetPlatform() == "360";
-    if (!correctPlatform) {
-        recordResult(testName, false);
-    }
-    QVERIFY2(correctPlatform
-             , qPrintable("Factory created fastfile for platform: " + fastFile->GetPlatform()));
-
-    bool correctGame = fastFile->GetGame() == "COD2";
+    const QString game = fastFile->GetGame();
+    bool correctGame = game == "COD2";
     if (!correctGame) {
         recordResult(testName, false);
     }
     QVERIFY2(correctGame
-             , qPrintable("Factory created fastfile for game: " + fastFile->GetGame()));
+             , qPrintable("Factory parsed wrong game [" + game + "] for fastfile: " + fastFilePath));
+
+    const QString platform = fastFile->GetPlatform();
+    bool correctPlatform = platform == "360";
+    if (!correctPlatform) {
+        recordResult(testName, false);
+    }
+    QVERIFY2(correctPlatform
+             , qPrintable("Factory parsed wrong platform [" + platform + "] for fastfile: " + fastFilePath));
 
     recordResult(testName, true);
 }

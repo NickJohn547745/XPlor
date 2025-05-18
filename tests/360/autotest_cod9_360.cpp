@@ -12,12 +12,16 @@ class AutoTest_COD9_360 : public AutoTest_COD {
 
 private slots:
     void initTestCase();
-    // Data-driven test for decompression
+
     void testDecompression_data();
     void testDecompression();
-    // Data-driven test for recompression (compression)
+
     void testCompression_data();
     void testCompression();
+
+    void testFactory_data();
+    void testFactory();
+
     void cleanupTestCase();
 };
 
@@ -27,24 +31,18 @@ void AutoTest_COD9_360::initTestCase() {
 }
 
 void AutoTest_COD9_360::testDecompression_data() {
-    QTest::addColumn<QString>("fastFilePath_cod9_360");
-
-    QStringList ffFiles = findFastFiles(getFastFileDirectory());
-    for (const QString &filePath : ffFiles) {
-        QString fileName = QFileInfo(filePath).fileName();
-        QTest::newRow(qPrintable(fileName)) << filePath;
-    }
+    AutoTest_COD::testDecompression_data();
 }
 
 void AutoTest_COD9_360::testDecompression() {
-    QFETCH(QString, fastFilePath_cod9_360);
+    QFETCH(QString, fastFilePath);
 
-    const QString testName = "Decompress: " + fastFilePath_cod9_360;
+    const QString testName = "Decompress: " + fastFilePath;
 
     // Open the original .ff file.
-    QFile testFastFile(fastFilePath_cod9_360);
+    QFile testFastFile(fastFilePath);
     QVERIFY2(testFastFile.open(QIODevice::ReadOnly),
-             qPrintable("Failed to open test fastfile: " + fastFilePath_cod9_360));
+             qPrintable("Failed to open test fastfile: " + fastFilePath));
     const QByteArray testFFData = testFastFile.readAll();
     testFastFile.close();
 
@@ -58,10 +56,10 @@ void AutoTest_COD9_360::testDecompression() {
     quint32 zoneSize;
     zoneStream >> zoneSize;
     QVERIFY2(zoneSize + 44 == testZoneData.size(),
-             qPrintable("Decompression validation failed for: " + fastFilePath_cod9_360));
+             qPrintable("Decompression validation failed for: " + fastFilePath));
 
     // Write the decompressed zone data to the exports folder with a .zone extension.
-    QFileInfo fi(fastFilePath_cod9_360);
+    QFileInfo fi(fastFilePath);
     QString outputFileName = fi.completeBaseName() + ".zone";
     QString outputFilePath = QDir(EXPORT_DIR).filePath(outputFileName);
     QFile outputFile(outputFilePath);
@@ -72,24 +70,18 @@ void AutoTest_COD9_360::testDecompression() {
 }
 
 void AutoTest_COD9_360::testCompression_data() {
-    QTest::addColumn<QString>("zoneFilePath_cod9_360");
-
-    QStringList zoneFiles = findZoneFiles(getZoneFileDirectory());
-    for (const QString &filePath : zoneFiles) {
-        QString fileName = QFileInfo(filePath).fileName();
-        QTest::newRow(qPrintable(fileName)) << filePath;
-    }
+    AutoTest_COD::testCompression_data();
 }
 
 void AutoTest_COD9_360::testCompression() {
-    QFETCH(QString, zoneFilePath_cod9_360);
+    QFETCH(QString, zoneFilePath);
 
-    QFile zoneFile(zoneFilePath_cod9_360);
-    QVERIFY2(zoneFile.open(QIODevice::ReadOnly), qPrintable("Failed to open zone file: " + zoneFilePath_cod9_360));
+    QFile zoneFile(zoneFilePath);
+    QVERIFY2(zoneFile.open(QIODevice::ReadOnly), qPrintable("Failed to open zone file: " + zoneFilePath));
     QByteArray decompressedData = zoneFile.readAll();
     zoneFile.close();
 
-    QFileInfo fi(zoneFilePath_cod9_360);
+    QFileInfo fi(zoneFilePath);
     QString originalFFPath = QDir(getFastFileDirectory()).filePath(fi.completeBaseName() + ".ff");
 
     QFile originalFile(originalFFPath);
@@ -117,6 +109,36 @@ void AutoTest_COD9_360::testCompression() {
     recompressedFile.close();
 
     QCOMPARE(recompressedData, originalFFData);
+}
+
+void AutoTest_COD9_360::testFactory_data() {
+    AutoTest_COD::testFactory_data();
+}
+
+void AutoTest_COD9_360::testFactory() {
+    QFETCH(QString, fastFilePath);
+
+    const QString testName = "Factory ingest: " + fastFilePath;
+
+    std::shared_ptr<FastFile> fastFile = FastFileFactory::Create(fastFilePath);
+
+    const QString game = fastFile->GetGame();
+    bool correctGame = game == "COD9";
+    if (!correctGame) {
+        recordResult(testName, false);
+    }
+    QVERIFY2(correctGame
+             , qPrintable("Factory parsed wrong game [" + game + "] for fastfile: " + fastFilePath));
+
+    const QString platform = fastFile->GetPlatform();
+    bool correctPlatform = platform == "360";
+    if (!correctPlatform) {
+        recordResult(testName, false);
+    }
+    QVERIFY2(correctPlatform
+             , qPrintable("Factory parsed wrong platform [" + platform + "] for fastfile: " + fastFilePath));
+
+    recordResult(testName, true);
 }
 
 void AutoTest_COD9_360::cleanupTestCase() {
