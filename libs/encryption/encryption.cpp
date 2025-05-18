@@ -1,6 +1,7 @@
 #include "encryption.h"
 #include "QtZlib/zlib.h"
 #include "ecrypt-sync.h"
+#include "compression.h"
 
 void Encryption::Convert32BitTo8Bit(quint32 value, quint8 *array) {
     array[0] = static_cast<quint8>(value >> 0);
@@ -350,7 +351,7 @@ void Encryption::generateNewIV(int index, const QByteArray &hash, QByteArray &iv
     ivCounter[index]++;
 }
 
-QByteArray Encryption::decryptFastFile(const QByteArray &fastFileData)
+QByteArray Encryption::decryptFastFile_BO2(const QByteArray &fastFileData)
 {
     const QByteArray bo2_salsa20_key = QByteArray::fromHex("641D8A2FE31D3AA63622BBC9CE8587229D42B0F8ED9B924130BF88B65EDC50BE");
 
@@ -431,6 +432,71 @@ QByteArray Encryption::decryptFastFile(const QByteArray &fastFileData)
             qWarning() << "Skipping past file size!";
             break;
         }
+
+        stream.skipRawData(dataLength);
+        chunkIndex++;
+    }
+
+    return finalFastFile;
+}
+
+QByteArray Encryption::decryptFastFile_BO3(const QByteArray &fastFileData) {
+    const QByteArray salsaKey = QByteArray::fromHex("0E50F49F412317096038665622DD091332A209BA0A05A00E1377CEDB0A3CB1D3");
+
+    QByteArray ivTable(0xFB0, 0);
+    fillIVTable(fastFileData, ivTable, 0xFB0 - 1);
+
+    QVector<quint32> ivCounter(4, 1);
+    QDataStream stream(fastFileData);
+    stream.setByteOrder(QDataStream::LittleEndian);
+
+    QByteArray finalFastFile;
+    QByteArray sha1Hash(20, 0);
+    QByteArray ivPtr(8, 0);
+    int chunkIndex = 0;
+
+    while (!stream.atEnd()) {
+        if (stream.device()->bytesAvailable() < 4) {
+            qWarning() << "No sufficient data for chunk size at offset:" << stream.device()->pos();
+            break;
+        }
+
+        quint32 dataLength;
+        stream >> dataLength;
+
+        if (dataLength == 0 || dataLength > fastFileData.size() - stream.device()->pos()) {
+            qWarning() << "Invalid data length at offset:" << stream.device()->pos();
+            break;
+        }
+
+        fillIV(chunkIndex % 4, ivPtr, ivTable, ivCounter);
+
+        ECRYPT_ctx x;
+        ECRYPT_keysetup(&x, reinterpret_cast<const u8*>(salsaKey.constData()), 256, 0);
+        ECRYPT_ivsetup(&x, reinterpret_cast<const u8*>(ivPtr.constData()));
+
+        QByteArray encryptedBlock = fastFileData.mid(stream.device()->pos(), dataLength);
+        QByteArray decryptedBlock(dataLength, Qt::Uninitialized);
+
+        ECRYPT_decrypt_bytes(&x,
+                             reinterpret_cast<const u8*>(encryptedBlock.constData()),
+                             reinterpret_cast<u8*>(decryptedBlock.data()),
+                             dataLength);
+
+        // SHA1 hash update
+        sha1Hash = QCryptographicHash::hash(decryptedBlock, QCryptographicHash::Sha1);
+
+        // Decompress (ZLIB raw DEFLATE)
+        QByteArray decompressedData = Compression::DecompressDeflate(decryptedBlock);
+        if (decompressedData.isEmpty()) {
+            qWarning() << "Failed decompression at chunk index:" << chunkIndex;
+            return QByteArray();
+        }
+
+        finalFastFile.append(decompressedData);
+
+        // Update IV table using SHA1
+        generateNewIV(chunkIndex % 4, sha1Hash, ivTable, ivCounter);
 
         stream.skipRawData(dataLength);
         chunkIndex++;
