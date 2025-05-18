@@ -5,4 +5,6 @@ SUBDIRS += libs \
            tools \
            tests
 
-QMAKE_PRE_BUILD += make clean
+tests.depends = libs
+app.depends = libs
+tools.depends = libs
